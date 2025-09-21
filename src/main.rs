@@ -4,8 +4,9 @@ use clap::{Parser, Subcommand};
 mod task;
 mod config;
 mod commands;
+mod git;
 
-use commands::{init, list, create, validate};
+use commands::{init, list, create, validate, sync};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -48,6 +49,15 @@ enum Commands {
     },
     /// Validate tasks and dependencies
     Validate,
+    /// Analyze Git history and suggest task updates
+    Sync {
+        /// Number of commits to analyze
+        #[arg(short, long, default_value = "50")]
+        limit: usize,
+        /// Show detailed analysis
+        #[arg(short, long)]
+        verbose: bool,
+    },
     /// Show project status
     Status,
 }
@@ -64,6 +74,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         Commands::Validate => validate::run(),
+        Commands::Sync { limit, verbose } => sync::run(limit, verbose),
         Commands::Status => {
             println!("Project status overview");
             Ok(())

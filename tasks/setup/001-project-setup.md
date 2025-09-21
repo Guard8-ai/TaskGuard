@@ -1,7 +1,7 @@
 ---
 id: setup-001
 title: "Project Setup and Dependencies"
-status: todo
+status: done
 priority: high
 tags: [setup, foundation]
 dependencies: []
