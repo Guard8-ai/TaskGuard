@@ -5,8 +5,9 @@ pub mod task;
 pub mod config;
 pub mod commands;
 pub mod git;
+pub mod analysis;
 
-use commands::{init, list, create, validate, sync};
+use commands::{init, list, create, validate, sync, lint};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -58,6 +59,15 @@ enum Commands {
         #[arg(short, long)]
         verbose: bool,
     },
+    /// Analyze task complexity and quality
+    Lint {
+        /// Show detailed analysis for all tasks
+        #[arg(short, long)]
+        verbose: bool,
+        /// Filter by area
+        #[arg(short, long)]
+        area: Option<String>,
+    },
     /// Show project status
     Status,
 }
@@ -75,6 +85,7 @@ fn main() -> Result<()> {
         }
         Commands::Validate => validate::run(),
         Commands::Sync { limit, verbose } => sync::run(limit, verbose),
+        Commands::Lint { verbose, area } => lint::run(verbose, area),
         Commands::Status => {
             println!("Project status overview");
             Ok(())

@@ -12,6 +12,8 @@ TaskGuard is a local-first, Git-native task management system built in Rust. It 
 - **📊 Multi-area organization**: Organize tasks by backend, frontend, auth, etc.
 - **⚡ Fast & reliable**: Built in Rust for performance and safety
 - **🤖 AI-ready**: Designed for natural language integration with Claude Code
+- **🕰️ Git analysis**: Intelligent status suggestions based on commit history
+- **🔒 Security-audited**: Comprehensive security testing with 17 security-focused tests
 
 ## 🚀 Quick Start
 
@@ -118,6 +120,7 @@ Brief description of what needs to be done and why.
 | `taskguard list [--area AREA] [--status STATUS]` | List tasks with optional filters |
 | `taskguard create --title TITLE [OPTIONS]` | Create a new task |
 | `taskguard validate` | Check dependencies and show available tasks |
+| `taskguard sync [--verbose]` | Analyze Git history for intelligent status suggestions |
 
 ## 🏗️ Project Organization
 
@@ -158,12 +161,17 @@ TaskGuard provides information and suggestions but never makes decisions for you
 - YAML + Markdown task format
 - Multi-area project structure
 
-**⏳ Phase 2 (TODO): Intelligence Layer**
-- Git history analysis
-- Smart status suggestions
-- Conflict detection and resolution helpers
+**✅ Phase 2A (COMPLETED): Intelligence Layer**
+- ✅ Git history analysis with commit correlation
+- ✅ Smart status suggestions based on commit patterns
+- ✅ Comprehensive security audit (17 security tests)
+- ✅ `taskguard sync` command for workflow intelligence
 
-**⏳ Phase 3 (TODO): Claude Code Integration**
+**⏳ Phase 2B (IN PROGRESS): Enhanced Analysis**
+- Task complexity analysis and linting
+- Advanced conflict detection helpers
+
+**⏳ Phase 3 (READY): Claude Code Integration**
 - Natural language task management
 - Context-aware suggestions
 - Intelligent workflow automation
@@ -179,3 +187,14 @@ MIT License - see LICENSE file for details.
 ---
 
 Built with ❤️ in Rust for developers who want to stay in control of their workflow.
+
+## 🔒 Security
+
+TaskGuard has undergone comprehensive security auditing with 17 security-focused tests covering:
+- Regular Expression Denial of Service (ReDoS) protection
+- Path traversal attack prevention
+- Memory exhaustion protection
+- Git repository access validation
+- Input sanitization and validation
+
+See `security-report.md` for detailed security analysis and mitigation strategies.
