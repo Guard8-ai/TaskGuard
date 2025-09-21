@@ -164,4 +164,19 @@ impl Task {
         // Task is available if all dependencies are completed
         self.dependencies.iter().all(|dep| completed_tasks.contains(dep))
     }
+
+    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let content = self.to_file_content()?;
+
+        // Ensure parent directory exists
+        if let Some(parent) = path.as_ref().parent() {
+            fs::create_dir_all(parent)
+                .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
+        }
+
+        fs::write(&path, content)
+            .with_context(|| format!("Failed to write task file: {}", path.as_ref().display()))?;
+
+        Ok(())
+    }
 }

@@ -25,7 +25,7 @@ pub enum Severity {
     Error,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum IssueCategory {
     Complexity,
     Structure,

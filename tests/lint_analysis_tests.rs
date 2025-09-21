@@ -295,3 +295,422 @@ fn test_analysis_summary() {
     assert!(summary.avg_quality_score > 0.0);
     assert!(summary.high_complexity_count >= 1); // The complex task should be flagged
 }
+
+// =============================================================================
+// COMPREHENSIVE COMPLEXITY ANALYSIS TESTS FOR PHASE 2-3 FEATURES
+// =============================================================================
+
+#[test]
+fn test_comprehensive_task_complexity_scenarios() {
+    let analyzer = TaskAnalyzer::new();
+
+    // Scenario 1: Minimal task
+    let minimal_task = create_test_task(
+        "minimal-001",
+        "Fix typo",
+        "Fix a small typo in the documentation.",
+        vec![],
+        Some("5 minutes".to_string()),
+        Some(1),
+    );
+
+    let analysis = analyzer.analyze_task(&minimal_task);
+    assert!(analysis.complexity_score < 2.0, "Minimal task should have very low complexity");
+    assert!(analysis.quality_score < 6.0, "Brief task should have lower quality score");
+
+    // Scenario 2: Well-structured medium task
+    let medium_task_content = r#"
+## Context
+This task involves implementing a user authentication system using modern security practices.
+
+## Objectives
+- Implement secure user login functionality
+- Add session management
+- Ensure proper error handling
+
+## Tasks
+- [ ] Set up authentication middleware
+- [ ] Create login endpoint
+- [ ] Implement session storage
+- [ ] Add input validation
+- [ ] Write comprehensive tests
+
+## Acceptance Criteria
+✅ Users can authenticate with email/password
+✅ Sessions are properly managed
+✅ Invalid attempts are handled gracefully
+
+## Technical Notes
+- Use JWT for session tokens
+- Hash passwords with bcrypt
+- Implement rate limiting
+"#;
+
+    let medium_task = create_test_task(
+        "auth-001",
+        "Implement User Authentication System",
+        medium_task_content,
+        vec!["setup-001".to_string()],
+        Some("8 hours".to_string()),
+        Some(6),
+    );
+
+    let analysis = analyzer.analyze_task(&medium_task);
+    assert!(analysis.complexity_score >= 4.0 && analysis.complexity_score <= 7.0,
+        "Well-structured medium task should have moderate complexity");
+    assert!(analysis.quality_score >= 8.0, "Well-structured task should have high quality");
+
+    // Scenario 3: Overly complex task
+    let complex_content = format!(
+        "{}{}{}{}{}",
+        "This is an extremely complex task that involves multiple systems, extensive coordination, and deep technical knowledge. ",
+        "It requires understanding of distributed systems, microservices architecture, database optimization, frontend frameworks, testing strategies, DevOps practices, security considerations, and performance optimization. ".repeat(20),
+        "\n\n## Subtasks\n",
+        "- [ ] Subtask\n".repeat(50),
+        "\n\n## Dependencies\nThis task depends on completing a complex chain of prerequisites."
+    );
+
+    let complex_task = create_test_task(
+        "mega-001",
+        "Redesign Entire System Architecture with Full Stack Implementation",
+        &complex_content,
+        vec!["dep1".to_string(), "dep2".to_string(), "dep3".to_string(), "dep4".to_string(), "dep5".to_string(), "dep6".to_string(), "dep7".to_string()],
+        Some("3 months".to_string()),
+        Some(10),
+    );
+
+    let analysis = analyzer.analyze_task(&complex_task);
+    assert!(analysis.complexity_score > 8.0, "Overly complex task should have very high complexity");
+    assert!(!analysis.issues.is_empty(), "Complex task should have quality issues");
+}
+
+#[test]
+fn test_task_quality_dimensions() {
+    let analyzer = TaskAnalyzer::new();
+
+    // Test different quality dimensions
+
+    // 1. Structure quality
+    let good_structure = r#"
+## Context
+Clear context provided here.
+
+## Objectives
+- Specific objective 1
+- Specific objective 2
+
+## Tasks
+- [ ] Actionable task 1
+- [ ] Actionable task 2
+
+## Acceptance Criteria
+✅ Measurable criteria 1
+✅ Measurable criteria 2
+"#;
+
+    let poor_structure = "Just some random text without any clear structure or organization.";
+
+    let structured_task = create_test_task("struct-001", "Structured Task", good_structure, vec![], None, None);
+    let unstructured_task = create_test_task("unstruct-001", "Unstructured Task", poor_structure, vec![], None, None);
+
+    let structured_analysis = analyzer.analyze_task(&structured_task);
+    let unstructured_analysis = analyzer.analyze_task(&unstructured_task);
+
+    assert!(structured_analysis.quality_score > unstructured_analysis.quality_score,
+        "Structured task should have higher quality");
+
+    // 2. Completeness quality
+    let complete_task = Task {
+        id: "complete-001".to_string(),
+        title: "Complete Task with All Information".to_string(),
+        status: TaskStatus::Todo,
+        priority: Priority::High,
+        tags: vec!["backend".to_string(), "api".to_string(), "auth".to_string()],
+        dependencies: vec!["setup-001".to_string()],
+        assignee: Some("developer".to_string()),
+        created: Utc::now(),
+        estimate: Some("4 hours".to_string()),
+        complexity: Some(5),
+        area: "backend".to_string(),
+        content: good_structure.to_string(),
+    };
+
+    let incomplete_task = Task {
+        id: "incomplete-001".to_string(),
+        title: "Task".to_string(),
+        status: TaskStatus::Todo,
+        priority: Priority::Medium,
+        tags: vec![],
+        dependencies: vec![],
+        assignee: None,
+        created: Utc::now(),
+        estimate: None,
+        complexity: None,
+        area: "misc".to_string(),
+        content: "Brief.".to_string(),
+    };
+
+    let complete_analysis = analyzer.analyze_task(&complete_task);
+    let incomplete_analysis = analyzer.analyze_task(&incomplete_task);
+
+    assert!(complete_analysis.quality_score > incomplete_analysis.quality_score,
+        "Complete task should have higher quality");
+
+    // Count completeness issues
+    let completeness_issues = incomplete_analysis.issues.iter()
+        .filter(|issue| matches!(issue.category, IssueCategory::Completeness))
+        .count();
+    assert!(completeness_issues >= 3, "Should detect multiple completeness issues");
+}
+
+#[test]
+fn test_complexity_factors_weighting() {
+    let analyzer = TaskAnalyzer::new();
+
+    // Test individual complexity factors
+
+    // 1. Content length factor
+    let short_content = "Brief task description.";
+    let long_content = "Very long task description. ".repeat(200);
+
+    let short_task = create_test_task("short-001", "Short Task", short_content, vec![], None, None);
+    let long_task = create_test_task("long-001", "Long Task", &long_content, vec![], None, None);
+
+    let short_analysis = analyzer.analyze_task(&short_task);
+    let long_analysis = analyzer.analyze_task(&long_task);
+
+    assert!(long_analysis.complexity_score > short_analysis.complexity_score,
+        "Longer content should increase complexity");
+
+    // 2. Dependencies factor
+    let no_deps = create_test_task("nodep-001", "No Dependencies", "Task with no dependencies", vec![], None, None);
+    let many_deps = create_test_task("manydep-001", "Many Dependencies", "Task with many dependencies",
+        vec!["dep1".to_string(), "dep2".to_string(), "dep3".to_string(), "dep4".to_string(), "dep5".to_string()], None, None);
+
+    let no_deps_analysis = analyzer.analyze_task(&no_deps);
+    let many_deps_analysis = analyzer.analyze_task(&many_deps);
+
+    assert!(many_deps_analysis.complexity_score > no_deps_analysis.complexity_score,
+        "More dependencies should increase complexity");
+
+    // 3. Subtasks factor
+    let no_subtasks = create_test_task("nosub-001", "No Subtasks", "Simple task without subtasks", vec![], None, None);
+    let many_subtasks_content = format!("Task with many subtasks:\n{}", "- [ ] Subtask\n".repeat(20));
+    let many_subtasks = create_test_task("manysub-001", "Many Subtasks", &many_subtasks_content, vec![], None, None);
+
+    let no_subtasks_analysis = analyzer.analyze_task(&no_subtasks);
+    let many_subtasks_analysis = analyzer.analyze_task(&many_subtasks);
+
+    assert!(many_subtasks_analysis.complexity_score > no_subtasks_analysis.complexity_score,
+        "More subtasks should increase complexity");
+}
+
+#[test]
+fn test_estimate_complexity_conversion() {
+    let analyzer = TaskAnalyzer::new();
+
+    let estimate_tests = vec![
+        ("30m", 0.5),
+        ("1h", 1.0),
+        ("2 hours", 2.0),
+        ("4h", 4.0),
+        ("1d", 8.0),  // Assuming 8 hours per day
+        ("1 day", 8.0),
+        ("3 days", 24.0),
+        ("1w", 40.0), // Assuming 5 days per week
+        ("1 week", 40.0),
+        ("2 weeks", 80.0),
+        ("1 month", 160.0), // Assuming ~4 weeks
+    ];
+
+    for (estimate_str, expected_range) in estimate_tests {
+        let points = analyzer.estimate_to_complexity_points(estimate_str);
+        assert!(points > 0.0, "Should parse estimate: {}", estimate_str);
+
+        // Allow some tolerance in the conversion
+        let tolerance = expected_range * 0.5;
+        assert!(points >= expected_range - tolerance && points <= expected_range + tolerance,
+            "Estimate '{}' should convert to ~{} points, got {}", estimate_str, expected_range, points);
+    }
+
+    // Test unknown/invalid estimates
+    let unknown_estimates = vec!["unknown", "tbd", "???", "invalid format"];
+    for unknown in unknown_estimates {
+        let points = analyzer.estimate_to_complexity_points(unknown);
+        assert!(points > 0.0, "Should provide default points for unknown estimate: {}", unknown);
+    }
+}
+
+#[test]
+fn test_issue_categorization_and_severity() {
+    let analyzer = TaskAnalyzer::new();
+
+    // Create tasks designed to trigger specific issue categories
+
+    // Complexity issues
+    let huge_content = format!("{}{}", "x".repeat(5000), "- [ ] Task\n".repeat(40));
+    let complexity_task = create_test_task(
+        "complex-001",
+        "Overly Complex Task",
+        &huge_content,
+        vec!["dep1".to_string(), "dep2".to_string(), "dep3".to_string(), "dep4".to_string(), "dep5".to_string(), "dep6".to_string(), "dep7".to_string(), "dep8".to_string()],
+        Some("6 months".to_string()),
+        Some(10),
+    );
+
+    let analysis = analyzer.analyze_task(&complexity_task);
+
+    // Should have multiple issue categories
+    let categories: std::collections::HashSet<_> = analysis.issues.iter()
+        .map(|issue| &issue.category)
+        .collect();
+
+    assert!(categories.contains(&IssueCategory::Complexity), "Should detect complexity issues");
+
+    let complexity_issues: Vec<_> = analysis.issues.iter()
+        .filter(|issue| matches!(issue.category, IssueCategory::Complexity))
+        .collect();
+    assert!(!complexity_issues.is_empty(), "Should have complexity issues");
+
+    // Check severity distribution
+    let error_count = analysis.issues.iter()
+        .filter(|issue| matches!(issue.severity, Severity::Error))
+        .count();
+    let warning_count = analysis.issues.iter()
+        .filter(|issue| matches!(issue.severity, Severity::Warning))
+        .count();
+    let info_count = analysis.issues.iter()
+        .filter(|issue| matches!(issue.severity, Severity::Info))
+        .count();
+
+    assert!(error_count + warning_count + info_count > 0, "Should have issues of various severities");
+
+    // Structure issues
+    let poor_structure_task = create_test_task(
+        "poor-001",
+        "Poorly Structured Task",
+        "This is just a wall of text without any clear organization or structure or sections or headers or anything that would make it easy to understand what needs to be done or how to approach the work.",
+        vec![],
+        None,
+        None,
+    );
+
+    let structure_analysis = analyzer.analyze_task(&poor_structure_task);
+    let structure_issues: Vec<_> = structure_analysis.issues.iter()
+        .filter(|issue| matches!(issue.category, IssueCategory::Structure))
+        .collect();
+    assert!(!structure_issues.is_empty(), "Should detect structure issues");
+}
+
+#[test]
+fn test_task_recommendations() {
+    let analyzer = TaskAnalyzer::new();
+
+    // Test that analysis provides actionable recommendations
+    let problematic_task = Task {
+        id: "prob-001".to_string(),
+        title: "vague".to_string(),
+        status: TaskStatus::Todo,
+        priority: Priority::Medium,
+        tags: vec![],
+        dependencies: vec![],
+        assignee: None,
+        created: Utc::now(),
+        estimate: None,
+        complexity: None,
+        area: "misc".to_string(),
+        content: "do stuff".to_string(),
+    };
+
+    let analysis = analyzer.analyze_task(&problematic_task);
+
+    assert!(!analysis.suggestions.is_empty(), "Should provide suggestions for improvement");
+
+    // Suggestions should be actionable
+    for suggestion in &analysis.suggestions {
+        assert!(!suggestion.is_empty(), "Suggestions should not be empty");
+        assert!(suggestion.len() > 10, "Suggestions should be meaningful");
+    }
+}
+
+#[test]
+fn test_batch_analysis_performance() {
+    let analyzer = TaskAnalyzer::new();
+
+    // Create many tasks for performance testing
+    let mut tasks = Vec::new();
+    for i in 1..=100 {
+        let content = if i % 10 == 0 {
+            format!("Complex task #{} with detailed content: {}", i, "Some detailed content. ".repeat(50))
+        } else {
+            format!("Simple task #{}", i)
+        };
+
+        let task = create_test_task(
+            &format!("task-{:03}", i),
+            &format!("Task {}", i),
+            &content,
+            if i > 1 { vec![format!("task-{:03}", i-1)] } else { vec![] },
+            Some(format!("{}h", i % 8 + 1)),
+            Some((i % 10 + 1) as u8),
+        );
+        tasks.push(task);
+    }
+
+    let start = std::time::Instant::now();
+    let analyses = analyzer.analyze_all_tasks(&tasks);
+    let duration = start.elapsed();
+
+    assert!(duration < std::time::Duration::from_secs(10),
+        "Batch analysis of 100 tasks should complete within 10 seconds, took {:?}", duration);
+
+    assert_eq!(analyses.len(), 100, "Should analyze all tasks");
+
+    let start = std::time::Instant::now();
+    let summary = analyzer.generate_summary(&analyses);
+    let summary_duration = start.elapsed();
+
+    assert!(summary_duration < std::time::Duration::from_secs(1),
+        "Summary generation should be fast");
+
+    assert_eq!(summary.total_tasks, 100, "Summary should include all tasks");
+    assert!(summary.avg_complexity_score > 0.0, "Should calculate average complexity");
+    assert!(summary.avg_quality_score > 0.0, "Should calculate average quality");
+}
+
+#[test]
+fn test_edge_case_task_content() {
+    let analyzer = TaskAnalyzer::new();
+
+    // Test various edge cases
+
+    // Empty content
+    let empty_task = create_test_task("empty-001", "Empty Task", "", vec![], None, None);
+    let empty_analysis = analyzer.analyze_task(&empty_task);
+    assert!(empty_analysis.complexity_score >= 0.0, "Should handle empty content");
+
+    // Unicode content
+    let unicode_content = "Unicode task: 🚀 Deploy 配置 résoudre проблему";
+    let unicode_task = create_test_task("unicode-001", "Unicode Task", unicode_content, vec![], None, None);
+    let unicode_analysis = analyzer.analyze_task(&unicode_task);
+    assert!(unicode_analysis.complexity_score >= 0.0, "Should handle unicode content");
+
+    // Very long title
+    let long_title = "Very long task title that goes on and on and on ".repeat(10);
+    let long_title_task = create_test_task("longtitle-001", &long_title, "Simple content", vec![], None, None);
+    let long_title_analysis = analyzer.analyze_task(&long_title_task);
+    assert!(long_title_analysis.complexity_score >= 0.0, "Should handle long titles");
+
+    // Malformed markdown
+    let malformed_markdown = r#"
+# Incomplete header
+## Another header
+- Incomplete list
+- [ ] Incomplete checklist
+] random bracket
+## # Mixed headers
+"#;
+    let malformed_task = create_test_task("malformed-001", "Malformed Task", malformed_markdown, vec![], None, None);
+    let malformed_analysis = analyzer.analyze_task(&malformed_task);
+    assert!(malformed_analysis.complexity_score >= 0.0, "Should handle malformed markdown");
+}
