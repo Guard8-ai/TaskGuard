@@ -19,14 +19,37 @@ TaskGuard is a local-first, Git-native task management system built in Rust. It 
 
 ### Installation
 
+TaskGuard can be installed globally to work with all your projects. Since this is a private repository, you'll need access to the Guard8.ai organization.
+
+**Global Installation (Recommended):**
+
+```bash
+# Clone the repository
+git clone https://github.com/Guard8-ai/TaskGuard.git
+cd TaskGuard
+
+# Run platform-specific installation script
+./scripts/install-linux.sh     # Linux
+./scripts/install-macos.sh     # macOS
+./scripts/install-wsl.sh       # WSL/WSL2
+```
+
+**Windows (PowerShell):**
+```powershell
+.\scripts\install-windows.ps1
+```
+
+**Manual Build:**
 ```bash
 # Clone and build
-git clone [repository-url]
+git clone https://github.com/Guard8-ai/TaskGuard.git
 cd TaskGuard
 cargo build --release
 
 # The binary is available at target/release/taskguard
 ```
+
+See [INSTALL.md](INSTALL.md) for detailed installation instructions and troubleshooting.
 
 ### Initialize a Project
 
@@ -34,18 +57,18 @@ cargo build --release
 # Navigate to your project
 cd my-project
 
-# Initialize TaskGuard
-./taskguard init
+# Initialize TaskGuard (works globally after installation)
+taskguard init
 ```
 
 ### Create Your First Tasks
 
 ```bash
 # Create a setup task
-./taskguard create --title "Setup development environment" --area setup --priority high
+taskguard create --title "Setup development environment" --area setup --priority high
 
 # Create a backend task that depends on setup
-./taskguard create --title "Implement user auth" --area backend --priority medium
+taskguard create --title "Implement user auth" --area backend --priority medium
 ```
 
 ### Add Dependencies
@@ -65,10 +88,16 @@ dependencies: [setup-001]
 
 ```bash
 # See all tasks
-./taskguard list
+taskguard list
 
-# Check dependencies
-./taskguard validate
+# Check dependencies and see what's available
+taskguard validate
+
+# Get AI recommendations
+taskguard ai "what should I work on next?"
+
+# Analyze Git activity for status suggestions
+taskguard sync --verbose
 ```
 
 ## 🎯 Core Concept: Dependency Blocking
@@ -114,13 +143,28 @@ Brief description of what needs to be done and why.
 
 ## 🔧 Commands
 
+### Core Commands
 | Command | Description |
 |---------|-------------|
 | `taskguard init` | Initialize TaskGuard in a project |
 | `taskguard list [--area AREA] [--status STATUS]` | List tasks with optional filters |
 | `taskguard create --title TITLE [OPTIONS]` | Create a new task |
 | `taskguard validate` | Check dependencies and show available tasks |
+
+### Intelligence Commands
+| Command | Description |
+|---------|-------------|
 | `taskguard sync [--verbose]` | Analyze Git history for intelligent status suggestions |
+| `taskguard lint [--verbose]` | Analyze task complexity and quality |
+| `taskguard ai "QUERY"` | Natural language task management with AI |
+
+### Installation Commands
+| Platform | Command |
+|----------|---------|
+| Linux | `./scripts/install-linux.sh` |
+| macOS | `./scripts/install-macos.sh` |
+| Windows | `.\scripts\install-windows.ps1` |
+| WSL/WSL2 | `./scripts/install-wsl.sh` |
 
 ## 🏗️ Project Organization
 
@@ -161,20 +205,21 @@ TaskGuard provides information and suggestions but never makes decisions for you
 - YAML + Markdown task format
 - Multi-area project structure
 
-**✅ Phase 2A (COMPLETED): Intelligence Layer**
-- ✅ Git history analysis with commit correlation
+**✅ Phase 2 (COMPLETED): Intelligence Layer**
+- ✅ Git history analysis with commit correlation (`taskguard sync`)
 - ✅ Smart status suggestions based on commit patterns
+- ✅ Task complexity analysis and linting (`taskguard lint`)
 - ✅ Comprehensive security audit (17 security tests)
-- ✅ `taskguard sync` command for workflow intelligence
 
-**⏳ Phase 2B (IN PROGRESS): Enhanced Analysis**
-- Task complexity analysis and linting
-- Advanced conflict detection helpers
+**✅ Phase 3 (COMPLETED): AI Integration**
+- ✅ Natural language task management (`taskguard ai`)
+- ✅ Context-aware suggestions and recommendations
+- ✅ Claude Code integration for intelligent workflow automation
 
-**⏳ Phase 3 (READY): Claude Code Integration**
-- Natural language task management
-- Context-aware suggestions
-- Intelligent workflow automation
+**✅ Phase 4 (COMPLETED): Distribution**
+- ✅ Cross-platform installation scripts (Linux, macOS, Windows, WSL)
+- ✅ Global installation for multi-project usage
+- ✅ Comprehensive documentation and guides
 
 ## 🤝 Contributing
 
