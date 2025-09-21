@@ -560,6 +560,60 @@ auto_suggestions = true
 - **Performance**: Fast operations on hundreds of task files
 - **Reliability**: Graceful error handling, never lose data
 
+## Security Considerations
+
+TaskGuard has been security-audited with comprehensive testing for defensive security posture. Key security features and considerations:
+
+### Git Repository Security
+
+- **Path Validation**: Repository access is restricted to prevent path traversal attacks
+- **Safe Git Operations**: All Git operations use the secure `git2` crate with proper error handling
+- **Repository Isolation**: TaskGuard operates only within the current project scope
+
+### Input Processing Security
+
+- **Commit Message Safety**: Commit messages are processed securely without executing embedded commands
+- **Regex Security**: All regex patterns are tested against ReDoS (Regular Expression Denial of Service) attacks
+- **Input Validation**: Size limits and character validation prevent malicious input exploitation
+
+### Memory and Performance Security
+
+- **Bounded Processing**: Commit processing has reasonable limits to prevent memory exhaustion
+- **Performance Limits**: All operations are tested for algorithmic complexity attacks
+- **Concurrent Safety**: Thread-safe operations for multiple concurrent Git access
+
+### Error Handling Security
+
+- **Information Disclosure Protection**: Error messages are sanitized to prevent leaking sensitive paths
+- **Graceful Failure**: Proper error handling prevents crashes and unexpected behavior
+- **Security Logging**: Important security events are properly logged for monitoring
+
+### Production Deployment Guidelines
+
+When using TaskGuard in production environments:
+
+1. **Repository Access**: Ensure TaskGuard runs with minimal necessary file system permissions
+2. **Input Sources**: Validate any external input sources (if integrating with other tools)
+3. **Monitoring**: Monitor for unusual patterns in commit processing or task analysis
+4. **Updates**: Keep dependencies updated and run security audits regularly
+
+### Security Testing
+
+TaskGuard includes comprehensive security tests covering:
+- ReDoS (Regular Expression Denial of Service) prevention
+- Path traversal attack prevention
+- Malicious commit message injection handling
+- Memory exhaustion protection
+- Concurrent access safety
+- Unicode and control character handling
+
+Run security tests with:
+```bash
+cargo test security_tests -- --nocapture
+```
+
+For detailed security audit results, see `security-report.md` in the project root.
+
 ## Troubleshooting
 
 ### Common Issues
