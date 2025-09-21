@@ -129,7 +129,7 @@ impl GitAnalyzer {
     }
 
     /// Extract task IDs from commit message using common patterns
-    fn extract_task_ids(&self, message: &str) -> Vec<String> {
+    pub fn extract_task_ids(&self, message: &str) -> Vec<String> {
         let mut task_ids = Vec::new();
 
         // Pattern 1: area-number format (e.g., "setup-001", "backend-002")
@@ -140,8 +140,8 @@ impl GitAnalyzer {
             }
         }
 
-        // Pattern 2: Issue/task references (e.g., "#123", "task 456")
-        let issue_pattern = regex::Regex::new(r"(?i)\b(?:task|issue|#)\s*(\d+)\b").unwrap();
+        // Pattern 2: Issue/task references (e.g., "#123", "task 456", "issue 123")
+        let issue_pattern = regex::Regex::new(r"(?i)(?:\b(?:task|issue)\s*|#)(\d+)\b").unwrap();
         for cap in issue_pattern.captures_iter(message) {
             if let Some(number) = cap.get(1) {
                 task_ids.push(format!("task-{}", number.as_str()));
@@ -152,7 +152,7 @@ impl GitAnalyzer {
     }
 
     /// Suggest task status based on commit patterns
-    fn suggest_status(&self, commits: &[TaskCommit]) -> (Option<String>, f32) {
+    pub fn suggest_status(&self, commits: &[TaskCommit]) -> (Option<String>, f32) {
         if commits.is_empty() {
             return (None, 0.0);
         }
@@ -228,26 +228,4 @@ impl GitAnalyzer {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_extract_task_ids() {
-        let analyzer = GitAnalyzer::new(".").unwrap();
-
-        let message1 = "Fix authentication bug in backend-001";
-        let ids1 = analyzer.extract_task_ids(message1);
-        assert_eq!(ids1, vec!["backend-001"]);
-
-        let message2 = "Complete setup-003 and start frontend-001";
-        let ids2 = analyzer.extract_task_ids(message2);
-        assert!(ids2.contains(&"setup-003".to_string()));
-        assert!(ids2.contains(&"frontend-001".to_string()));
-
-        let message3 = "Fix issue #123 and task 456";
-        let ids3 = analyzer.extract_task_ids(message3);
-        assert!(ids3.contains(&"task-123".to_string()));
-        assert!(ids3.contains(&"task-456".to_string()));
-    }
-}
+// Unit tests are in tests/git_analysis_tests.rs

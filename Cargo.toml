@@ -9,6 +9,10 @@ license = "MIT"
 name = "taskguard"
 path = "src/main.rs"
 
+[lib]
+name = "taskguard"
+path = "src/lib.rs"
+
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -20,3 +24,6 @@ git2 = "0.18"
 uuid = { version = "1.0", features = ["v4"] }
 toml = "0.8"
 regex = "1.10"
+
+[dev-dependencies]
+tempfile = "3.8"

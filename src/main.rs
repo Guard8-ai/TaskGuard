@@ -1,10 +1,10 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-mod task;
-mod config;
-mod commands;
-mod git;
+pub mod task;
+pub mod config;
+pub mod commands;
+pub mod git;
 
 use commands::{init, list, create, validate, sync};
 
