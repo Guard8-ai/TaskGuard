@@ -221,6 +221,21 @@ TaskGuard provides information and suggestions but never makes decisions for you
 - ✅ Global installation for multi-project usage
 - ✅ Comprehensive documentation and guides
 
+## 🤖 For AI Agents & Automation
+
+TaskGuard is designed to work seamlessly with agentic AI systems like Claude Code. If you're building AI agents that need to manage tasks systematically:
+
+**📖 [Agentic AI TaskGuard Guide](AGENTIC_AI_TASKGUARD_GUIDE.md)**
+
+This comprehensive guide covers:
+- Common pitfalls when AI agents use TaskGuard
+- Proper task distribution across areas to avoid ID conflicts
+- Tool hygiene practices for reliable dependency management
+- Step-by-step workflows for AI-driven task breakdown
+- Debugging strategies for complex task hierarchies
+
+Key insight: AI agents must **respect TaskGuard's design patterns** rather than trying to bulldoze through with rapid commands.
+
 ## 🤝 Contributing
 
 TaskGuard is in active development. See [CLAUDE.md](CLAUDE.md) for detailed technical documentation.
