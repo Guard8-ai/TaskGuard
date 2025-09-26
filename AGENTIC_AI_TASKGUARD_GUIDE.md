@@ -6,10 +6,6 @@ TaskGuard is a sophisticated task management system that requires **tool hygiene
 
 ## Core Problems to Avoid
 
-### ❌ Task ID Overwriting
-**Problem**: Creating multiple tasks in the same area rapidly causes ID conflicts
-**Solution**: Distribute tasks across different areas initially
-
 ### ❌ Poor Area Distribution
 **Problem**: Cramming everything into `backend` or `api` areas
 **Solution**: Use the full spectrum of available areas
@@ -59,17 +55,29 @@ taskguard list
 taskguard validate
 ```
 
-### Step 4: Add Dependencies by Editing Files
-```bash
-# Edit task files to add proper dependencies
-vim tasks/api/api-001.md
-# Add to YAML front-matter:
-# dependencies: [setup-001, backend-001]
+### Step 4: Edit Task Files After Creation
+**CRITICAL**: TaskGuard creates tasks with template content - AI agents MUST edit them immediately!
 
-vim tasks/testing/testing-001.md
-# Add to YAML front-matter:
-# dependencies: [api-001, backend-001, frontend-001]
+```bash
+# TaskGuard creates skeleton tasks with placeholder content
+# Example after: taskguard create --title "Setup API endpoints" --area api --priority high
+
+# The file contains generic template content:
+# ## Context
+# Brief description of what needs to be done and why.
+# ## Tasks
+# - [ ] Break down the work into specific tasks
+
+# AI agents must immediately edit to add real content:
+vim tasks/api/api-001.md
 ```
+
+**Required Edits:**
+1. **Replace template content** with actual requirements
+2. **Add dependencies** in YAML front-matter: `dependencies: [setup-001, backend-001]`
+3. **Update context** with real project details
+4. **Specify concrete tasks** instead of placeholder text
+5. **Define measurable acceptance criteria**
 
 ### Step 5: Verify Dependency Chain
 ```bash
@@ -91,6 +99,43 @@ Use these areas strategically to avoid ID conflicts:
 - **testing**: Unit tests, integration tests, validation
 - **integration**: System integration, connecting components
 - **deployment**: CI/CD, infrastructure, production setup
+
+## Understanding TaskGuard's Create Process
+
+**Important**: TaskGuard's `create` command generates **template tasks**, not AI-generated content.
+
+### What TaskGuard Creates Automatically:
+- **YAML metadata**: ID, status (todo), priority, tags, timestamps
+- **Template structure**: Standard sections (Context, Objectives, Tasks, etc.)
+- **Placeholder content**: Generic text like "Brief description of what needs to be done"
+
+### What AI Agents Must Do:
+1. **Immediate editing**: Replace all template content with real requirements
+2. **Add dependencies**: Specify which tasks must complete first
+3. **Define concrete deliverables**: Replace generic bullet points with specific work items
+4. **Validate workflow**: Use `taskguard validate` after each edit
+
+### Template vs. Real Content Example:
+```markdown
+# TEMPLATE (what TaskGuard creates):
+## Context
+Brief description of what needs to be done and why.
+
+## Tasks
+- [ ] Break down the work into specific tasks
+
+# REAL CONTENT (what AI agents must add):
+## Context
+The current API lacks user authentication. Need to implement JWT-based auth
+system to secure /api/users and /api/data endpoints before frontend integration.
+
+## Tasks
+- [ ] Install and configure jsonwebtoken package
+- [ ] Create auth middleware for protected routes
+- [ ] Implement POST /auth/login endpoint with bcrypt
+- [ ] Add token validation to existing user endpoints
+- [ ] Write integration tests for auth flow
+```
 
 ## AI Agent Best Practices
 
@@ -125,31 +170,36 @@ setup-001 → backend-001 → api-001 → testing-001
 # 1. Initialize
 taskguard init
 
-# 2. Create strategic foundation tasks
+# 2. Create foundation task
 taskguard create --title "Verify existing API endpoints" --area setup --priority high
-taskguard create --title "Analyze requirements document" --area docs --priority high
 
-# 3. Check state
-taskguard list
+# 3. IMMEDIATELY edit the task with real content
+# Replace template content in tasks/setup/setup-001.md:
+# - Add actual verification steps
+# - Define specific endpoints to check
+# - Set measurable success criteria
+
+# 4. Validate after editing
 taskguard validate
 
-# 4. Create implementation tasks
+# 5. Create next task
 taskguard create --title "Extract data processing patterns" --area data --priority medium
+
+# 6. IMMEDIATELY edit and add dependency
+# Edit tasks/data/data-001.md:
+# - Add: dependencies: [setup-001]
+# - Replace template with real extraction requirements
+
+# 7. Validate dependency chain
+taskguard validate
+# Should show setup-001 available, data-001 blocked
+
+# 8. Continue create-edit-validate pattern
 taskguard create --title "Implement strategy execution endpoint" --area api --priority medium
-
-# 5. Check state again
+# Edit tasks/api/api-001.md with dependencies: [setup-001, data-001]
 taskguard validate
 
-# 6. Edit task files to add dependencies
-# Edit tasks/api/api-001.md to depend on [setup-001, data-001]
-# Edit tasks/data/data-001.md to depend on [docs-001]
-
-# 7. Create validation tasks
-taskguard create --title "Create end-to-end test suite" --area testing --priority medium
-
-# 8. Final validation
-taskguard validate
-# Should show clear dependency chain and available tasks
+# 9. Result: Clear dependency chain with real, actionable tasks
 ```
 
 ## Debugging TaskGuard Issues
@@ -189,6 +239,8 @@ A successful TaskGuard session should show:
 2. **Clear dependency chains**: `taskguard validate` shows logical blocking
 3. **No parse errors**: All tasks validate successfully
 4. **Actionable queue**: Clear list of available tasks to work on
+5. **No template content**: All tasks have real requirements, not generic placeholders
+6. **Concrete deliverables**: Each task has specific, measurable work items
 
 ## Remember: TaskGuard is the Manager
 

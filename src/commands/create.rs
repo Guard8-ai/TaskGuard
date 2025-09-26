@@ -94,6 +94,15 @@ Brief description of what needs to be done and why.
 
     // Write task file
     let file_path = area_dir.join(task.file_name());
+
+    // Check if file already exists to prevent overwrites
+    if file_path.exists() {
+        return Err(anyhow::anyhow!(
+            "Task file already exists: {}. This should not happen with proper ID generation.",
+            file_path.display()
+        ));
+    }
+
     let content = task.to_file_content()?;
 
     fs::write(&file_path, content)
@@ -121,10 +130,18 @@ fn generate_task_id(area: &str, area_dir: &std::path::Path) -> Result<String> {
             let entry = entry.context("Failed to read directory entry")?;
             if let Some(file_name) = entry.file_name().to_str() {
                 if file_name.ends_with(".md") {
-                    // Extract number from filename like "001-something.md"
-                    if let Some(num_str) = file_name.split('-').next() {
-                        if let Ok(num) = num_str.parse::<u32>() {
-                            max_num = max_num.max(num);
+                    // Extract number from filename like "backend-001.md" or "area-123.md"
+                    // Expected format: area-NNN.md
+                    let stem = file_name.trim_end_matches(".md");
+                    if let Some(dash_pos) = stem.rfind('-') {
+                        let area_part = &stem[..dash_pos];
+                        let num_part = &stem[dash_pos + 1..];
+
+                        // Only consider files that match our area prefix
+                        if area_part == area {
+                            if let Ok(num) = num_part.parse::<u32>() {
+                                max_num = max_num.max(num);
+                            }
                         }
                     }
                 }
