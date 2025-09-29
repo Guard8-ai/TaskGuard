@@ -2,7 +2,7 @@
 
 > AI-ready local task management with Git integration
 
-TaskGuard is a local-first, Git-native task management system built in Rust. It provides intelligent task management with dependency blocking while keeping developers in complete control.
+TaskGuard is a local-first, Git-native task management system built in Rust. It provides AI-ready task management with automatic agent integration, dependency blocking, and intelligent workflows while keeping developers in complete control.
 
 ## ✨ Features
 
@@ -11,7 +11,7 @@ TaskGuard is a local-first, Git-native task management system built in Rust. It 
 - **🔗 Dependency blocking**: Tasks automatically block until prerequisites are complete
 - **📊 Multi-area organization**: Organize tasks by backend, frontend, auth, etc.
 - **⚡ Fast & reliable**: Built in Rust for performance and safety
-- **🤖 AI-ready**: Designed for natural language integration with Claude Code
+- **🤖 AI-ready**: Zero-setup AI agent integration with automatic guide distribution
 - **🕰️ Git analysis**: Intelligent status suggestions based on commit history
 - **🔒 Security-audited**: Comprehensive security testing with 17 security-focused tests
 
@@ -61,11 +61,11 @@ cd my-project
 taskguard init
 ```
 
-**🤖 AI Agent Integration**: TaskGuard automatically creates AI collaboration files when initialized:
-- `AGENTIC_AI_TASKGUARD_GUIDE.md` - Complete guide for AI agents
-- `AI_AGENT_SETUP_NOTIFICATION.md` - Setup instructions for tool integration
+**🤖 Zero-Setup AI Integration**: TaskGuard automatically creates AI collaboration files when initialized:
+- `AGENTIC_AI_TASKGUARD_GUIDE.md` - Complete guide for AI agents with best practices
+- `AI_AGENT_SETUP_NOTIFICATION.md` - Automatic setup instructions for tool integration
 
-**For AI tools**: Update your instruction files (CLAUDE.md, GEMINI.md, etc.) with TaskGuard integration after running `taskguard init`.
+**For AI agents**: TaskGuard automatically distributes integration guides and provides notification system for updating tool instruction files (CLAUDE.md, GEMINI.md, etc.) with zero manual setup required.
 
 ### Create Your First Tasks
 

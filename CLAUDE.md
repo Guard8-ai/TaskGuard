@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TaskGuard is a local-first, Git-native task management system built in Rust. It provides AI-ready task management with special integration for Claude Code workflows while keeping developers in control.
+TaskGuard is a local-first, Git-native task management system built in Rust. It provides AI-ready task management with automatic Claude Code integration, zero-setup agent collaboration, and intelligent dependency blocking while keeping developers in control.
 
 ## Build and Installation
 
@@ -425,7 +425,7 @@ TaskGuard configuration is stored in `.taskguard/config.toml`. The configuration
 ```toml
 [project]
 name = "My Project"
-version = "1.0.0"
+version = "0.2.0"
 areas = ["setup", "backend", "frontend", "api", "auth", "testing", "deployment"]
 
 [settings]
@@ -496,15 +496,19 @@ priorities = ["p0", "p1", "p2", "p3"]
 
 ## Claude Code Integration
 
-TaskGuard is designed for natural language interaction through Claude Code:
+TaskGuard v0.2.0 provides zero-setup AI agent integration with automatic guide distribution:
 
-### 🚨 IMPORTANT: AI Agent Integration Guide
-**When you run `taskguard init`, you MUST also:**
-1. Copy `AGENTIC_AI_TASKGUARD_GUIDE.md` to your project root
-2. Add reference to it in your AI tool instruction files (CLAUDE.md, GEMINI.md, etc.)
-3. Update your tool configs to use TaskGuard CLI commands for task management
+### 🤖 Automatic AI Integration (v0.2.0)
+**TaskGuard now handles AI setup automatically:**
+1. ✅ **Auto-copies** `AGENTIC_AI_TASKGUARD_GUIDE.md` to your project root during `taskguard init`
+2. ✅ **Auto-creates** `AI_AGENT_SETUP_NOTIFICATION.md` with tool integration instructions
+3. ✅ **Built-in notification system** prompts you to update AI tool instruction files
+4. ✅ **Zero manual setup** required for AI agent collaboration
 
-**For optimal AI collaboration, see: `AGENTIC_AI_TASKGUARD_GUIDE.md`**
+**Simply run `taskguard init` and follow the notification prompts!**
+
+### 📖 Complete AI Collaboration Guide
+**For optimal AI collaboration, see: `AGENTIC_AI_TASKGUARD_GUIDE.md`** (automatically distributed)
 
 ### Natural Language Commands
 Instead of CLI syntax, use conversational commands:
@@ -547,17 +551,21 @@ auto_suggestions = true
 - ✅ Dependency validation and blocking
 - ✅ Multi-area task organization
 
-**Phase 2 (TODO)**: Intelligence Layer
-- ⏳ Git analysis and smart suggestions
-- ⏳ Task complexity analysis
-- ⏳ Conflict detection and resolution
+**Phase 2 (COMPLETED)**: Intelligence Layer
+- ✅ Git analysis and smart suggestions
+- ✅ Task complexity analysis
+- ✅ Conflict detection and resolution
 
-**Phase 3 (TODO)**: Claude Code Bridge
-- ⏳ Natural language integration
-- ⏳ Context-aware suggestions
+**Phase 3 (COMPLETED)**: AI Integration
+- ✅ Automatic AI guide distribution
+- ✅ Zero-setup agent collaboration
+- ✅ Built-in notification system for tool integration
+- ✅ Context-aware suggestions
 
-**Phase 4 (TODO)**: Advanced Features
-- ⏳ Templates, collaboration, analytics
+**Phase 4 (COMPLETED)**: Distribution & Polish
+- ✅ Cross-platform installation scripts
+- ✅ Security audit (17 security tests)
+- ✅ Comprehensive documentation
 
 ## Key Design Principles
 

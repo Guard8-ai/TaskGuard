@@ -1,7 +1,7 @@
 # TaskGuard - AI-Ready Local Task Management
 
 ## Vision Statement
-TaskGuard is a local-first, Git-native task management system that keeps developers in control while providing intelligent assistance. Built in Rust for reliability and performance, with special integration for Claude Code workflows.
+TaskGuard is a local-first, Git-native task management system that keeps developers in control while providing intelligent assistance. Built in Rust for reliability and performance, with zero-setup AI agent integration and automatic guide distribution for Claude Code workflows.
 
 ## Core Philosophy: "Developer is the Captain"
 
@@ -325,7 +325,7 @@ Create this task? [Y/n]
 ```toml
 [project]
 name = "My Web Application"
-version = "1.0.0"
+version = "0.2.0"
 areas = ["setup", "backend", "frontend", "api", "auth", "testing", "deployment"]
 
 [settings]
