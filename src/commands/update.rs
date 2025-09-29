@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use crate::config::get_tasks_dir;
 use crate::task::{Task, TaskStatus, Priority};
+use regex::Regex;
 
 pub fn run(field: String, task_id: String, value: String) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
@@ -153,4 +154,139 @@ fn validate_status_transition(current: &TaskStatus, new: &TaskStatus) -> Result<
     }
 
     Ok(())
+}
+
+pub fn run_task_item(task_id: String, item_index: usize, status: String) -> Result<()> {
+    let tasks_dir = get_tasks_dir()?;
+
+    // Validate status input
+    let target_completed = match status.as_str() {
+        "done" | "completed" | "true" => true,
+        "todo" | "incomplete" | "false" => false,
+        _ => {
+            return Err(anyhow::anyhow!(
+                "Invalid status '{}'. Valid values: done, todo",
+                status
+            ));
+        }
+    };
+
+    // Find the task file
+    let task_file_path = find_task_file(&tasks_dir, &task_id)?;
+
+    // Load the task
+    let mut task = Task::from_file(&task_file_path)?;
+
+    // Parse checklist items
+    let items = parse_checklist_items(&task.content)?;
+
+    if items.is_empty() {
+        return Err(anyhow::anyhow!(
+            "No checklist items found in task {}",
+            task_id
+        ));
+    }
+
+    // Validate item index (1-based)
+    if item_index == 0 || item_index > items.len() {
+        return Err(anyhow::anyhow!(
+            "Invalid item index {}. Valid range: 1-{}",
+            item_index,
+            items.len()
+        ));
+    }
+
+    let target_item = &items[item_index - 1]; // Convert to 0-based
+
+    // Check if already in target state
+    if target_item.completed == target_completed {
+        let current_status = if target_item.completed { "done" } else { "todo" };
+        println!("✨ Item {} is already {}: {}",
+            item_index,
+            current_status,
+            target_item.text
+        );
+        return Ok(());
+    }
+
+    // Update the task content by modifying the specific item
+    let updated_content = update_checklist_item(&task.content, item_index - 1, target_completed)?;
+    task.content = updated_content;
+
+    // Save the updated task
+    task.save_to_file(&task_file_path)?;
+
+    // Show success message
+    let new_status = if target_completed { "done" } else { "todo" };
+    let status_icon = if target_completed { "✅" } else { "⭕" };
+
+    println!("✅ Updated task {} item {}: {} [{}] {}",
+        task_id,
+        item_index,
+        status_icon,
+        new_status,
+        target_item.text
+    );
+
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+struct ChecklistItem {
+    text: String,
+    completed: bool,
+    line_number: usize,
+}
+
+fn parse_checklist_items(content: &str) -> Result<Vec<ChecklistItem>> {
+    let mut items = Vec::new();
+
+    // Regex to match checklist items like "- [ ] text" or "- [x] text"
+    let checkbox_regex = Regex::new(r"^(\s*)-\s*\[([x\s])\]\s*(.+)$")?;
+
+    for (line_number, line) in content.lines().enumerate() {
+        if let Some(captures) = checkbox_regex.captures(line) {
+            let checkbox_state = captures.get(2).unwrap().as_str().trim();
+            let text = captures.get(3).unwrap().as_str().trim();
+
+            let completed = match checkbox_state {
+                "x" | "X" => true,
+                _ => false,
+            };
+
+            items.push(ChecklistItem {
+                text: text.to_string(),
+                completed,
+                line_number: line_number + 1, // 1-based for user display
+            });
+        }
+    }
+
+    Ok(items)
+}
+
+fn update_checklist_item(content: &str, item_index: usize, completed: bool) -> Result<String> {
+    let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+    let checkbox_regex = Regex::new(r"^(\s*)-\s*\[([x\s])\]\s*(.+)$")?;
+
+    let mut current_item_index = 0;
+
+    for (line_index, line) in lines.iter().enumerate() {
+        if checkbox_regex.is_match(line) {
+            if current_item_index == item_index {
+                // This is the line we need to update
+                if let Some(captures) = checkbox_regex.captures(line) {
+                    let indent = captures.get(1).unwrap().as_str();
+                    let text = captures.get(3).unwrap().as_str();
+
+                    let new_checkbox = if completed { "[x]" } else { "[ ]" };
+                    lines[line_index] = format!("{}- {} {}", indent, new_checkbox, text);
+                }
+                break;
+            }
+            current_item_index += 1;
+        }
+    }
+
+    Ok(lines.join("\n"))
 }

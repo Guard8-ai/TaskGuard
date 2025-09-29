@@ -4,6 +4,7 @@ use walkdir::WalkDir;
 
 use crate::config::get_tasks_dir;
 use crate::task::{Task, TaskStatus};
+use regex::Regex;
 
 pub fn run(status_filter: Option<String>, area_filter: Option<String>) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
@@ -120,4 +121,100 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>) -> Result
     }
 
     Ok(())
+}
+
+pub fn run_items(task_id: String) -> Result<()> {
+    let tasks_dir = get_tasks_dir()?;
+
+    // Find the task file using the same logic as update command
+    let task_file_path = find_task_file(&tasks_dir, &task_id)?;
+
+    // Load the task
+    let task = Task::from_file(&task_file_path)?;
+
+    // Parse checklist items from the task content
+    let items = parse_checklist_items(&task.content)?;
+
+    if items.is_empty() {
+        println!("📋 No checklist items found in task {}", task_id);
+        return Ok(());
+    }
+
+    println!("📋 Checklist items for task {}:", task_id);
+    println!("   {}", task.title);
+    println!();
+
+    for (index, item) in items.iter().enumerate() {
+        let status_icon = if item.completed { "✅" } else { "⭕" };
+        let status_text = if item.completed { "done" } else { "todo" };
+
+        println!("   {}. {} [{}] {}",
+            index + 1,
+            status_icon,
+            status_text,
+            item.text
+        );
+    }
+
+    println!();
+    println!("📊 SUMMARY");
+    println!("   Total items: {}", items.len());
+    let completed = items.iter().filter(|i| i.completed).count();
+    println!("   Completed: {} ({:.1}%)", completed, completed as f32 / items.len() as f32 * 100.0);
+    println!("   Remaining: {}", items.len() - completed);
+
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct ChecklistItem {
+    pub text: String,
+    pub completed: bool,
+    pub line_number: usize,
+}
+
+fn parse_checklist_items(content: &str) -> Result<Vec<ChecklistItem>> {
+    let mut items = Vec::new();
+
+    // Regex to match checklist items like "- [ ] text" or "- [x] text"
+    let checkbox_regex = Regex::new(r"^(\s*)-\s*\[([x\s])\]\s*(.+)$")?;
+
+    for (line_number, line) in content.lines().enumerate() {
+        if let Some(captures) = checkbox_regex.captures(line) {
+            let checkbox_state = captures.get(2).unwrap().as_str().trim();
+            let text = captures.get(3).unwrap().as_str().trim();
+
+            let completed = match checkbox_state {
+                "x" | "X" => true,
+                _ => false,
+            };
+
+            items.push(ChecklistItem {
+                text: text.to_string(),
+                completed,
+                line_number: line_number + 1, // 1-based for user display
+            });
+        }
+    }
+
+    Ok(items)
+}
+
+// Helper function to find task file (similar to update.rs)
+fn find_task_file(tasks_dir: &std::path::PathBuf, task_id: &str) -> Result<std::path::PathBuf> {
+    // Extract area from task ID (e.g., "backend-001" -> "backend")
+    let area = task_id.split('-').next()
+        .ok_or_else(|| anyhow::anyhow!("Invalid task ID format. Expected format: area-number"))?;
+
+    let area_dir = tasks_dir.join(area);
+    let task_file = area_dir.join(format!("{}.md", task_id));
+
+    if !task_file.exists() {
+        return Err(anyhow::anyhow!(
+            "Task file not found: {}. Available tasks can be seen with 'taskguard list'",
+            task_file.display()
+        ));
+    }
+
+    Ok(task_file)
 }

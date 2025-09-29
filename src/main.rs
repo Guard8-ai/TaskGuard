@@ -19,15 +19,39 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+enum ListCommands {
+    /// List checklist items within a task
+    Items {
+        /// Task ID to list items from
+        task_id: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum TaskCommands {
+    /// Update a specific checklist item within a task
+    Update {
+        /// Task ID
+        task_id: String,
+        /// Item index (1-based)
+        item_index: usize,
+        /// New status (done or todo)
+        status: String,
+    },
+}
+
+#[derive(Subcommand)]
 enum Commands {
     /// Initialize TaskGuard in the current project
     Init,
-    /// List all tasks
+    /// List tasks or task items
     List {
-        /// Filter by status
+        #[command(subcommand)]
+        command: Option<ListCommands>,
+        /// Filter by status (when listing tasks)
         #[arg(short, long)]
         status: Option<String>,
-        /// Filter by area
+        /// Filter by area (when listing tasks)
         #[arg(short, long)]
         area: Option<String>,
     },
@@ -82,6 +106,11 @@ enum Commands {
         /// New value for the field
         value: String,
     },
+    /// Task-specific operations (update checklist items)
+    Task {
+        #[command(subcommand)]
+        command: TaskCommands,
+    },
     /// Show project status
     Status,
 }
@@ -91,7 +120,10 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Init => init::run(),
-        Commands::List { status, area } => list::run(status, area),
+        Commands::List { command, status, area } => match command {
+            Some(ListCommands::Items { task_id }) => list::run_items(task_id),
+            None => list::run(status, area),
+        },
         Commands::Create { title, area, priority } => create::run(title, area, priority),
         Commands::Show { task_id } => {
             println!("Show task: {}", task_id);
@@ -102,6 +134,9 @@ fn main() -> Result<()> {
         Commands::Lint { verbose, area } => lint::run(verbose, area),
         Commands::Ai { input } => ai::run(input),
         Commands::Update { field, task_id, value } => update::run(field, task_id, value),
+        Commands::Task { command } => match command {
+            TaskCommands::Update { task_id, item_index, status } => update::run_task_item(task_id, item_index, status),
+        },
         Commands::Status => {
             println!("Project status overview");
             Ok(())

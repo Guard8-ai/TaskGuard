@@ -80,6 +80,8 @@ taskguard update status api-001 doing
 2. **Status**: `taskguard update status <task-id> <todo|doing|review|done|blocked>`
 3. **Priority**: `taskguard update priority <task-id> <low|medium|high|critical>`
 4. **Assignee**: `taskguard update assignee <task-id> <name>`
+5. **Task Items**: `taskguard list items <task-id>` - List checklist items
+6. **Task Items**: `taskguard task update <task-id> <item-index> <done|todo>` - Update specific items
 
 **Still Required (Manual Editing):**
 - Replace template content with actual requirements
@@ -154,6 +156,48 @@ taskguard update dependencies api-001 "setup-001,backend-001"
 taskguard update dependencies integration-001 "api-001,frontend-001,auth-001"
 taskguard update dependencies testing-001 ""  # Clear dependencies
 ```
+
+### Granular Task Item Management
+**NEW**: TaskGuard now supports programmatic management of individual checklist items within tasks, enabling precise progress tracking for agentic AI systems.
+
+#### List Task Items
+```bash
+taskguard list items <task-id>
+# Shows numbered checklist items with status and progress summary
+
+# Example output:
+# 📋 Checklist items for task backend-001:
+#    Implement user authentication system
+#
+#    1. ✅ [done] Install and configure JWT dependencies
+#    2. ⭕ [todo] Create authentication middleware
+#    3. ⭕ [todo] Implement login endpoint
+#    4. ✅ [done] Add password hashing with bcrypt
+#
+# 📊 SUMMARY
+#    Total items: 4
+#    Completed: 2 (50.0%)
+#    Remaining: 2
+```
+
+#### Update Individual Task Items
+```bash
+taskguard task update <task-id> <item-index> <status>
+# item-index: 1-based index from list output
+# status: done, todo (or completed, incomplete)
+
+# Examples:
+taskguard task update backend-001 2 done    # Mark 2nd item as completed
+taskguard task update api-001 3 todo        # Mark 3rd item as incomplete
+taskguard task update auth-001 1 done       # Mark 1st item as completed
+```
+
+#### Benefits for Agentic AI
+- **Atomic Operations**: Each item update is a single, deterministic operation
+- **Progress Tracking**: Get precise completion percentages and remaining work
+- **Error Handling**: Clear validation for invalid indexes and task IDs
+- **Preserved Formatting**: Markdown structure remains intact during updates
+- **Consistent Indexing**: 1-based indexing matches human-readable output
 
 ### CLI Command Benefits for AI Agents
 - **Atomic operations**: Updates are all-or-nothing
@@ -243,6 +287,11 @@ taskguard update priority setup-001 critical       # Adjust priority
 taskguard update dependencies api-001 "setup-001,backend-001"  # Set dependencies
 taskguard update assignee frontend-001 "ui-team"   # Assign ownership
 
+# NEW: Granular task item management
+taskguard list items backend-001                   # View checklist items
+taskguard task update backend-001 1 done           # Mark specific items complete
+taskguard task update api-001 3 todo              # Revert items if needed
+
 # Commands provide consistent exit codes for automation
 echo $?  # 0 for success, 1 for error
 ```
@@ -299,7 +348,12 @@ taskguard validate
 taskguard update status data-001 doing
 taskguard update assignee data-001 "data-team"
 
-# 9. Result: Clean dependency chain managed via CLI
+# 9. Track granular progress within tasks
+taskguard list items data-001
+taskguard task update data-001 1 done  # Mark first checklist item complete
+taskguard task update data-001 2 done  # Mark second item complete
+
+# 10. Result: Clean dependency chain with granular progress tracking
 ```
 
 ## Debugging TaskGuard Issues
@@ -346,6 +400,16 @@ taskguard update status task-001 invalid-status
 # Check exit codes in scripts
 taskguard update priority api-001 high
 echo $?  # 0 for success, 1 for error
+
+# Test granular item management errors
+taskguard list items nonexistent-001
+# Error: Task file not found
+
+taskguard task update backend-001 99 done
+# Error: Invalid item index 99. Valid range: 1-10
+
+taskguard task update backend-001 1 invalid
+# Error: Invalid status 'invalid'. Valid values: done, todo
 ```
 
 ## Key Success Metrics
@@ -362,6 +426,8 @@ A successful TaskGuard session should show:
 8. **No template content**: All tasks have real requirements, not generic placeholders
 9. **Concrete deliverables**: Each task has specific, measurable work items
 10. **Proper status tracking**: Tasks progress through logical status transitions
+11. **Granular progress tracking**: Individual task items managed via CLI commands
+12. **Precise completion metrics**: Real-time progress percentages for complex tasks
 
 ## Remember: TaskGuard is the Manager
 
