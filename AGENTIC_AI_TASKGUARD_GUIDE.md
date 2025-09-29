@@ -1,8 +1,8 @@
 # TaskGuard Usage Guide for Agentic AI Agents
 
-## Critical: Respect the Tool's Design Patterns
+## Critical: Use CLI-First Approach
 
-TaskGuard is a sophisticated task management system that requires **tool hygiene** and patience. Agentic AI agents must follow its intended workflow rather than trying to bulldoze through with rapid commands.
+TaskGuard is a sophisticated task management system designed for **deterministic, programmatic operations**. Agentic AI agents should use the CLI update commands for atomic task modifications instead of manual file editing.
 
 ## Core Problems to Avoid
 
@@ -16,7 +16,7 @@ TaskGuard is a sophisticated task management system that requires **tool hygiene
 
 ### ❌ Ignoring Dependencies
 **Problem**: Creating tasks without proper dependency chains
-**Solution**: Edit task files immediately after creation to add dependencies
+**Solution**: Use `taskguard update dependencies <task-id> <deps>` immediately after creation
 
 ## Correct TaskGuard Workflow for AI Agents
 
@@ -55,29 +55,37 @@ taskguard list
 taskguard validate
 ```
 
-### Step 4: Edit Task Files After Creation
-**CRITICAL**: TaskGuard creates tasks with template content - AI agents MUST edit them immediately!
+### Step 4: Update Task Metadata with CLI Commands
+**CRITICAL**: TaskGuard creates tasks with template content - use CLI commands for atomic updates!
 
 ```bash
-# TaskGuard creates skeleton tasks with placeholder content
+# After creating a task, use CLI commands for deterministic updates
 # Example after: taskguard create --title "Setup API endpoints" --area api --priority high
 
-# The file contains generic template content:
-# ## Context
-# Brief description of what needs to be done and why.
-# ## Tasks
-# - [ ] Break down the work into specific tasks
+# Update task dependencies immediately
+taskguard update dependencies api-001 "setup-001,backend-001"
 
-# AI agents must immediately edit to add real content:
-vim tasks/api/api-001.md
+# Adjust priority if needed
+taskguard update priority api-001 critical
+
+# Assign ownership
+taskguard update assignee api-001 "team-lead"
+
+# Update status as work progresses
+taskguard update status api-001 doing
 ```
 
-**Required Edits:**
-1. **Replace template content** with actual requirements
-2. **Add dependencies** in YAML front-matter: `dependencies: [setup-001, backend-001]`
-3. **Update context** with real project details
-4. **Specify concrete tasks** instead of placeholder text
-5. **Define measurable acceptance criteria**
+**CLI Update Commands Available:**
+1. **Dependencies**: `taskguard update dependencies <task-id> <dep1,dep2,dep3>`
+2. **Status**: `taskguard update status <task-id> <todo|doing|review|done|blocked>`
+3. **Priority**: `taskguard update priority <task-id> <low|medium|high|critical>`
+4. **Assignee**: `taskguard update assignee <task-id> <name>`
+
+**Still Required (Manual Editing):**
+- Replace template content with actual requirements
+- Update context with real project details
+- Specify concrete tasks instead of placeholder text
+- Define measurable acceptance criteria
 
 ### Step 5: Verify Dependency Chain
 ```bash
@@ -100,20 +108,77 @@ Use these areas strategically to avoid ID conflicts:
 - **integration**: System integration, connecting components
 - **deployment**: CI/CD, infrastructure, production setup
 
+## CLI Update Commands Reference
+
+TaskGuard provides deterministic CLI commands for atomic task updates:
+
+### Status Updates
+```bash
+taskguard update status <task-id> <new-status>
+# Valid statuses: todo, doing, review, done, blocked
+
+# Examples:
+taskguard update status api-001 doing
+taskguard update status backend-002 done
+taskguard update status frontend-001 blocked
+```
+
+### Priority Updates
+```bash
+taskguard update priority <task-id> <new-priority>
+# Valid priorities: low, medium, high, critical
+
+# Examples:
+taskguard update priority setup-001 critical
+taskguard update priority docs-001 low
+```
+
+### Assignee Updates
+```bash
+taskguard update assignee <task-id> <assignee-name>
+# Use "" or "none" to clear assignee
+
+# Examples:
+taskguard update assignee api-001 "backend-team"
+taskguard update assignee frontend-001 "alice"
+taskguard update assignee testing-001 ""  # Clear assignee
+```
+
+### Dependency Updates
+```bash
+taskguard update dependencies <task-id> <comma-separated-deps>
+# Use "" or "none" to clear dependencies
+
+# Examples:
+taskguard update dependencies api-001 "setup-001,backend-001"
+taskguard update dependencies integration-001 "api-001,frontend-001,auth-001"
+taskguard update dependencies testing-001 ""  # Clear dependencies
+```
+
+### CLI Command Benefits for AI Agents
+- **Atomic operations**: Updates are all-or-nothing
+- **Consistent exit codes**: 0 for success, 1 for errors
+- **Machine-parseable errors**: Clear error messages for automation
+- **Idempotent**: Safe to run multiple times
+- **Immediate validation**: Invalid values are rejected with helpful messages
+
 ## Understanding TaskGuard's Create Process
 
 **Important**: TaskGuard's `create` command generates **template tasks**, not AI-generated content.
 
 ### What TaskGuard Creates Automatically:
 - **YAML metadata**: ID, status (todo), priority, tags, timestamps
-- **Template structure**: Standard sections (Context, Objectives, Tasks, etc.)
+- **Template structure**: Standard sections (Context, Objectives, Tasks, Testing, Version Control, etc.)
 - **Placeholder content**: Generic text like "Brief description of what needs to be done"
+- **Development workflow reminders**: Testing and Version Control sections with best practices
 
 ### What AI Agents Must Do:
 1. **Immediate editing**: Replace all template content with real requirements
 2. **Add dependencies**: Specify which tasks must complete first
 3. **Define concrete deliverables**: Replace generic bullet points with specific work items
-4. **Validate workflow**: Use `taskguard validate` after each edit
+4. **Customize testing approach**: Replace generic testing reminders with project-specific test plans
+5. **Adapt version control workflow**: Customize commit and branching strategy for the task
+6. **Validate workflow**: Use `taskguard validate` after each edit
 
 ### Template vs. Real Content Example:
 ```markdown
@@ -123,6 +188,18 @@ Brief description of what needs to be done and why.
 
 ## Tasks
 - [ ] Break down the work into specific tasks
+
+## Testing
+- [ ] Write unit tests for new functionality
+- [ ] Write integration tests if applicable
+- [ ] Ensure all tests pass before marking task complete
+- [ ] Consider edge cases and error conditions
+
+## Version Control
+- [ ] Commit changes incrementally with clear messages
+- [ ] Use descriptive commit messages that explain the "why"
+- [ ] Consider creating a feature branch for complex changes
+- [ ] Review changes before committing
 
 # REAL CONTENT (what AI agents must add):
 ## Context
@@ -134,7 +211,18 @@ system to secure /api/users and /api/data endpoints before frontend integration.
 - [ ] Create auth middleware for protected routes
 - [ ] Implement POST /auth/login endpoint with bcrypt
 - [ ] Add token validation to existing user endpoints
-- [ ] Write integration tests for auth flow
+
+## Testing
+- [ ] Write unit tests for auth middleware with valid/invalid tokens
+- [ ] Create integration tests for login flow with real JWT tokens
+- [ ] Test protected route access with and without authentication
+- [ ] Verify error handling for malformed tokens and expired sessions
+
+## Version Control
+- [ ] Commit auth middleware implementation separately
+- [ ] Commit login endpoint with clear description of JWT flow
+- [ ] Create feature branch for auth implementation
+- [ ] Review security implications before merging to main
 ```
 
 ## AI Agent Best Practices
@@ -145,6 +233,18 @@ system to secure /api/users and /api/data endpoints before frontend integration.
 taskguard list --area backend    # Check specific area
 taskguard validate              # See dependency status
 taskguard list                  # See full overview
+```
+
+### ⚡ Use Deterministic CLI Operations
+```bash
+# Prefer CLI commands over manual file editing
+taskguard update status backend-001 doing          # Start work
+taskguard update priority setup-001 critical       # Adjust priority
+taskguard update dependencies api-001 "setup-001,backend-001"  # Set dependencies
+taskguard update assignee frontend-001 "ui-team"   # Assign ownership
+
+# Commands provide consistent exit codes for automation
+echo $?  # 0 for success, 1 for error
 ```
 
 ### 📊 Start Small, Expand Gradually
@@ -173,33 +273,33 @@ taskguard init
 # 2. Create foundation task
 taskguard create --title "Verify existing API endpoints" --area setup --priority high
 
-# 3. IMMEDIATELY edit the task with real content
-# Replace template content in tasks/setup/setup-001.md:
-# - Add actual verification steps
-# - Define specific endpoints to check
-# - Set measurable success criteria
-
-# 4. Validate after editing
+# 3. Start work immediately with CLI commands
+taskguard update status setup-001 doing
 taskguard validate
 
-# 5. Create next task
+# 4. Create next task and set dependencies
 taskguard create --title "Extract data processing patterns" --area data --priority medium
+taskguard update dependencies data-001 "setup-001"
 
-# 6. IMMEDIATELY edit and add dependency
-# Edit tasks/data/data-001.md:
-# - Add: dependencies: [setup-001]
-# - Replace template with real extraction requirements
-
-# 7. Validate dependency chain
+# 5. Validate dependency chain
 taskguard validate
-# Should show setup-001 available, data-001 blocked
+# Should show setup-001 doing, data-001 blocked
 
-# 8. Continue create-edit-validate pattern
+# 6. Create API task with multiple dependencies
 taskguard create --title "Implement strategy execution endpoint" --area api --priority medium
-# Edit tasks/api/api-001.md with dependencies: [setup-001, data-001]
-taskguard validate
+taskguard update dependencies api-001 "setup-001,data-001"
+taskguard update priority api-001 high  # Increase priority
 
-# 9. Result: Clear dependency chain with real, actionable tasks
+# 7. Complete setup task and see chain reaction
+taskguard update status setup-001 done
+taskguard validate
+# Now data-001 becomes available
+
+# 8. Continue with deterministic operations
+taskguard update status data-001 doing
+taskguard update assignee data-001 "data-team"
+
+# 9. Result: Clean dependency chain managed via CLI
 ```
 
 ## Debugging TaskGuard Issues
@@ -224,11 +324,28 @@ taskguard list --area api
 
 ### When Dependencies Aren't Working
 ```bash
-# Check YAML syntax in task files
-cat tasks/api/api-001.md
+# Use CLI commands instead of manual editing
+taskguard update dependencies api-001 "setup-001,backend-001"
 
-# Ensure dependency IDs exist and are correct
+# Verify dependency chain
 taskguard validate
+
+# Check specific task details
+taskguard list --area api
+```
+
+### When CLI Commands Fail
+```bash
+# Check if task exists
+taskguard list | grep task-id
+
+# Verify valid status values
+taskguard update status task-001 invalid-status
+# Error: Invalid status 'invalid-status'. Valid statuses: todo, doing, review, done, blocked
+
+# Check exit codes in scripts
+taskguard update priority api-001 high
+echo $?  # 0 for success, 1 for error
 ```
 
 ## Key Success Metrics
@@ -239,8 +356,12 @@ A successful TaskGuard session should show:
 2. **Clear dependency chains**: `taskguard validate` shows logical blocking
 3. **No parse errors**: All tasks validate successfully
 4. **Actionable queue**: Clear list of available tasks to work on
-5. **No template content**: All tasks have real requirements, not generic placeholders
-6. **Concrete deliverables**: Each task has specific, measurable work items
+5. **Deterministic operations**: All metadata updates done via CLI commands
+6. **Consistent exit codes**: CLI commands return 0 for success, 1 for errors
+7. **Atomic updates**: Task state changes are atomic and reversible
+8. **No template content**: All tasks have real requirements, not generic placeholders
+9. **Concrete deliverables**: Each task has specific, measurable work items
+10. **Proper status tracking**: Tasks progress through logical status transitions
 
 ## Remember: TaskGuard is the Manager
 

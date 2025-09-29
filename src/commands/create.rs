@@ -83,6 +83,18 @@ Brief description of what needs to be done and why.
 - Architecture considerations
 - Dependencies and constraints
 
+## Testing
+- [ ] Write unit tests for new functionality
+- [ ] Write integration tests if applicable
+- [ ] Ensure all tests pass before marking task complete
+- [ ] Consider edge cases and error conditions
+
+## Version Control
+- [ ] Commit changes incrementally with clear messages
+- [ ] Use descriptive commit messages that explain the "why"
+- [ ] Consider creating a feature branch for complex changes
+- [ ] Review changes before committing
+
 ## Updates
 - {}: Task created
 "#, title, Utc::now().format("%Y-%m-%d")),

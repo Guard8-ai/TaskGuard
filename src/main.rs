@@ -7,7 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 
-use commands::{init, list, create, validate, sync, lint, ai};
+use commands::{init, list, create, validate, sync, lint, ai, update};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -73,6 +73,15 @@ enum Commands {
         /// Natural language input for task management
         input: String,
     },
+    /// Update task fields (status, priority, assignee, dependencies)
+    Update {
+        /// Field to update (status, priority, assignee, dependencies)
+        field: String,
+        /// Task ID to update
+        task_id: String,
+        /// New value for the field
+        value: String,
+    },
     /// Show project status
     Status,
 }
@@ -92,6 +101,7 @@ fn main() -> Result<()> {
         Commands::Sync { limit, verbose } => sync::run(limit, verbose),
         Commands::Lint { verbose, area } => lint::run(verbose, area),
         Commands::Ai { input } => ai::run(input),
+        Commands::Update { field, task_id, value } => update::run(field, task_id, value),
         Commands::Status => {
             println!("Project status overview");
             Ok(())

@@ -53,7 +53,7 @@ fn default_created() -> DateTime<Utc> {
     Utc::now()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TaskStatus {
     #[serde(rename = "todo")]
     Todo,
