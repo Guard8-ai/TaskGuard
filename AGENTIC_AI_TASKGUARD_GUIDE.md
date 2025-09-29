@@ -112,7 +112,7 @@ Use these areas strategically to avoid ID conflicts:
 
 ## CLI Update Commands Reference
 
-TaskGuard provides deterministic CLI commands for atomic task updates:
+TaskGuard provides deterministic CLI commands for atomic task updates and team collaboration:
 
 ### Status Updates
 ```bash
@@ -190,6 +190,21 @@ taskguard task update <task-id> <item-index> <status>
 taskguard task update backend-001 2 done    # Mark 2nd item as completed
 taskguard task update api-001 3 todo        # Mark 3rd item as incomplete
 taskguard task update auth-001 1 done       # Mark 1st item as completed
+```
+
+### Remote Sync Commands (NEW)
+```bash
+# Local analysis (existing functionality)
+taskguard sync [--verbose] [--limit N]
+
+# Remote team collaboration
+taskguard sync --remote [--verbose] [--limit N]    # Fetch and analyze remote changes
+taskguard sync --remote --dry-run [--verbose]      # Preview remote sync without changes
+
+# Examples:
+taskguard sync --remote --verbose                  # Full remote sync with detailed output
+taskguard sync --remote --dry-run                  # Safe preview of remote changes
+taskguard sync --limit 100                         # Analyze more commit history
 ```
 
 #### Benefits for Agentic AI
@@ -428,6 +443,74 @@ A successful TaskGuard session should show:
 10. **Proper status tracking**: Tasks progress through logical status transitions
 11. **Granular progress tracking**: Individual task items managed via CLI commands
 12. **Precise completion metrics**: Real-time progress percentages for complex tasks
+
+## Remote Team Collaboration (NEW)
+
+TaskGuard now supports **remote synchronization** for team collaboration while preserving the local-first approach.
+
+### Remote Sync Commands
+```bash
+# Analyze local Git history (existing functionality)
+taskguard sync --verbose
+
+# Fetch and analyze remote repository changes
+taskguard sync --remote --verbose
+
+# Preview remote sync without applying changes
+taskguard sync --remote --dry-run --verbose
+
+# Quick remote sync check
+taskguard sync --remote
+```
+
+### Remote Sync Features
+- **Automatic Remote Detection**: Uses 'origin' remote by default, fallback to first available
+- **Conflict Detection**: Compares local vs remote task activity suggestions
+- **Interactive Resolution**: User-controlled conflict resolution with confidence-based recommendations
+- **Network Resilience**: Gracefully handles authentication failures, proceeds with cached data
+- **Progress Indicators**: Real-time feedback during remote fetching operations
+
+### Team Collaboration Workflow
+```bash
+# 1. Team member A works on tasks and commits with task IDs
+git commit -m "Complete backend-007: Implement remote sync functionality"
+
+# 2. Team member B syncs to see remote activity
+taskguard sync --remote --verbose
+# Shows: backend-007 - Remote suggests "done" (80% confidence)
+
+# 3. Handle conflicts if local/remote suggestions differ
+taskguard sync --remote
+# Interactive prompts guide resolution decisions
+
+# 4. Preview changes before applying
+taskguard sync --remote --dry-run
+# Shows what would change without modifying files
+```
+
+### Remote Sync Benefits for AI Agents
+- **Team Awareness**: See task progress from all team members
+- **Conflict Prevention**: Detect divergent task states early
+- **Consistent State**: Maintain task consistency across distributed teams
+- **Safe Operations**: Dry-run mode prevents unintended changes
+- **Local-First**: Always preserves local control and decision-making
+
+### Remote Sync Error Handling
+TaskGuard provides comprehensive error handling for network issues:
+
+```bash
+# Authentication errors (SSH/HTTPS)
+taskguard sync --remote
+# ⚠️ Warning: SSH authentication error: Check your SSH keys and permissions
+#    Proceeding with locally cached remote data...
+
+# Network connectivity issues
+taskguard sync --remote
+# ⚠️ Warning: Network error: Check your internet connection and repository URL
+#    Proceeding with locally cached remote data...
+```
+
+**Key Principle**: Remote sync failures never block local operations - TaskGuard always falls back to cached data and continues analysis.
 
 ## Remember: TaskGuard is the Manager
 
