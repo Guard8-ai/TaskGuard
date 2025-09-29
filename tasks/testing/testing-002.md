@@ -1,7 +1,7 @@
 ---
 id: testing-002
 title: Test conflict resolution feature
-status: todo
+status: doing
 priority: medium
 tags:
 - testing
