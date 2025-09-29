@@ -1,5 +1,5 @@
 use anyhow::{Result, Context};
-use git2::{Repository, Commit};
+use git2::{Repository, Commit, FetchOptions, RemoteCallbacks, CertificateCheckStatus};
 use std::path::Path;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
@@ -27,6 +27,26 @@ pub struct TaskActivity {
     pub last_activity: Option<DateTime<Utc>>,
     pub suggested_status: Option<String>,
     pub confidence: f32,
+}
+
+/// Represents sync conflict between local and remote task states
+#[derive(Debug)]
+pub struct SyncConflict {
+    pub task_id: String,
+    pub local_status: String,
+    pub remote_suggested_status: String,
+    pub local_confidence: f32,
+    pub remote_confidence: f32,
+    pub resolution: ConflictResolution,
+}
+
+/// Conflict resolution strategies
+#[derive(Debug, PartialEq)]
+pub enum ConflictResolution {
+    KeepLocal,
+    AcceptRemote,
+    Interactive,
+    NoConflict,
 }
 
 impl GitAnalyzer {
@@ -225,6 +245,232 @@ impl GitAnalyzer {
         stats.insert("state".to_string(), state.to_string());
 
         Ok(stats)
+    }
+
+    /// Fetch updates from remote repository with comprehensive error handling
+    pub fn fetch_remote(&self, remote_name: &str) -> Result<()> {
+        let mut remote = self.repo.find_remote(remote_name)
+            .with_context(|| format!("Failed to find remote '{}'. Available remotes: {:?}", remote_name, self.get_remotes().unwrap_or_default()))?;
+
+        let mut callbacks = RemoteCallbacks::new();
+
+        // Handle authentication
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            // Try SSH key from agent first
+            if let Some(username) = username_from_url {
+                git2::Cred::ssh_key_from_agent(username)
+            } else {
+                // Fallback to default user
+                git2::Cred::ssh_key_from_agent("git")
+            }.or_else(|_| {
+                // Fallback to username/password prompt would go here
+                // For now, return the error
+                Err(git2::Error::from_str("Authentication required but no credentials available"))
+            })
+        });
+
+        // Progress callback for long operations
+        callbacks.push_update_reference(|refname, status| {
+            if let Some(msg) = status {
+                println!("   Reference {}: {}", refname, msg);
+            } else {
+                println!("   Updated reference: {}", refname);
+            }
+            Ok(())
+        });
+
+        callbacks.update_tips(|refname, _a, _b| {
+            println!("   📥 Updating {}", refname);
+            true
+        });
+
+        // Handle certificate verification
+        callbacks.certificate_check(|_cert, _valid| {
+            // For now, accept all certificates
+            // In production, you might want stricter validation
+            Ok(CertificateCheckStatus::CertificateOk)
+        });
+
+        let mut fetch_options = FetchOptions::new();
+        fetch_options.remote_callbacks(callbacks);
+
+        println!("🌐 Fetching from remote '{}'...", remote_name);
+
+        match remote.fetch(&[] as &[&str], Some(&mut fetch_options), None) {
+            Ok(()) => {
+                println!("   ✅ Fetch completed successfully");
+                Ok(())
+            },
+            Err(e) => {
+                let error_msg = match e.class() {
+                    git2::ErrorClass::Net => "Network error: Check your internet connection and repository URL",
+                    git2::ErrorClass::Ssh => "SSH authentication error: Check your SSH keys and permissions",
+                    git2::ErrorClass::Http => "HTTP error: Check repository URL and access permissions",
+                    git2::ErrorClass::Ssl => "SSL/TLS error: Check certificate configuration",
+                    git2::ErrorClass::Repository => "Repository error: Check if remote repository exists",
+                    _ => "Unknown Git error occurred",
+                };
+
+                Err(anyhow::anyhow!("{}: {}", error_msg, e))
+            }
+        }
+    }
+
+    /// Analyze remote task activity by comparing with local commits
+    pub fn analyze_remote_task_activity(&self, remote_name: &str, limit: Option<usize>) -> Result<Vec<TaskActivity>> {
+        // First, ensure we have the latest remote data
+        if let Err(e) = self.fetch_remote(remote_name) {
+            eprintln!("⚠️  Warning: Failed to fetch from remote: {}", e);
+            eprintln!("    Proceeding with locally cached remote data...");
+        }
+
+        // Get remote tracking branch commits
+        let remote_commits = self.get_remote_commits(remote_name, limit.unwrap_or(100))?;
+        let remote_task_commits = self.parse_task_commits(remote_commits)?;
+
+        // Group commits by task ID for remote analysis
+        let mut remote_task_groups: HashMap<String, Vec<TaskCommit>> = HashMap::new();
+        for commit in remote_task_commits {
+            for task_id in &commit.task_ids {
+                remote_task_groups.entry(task_id.clone())
+                    .or_insert_with(Vec::new)
+                    .push(commit.clone());
+            }
+        }
+
+        // Convert to TaskActivity structs with analysis
+        let mut remote_activities = Vec::new();
+        for (task_id, commits) in remote_task_groups {
+            let last_activity = commits.iter()
+                .map(|c| c.timestamp)
+                .max();
+
+            let (suggested_status, confidence) = self.suggest_status(&commits);
+
+            remote_activities.push(TaskActivity {
+                task_id,
+                commits,
+                last_activity,
+                suggested_status,
+                confidence,
+            });
+        }
+
+        // Sort by most recent activity
+        remote_activities.sort_by(|a, b| {
+            b.last_activity.cmp(&a.last_activity)
+        });
+
+        Ok(remote_activities)
+    }
+
+    /// Get commits from remote tracking branch
+    fn get_remote_commits(&self, remote_name: &str, limit: usize) -> Result<Vec<Commit>> {
+        let remote_branch_name = format!("{}/master", remote_name); // Assuming master branch
+        let remote_ref = self.repo.find_reference(&format!("refs/remotes/{}", remote_branch_name))
+            .or_else(|_| self.repo.find_reference(&format!("refs/remotes/{}/main", remote_name)))
+            .context("Failed to find remote tracking branch")?;
+
+        let remote_oid = remote_ref.target()
+            .context("Failed to get remote branch target")?;
+
+        let mut revwalk = self.repo.revwalk()
+            .context("Failed to create revision walker for remote")?;
+
+        revwalk.push(remote_oid)
+            .context("Failed to push remote OID to revwalk")?;
+
+        let mut commits = Vec::new();
+        for (i, oid) in revwalk.enumerate() {
+            if i >= limit {
+                break;
+            }
+
+            let oid = oid.context("Failed to get remote commit OID")?;
+            let commit = self.repo.find_commit(oid)
+                .context("Failed to find remote commit")?;
+            commits.push(commit);
+        }
+
+        Ok(commits)
+    }
+
+    /// Compare local and remote task activities to detect conflicts
+    pub fn detect_sync_conflicts(&self, local_activities: &[TaskActivity], remote_activities: &[TaskActivity]) -> Vec<SyncConflict> {
+        let mut conflicts = Vec::new();
+
+        // Create lookup maps for efficient comparison
+        let local_map: HashMap<String, &TaskActivity> = local_activities.iter()
+            .map(|a| (a.task_id.clone(), a))
+            .collect();
+
+        let remote_map: HashMap<String, &TaskActivity> = remote_activities.iter()
+            .map(|a| (a.task_id.clone(), a))
+            .collect();
+
+        // Find all unique task IDs from both local and remote
+        let mut all_task_ids = std::collections::HashSet::new();
+        for activity in local_activities {
+            all_task_ids.insert(activity.task_id.clone());
+        }
+        for activity in remote_activities {
+            all_task_ids.insert(activity.task_id.clone());
+        }
+
+        for task_id in all_task_ids {
+            let local_activity = local_map.get(&task_id);
+            let remote_activity = remote_map.get(&task_id);
+
+            let resolution = match (local_activity, remote_activity) {
+                (Some(local), Some(remote)) => {
+                    // Both have suggestions - check for conflict
+                    if let (Some(local_status), Some(remote_status)) = (&local.suggested_status, &remote.suggested_status) {
+                        if local_status != remote_status {
+                            // Conflict detected - use confidence to suggest resolution
+                            if remote.confidence > local.confidence * 1.2 {
+                                ConflictResolution::AcceptRemote
+                            } else if local.confidence > remote.confidence * 1.2 {
+                                ConflictResolution::KeepLocal
+                            } else {
+                                ConflictResolution::Interactive
+                            }
+                        } else {
+                            ConflictResolution::NoConflict
+                        }
+                    } else {
+                        ConflictResolution::NoConflict
+                    }
+                },
+                (Some(_), None) => ConflictResolution::KeepLocal, // Only local has activity
+                (None, Some(_)) => ConflictResolution::AcceptRemote, // Only remote has activity
+                (None, None) => continue, // No activity for this task
+            };
+
+            if resolution != ConflictResolution::NoConflict {
+                conflicts.push(SyncConflict {
+                    task_id,
+                    local_status: local_activity
+                        .and_then(|a| a.suggested_status.clone())
+                        .unwrap_or_else(|| "no local activity".to_string()),
+                    remote_suggested_status: remote_activity
+                        .and_then(|a| a.suggested_status.clone())
+                        .unwrap_or_else(|| "no remote activity".to_string()),
+                    local_confidence: local_activity.map(|a| a.confidence).unwrap_or(0.0),
+                    remote_confidence: remote_activity.map(|a| a.confidence).unwrap_or(0.0),
+                    resolution,
+                });
+            }
+        }
+
+        conflicts
+    }
+
+    /// Get list of available remotes
+    pub fn get_remotes(&self) -> Result<Vec<String>> {
+        Ok(self.repo.remotes()?
+            .iter()
+            .filter_map(|name| name.map(|s| s.to_string()))
+            .collect())
     }
 }
 

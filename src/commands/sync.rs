@@ -1,11 +1,12 @@
 use anyhow::{Result, Context};
 use std::env;
-use crate::git::GitAnalyzer;
+use std::io::{self, Write};
+use crate::git::{GitAnalyzer, ConflictResolution};
 use crate::task::Task;
 use crate::config::get_tasks_dir;
 use walkdir::WalkDir;
 
-pub fn run(limit: usize, verbose: bool) -> Result<()> {
+pub fn run(limit: usize, verbose: bool, remote: bool, dry_run: bool) -> Result<()> {
     let current_dir = env::current_dir()
         .context("Failed to get current directory")?;
 
@@ -37,7 +38,12 @@ pub fn run(limit: usize, verbose: bool) -> Result<()> {
         }
     }
 
-    println!("🔍 ANALYZING GIT HISTORY");
+    if remote {
+        println!("🌐 REMOTE SYNC MODE");
+        return run_remote_sync(&git_analyzer, &current_tasks, limit, verbose, dry_run);
+    }
+
+    println!("🔍 ANALYZING LOCAL GIT HISTORY");
     println!("   Scanning {} recent commits for task activity...\n", limit);
 
     // Analyze git activity
@@ -160,4 +166,225 @@ pub fn run(limit: usize, verbose: bool) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Handle remote synchronization workflow
+fn run_remote_sync(git_analyzer: &GitAnalyzer, current_tasks: &[Task], limit: usize, verbose: bool, dry_run: bool) -> Result<()> {
+    // Get available remotes
+    let remotes = git_analyzer.get_remotes()
+        .context("Failed to get repository remotes")?;
+
+    if remotes.is_empty() {
+        return Err(anyhow::anyhow!("No remotes configured. Add a remote repository first."));
+    }
+
+    // Use 'origin' if available, otherwise use first remote
+    let remote_name = if remotes.contains(&"origin".to_string()) {
+        "origin"
+    } else {
+        &remotes[0]
+    };
+
+    println!("   Using remote: {}", remote_name);
+    println!("   Scanning {} recent commits from remote...\n", limit);
+
+    // Analyze local activity
+    println!("🔍 Analyzing local Git history...");
+    let local_activities = git_analyzer.analyze_task_activity(Some(limit))
+        .context("Failed to analyze local Git activity")?;
+
+    // Analyze remote activity
+    println!("🌐 Analyzing remote Git history...");
+    let remote_activities = git_analyzer.analyze_remote_task_activity(remote_name, Some(limit))
+        .context("Failed to analyze remote Git activity")?;
+
+    if local_activities.is_empty() && remote_activities.is_empty() {
+        println!("ℹ️  No task-related activity found in local or remote commits.");
+        println!("   Tip: Reference task IDs in commit messages (e.g., 'Fix bug in backend-001')");
+        return Ok(());
+    }
+
+    // Detect conflicts between local and remote suggestions
+    println!("⚖️  Comparing local and remote task suggestions...\n");
+    let conflicts = git_analyzer.detect_sync_conflicts(&local_activities, &remote_activities);
+
+    // Show sync analysis results
+    display_sync_analysis(&local_activities, &remote_activities, &conflicts, verbose)?;
+
+    if conflicts.is_empty() {
+        println!("✅ NO CONFLICTS");
+        println!("   Local and remote task suggestions are consistent");
+        return Ok(());
+    }
+
+    // Handle conflicts based on dry_run mode
+    if dry_run {
+        println!("🔍 DRY RUN MODE - No changes will be applied");
+        display_conflict_preview(&conflicts)?;
+    } else {
+        handle_sync_conflicts(&conflicts, current_tasks)?;
+    }
+
+    Ok(())
+}
+
+/// Display comprehensive sync analysis results
+fn display_sync_analysis(local_activities: &[crate::git::TaskActivity], remote_activities: &[crate::git::TaskActivity], conflicts: &[crate::git::SyncConflict], verbose: bool) -> Result<()> {
+    println!("📊 SYNC ANALYSIS RESULTS");
+    println!("   Local activities: {}", local_activities.len());
+    println!("   Remote activities: {}", remote_activities.len());
+    println!("   Conflicts detected: {}\n", conflicts.len());
+
+    if verbose {
+        if !local_activities.is_empty() {
+            println!("📝 LOCAL ACTIVITY:");
+            for activity in local_activities.iter().take(5) {
+                println!("   {} - {} commits", activity.task_id, activity.commits.len());
+                if let Some(status) = &activity.suggested_status {
+                    println!("     Suggested: {} (confidence: {:.0}%)", status, activity.confidence * 100.0);
+                }
+            }
+            println!();
+        }
+
+        if !remote_activities.is_empty() {
+            println!("🌐 REMOTE ACTIVITY:");
+            for activity in remote_activities.iter().take(5) {
+                println!("   {} - {} commits", activity.task_id, activity.commits.len());
+                if let Some(status) = &activity.suggested_status {
+                    println!("     Suggested: {} (confidence: {:.0}%)", status, activity.confidence * 100.0);
+                }
+            }
+            println!();
+        }
+    }
+
+    Ok(())
+}
+
+/// Display conflict preview in dry-run mode
+fn display_conflict_preview(conflicts: &[crate::git::SyncConflict]) -> Result<()> {
+    println!("⚠️  CONFLICTS THAT WOULD BE RESOLVED:");
+    println!();
+
+    for conflict in conflicts {
+        println!("📝 Task: {}", conflict.task_id);
+        println!("   Local suggestion: {} (confidence: {:.0}%)", conflict.local_status, conflict.local_confidence * 100.0);
+        println!("   Remote suggestion: {} (confidence: {:.0}%)", conflict.remote_suggested_status, conflict.remote_confidence * 100.0);
+
+        match conflict.resolution {
+            ConflictResolution::AcceptRemote => println!("   → Would accept REMOTE suggestion"),
+            ConflictResolution::KeepLocal => println!("   → Would keep LOCAL suggestion"),
+            ConflictResolution::Interactive => println!("   → Would prompt for INTERACTIVE resolution"),
+            ConflictResolution::NoConflict => println!("   → No conflict"),
+        }
+        println!();
+    }
+
+    println!("💡 Run without --dry-run to apply these resolutions");
+    Ok(())
+}
+
+/// Handle sync conflicts with interactive resolution
+fn handle_sync_conflicts(conflicts: &[crate::git::SyncConflict], current_tasks: &[Task]) -> Result<()> {
+    println!("⚠️  RESOLVING {} CONFLICTS\n", conflicts.len());
+
+    for (i, conflict) in conflicts.iter().enumerate() {
+        println!("📝 Conflict {} of {}: {}", i + 1, conflicts.len(), conflict.task_id);
+
+        // Find current task for context
+        let current_task = current_tasks.iter().find(|t| t.id == conflict.task_id);
+        if let Some(task) = current_task {
+            println!("   Current status: {}", task.status);
+        }
+
+        println!("   Local suggestion: {} (confidence: {:.0}%)", conflict.local_status, conflict.local_confidence * 100.0);
+        println!("   Remote suggestion: {} (confidence: {:.0}%)", conflict.remote_suggested_status, conflict.remote_confidence * 100.0);
+
+        let resolution = match conflict.resolution {
+            ConflictResolution::AcceptRemote => {
+                println!("   💡 Recommendation: Accept remote suggestion (higher confidence)");
+                prompt_user_choice("Accept remote suggestion?", true)?
+            },
+            ConflictResolution::KeepLocal => {
+                println!("   💡 Recommendation: Keep local suggestion (higher confidence)");
+                prompt_user_choice("Keep local suggestion?", true)?
+            },
+            ConflictResolution::Interactive => {
+                println!("   💡 Both suggestions have similar confidence - your choice");
+                prompt_interactive_resolution()?
+            },
+            ConflictResolution::NoConflict => continue,
+        };
+
+        match resolution {
+            UserChoice::AcceptRemote => {
+                println!("   ✅ Accepting remote suggestion: {}", conflict.remote_suggested_status);
+                // TODO: Apply the status change to task file
+                println!("   📝 Manual update required: Change task status to '{}'", conflict.remote_suggested_status);
+            },
+            UserChoice::KeepLocal => {
+                println!("   ✅ Keeping local suggestion: {}", conflict.local_status);
+            },
+            UserChoice::Skip => {
+                println!("   ⏭️  Skipping this conflict");
+            },
+        }
+        println!();
+    }
+
+    println!("🎯 SYNC COMPLETE");
+    println!("   All conflicts have been resolved");
+    println!("   Note: Manual task file updates may be required");
+
+    Ok(())
+}
+
+#[derive(Debug)]
+enum UserChoice {
+    AcceptRemote,
+    KeepLocal,
+    Skip,
+}
+
+/// Prompt user for a yes/no choice with recommendation
+fn prompt_user_choice(question: &str, default: bool) -> Result<UserChoice> {
+    let default_str = if default { "Y/n" } else { "y/N" };
+    print!("   {} ({}) or (s)kip: ", question, default_str);
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    let input = input.trim().to_lowercase();
+
+    match input.as_str() {
+        "" => Ok(if default { UserChoice::AcceptRemote } else { UserChoice::KeepLocal }),
+        "y" | "yes" => Ok(if default { UserChoice::AcceptRemote } else { UserChoice::KeepLocal }),
+        "n" | "no" => Ok(if default { UserChoice::KeepLocal } else { UserChoice::AcceptRemote }),
+        "s" | "skip" => Ok(UserChoice::Skip),
+        _ => {
+            println!("   Invalid input. Please enter y, n, or s.");
+            prompt_user_choice(question, default)
+        }
+    }
+}
+
+/// Prompt user for interactive conflict resolution
+fn prompt_interactive_resolution() -> Result<UserChoice> {
+    print!("   Choose: (r)emote, (l)ocal, or (s)kip: ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    let input = input.trim().to_lowercase();
+
+    match input.as_str() {
+        "r" | "remote" => Ok(UserChoice::AcceptRemote),
+        "l" | "local" => Ok(UserChoice::KeepLocal),
+        "s" | "skip" => Ok(UserChoice::Skip),
+        _ => {
+            println!("   Invalid input. Please enter r, l, or s.");
+            prompt_interactive_resolution()
+        }
+    }
 }

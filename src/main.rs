@@ -82,6 +82,12 @@ enum Commands {
         /// Show detailed analysis
         #[arg(short, long)]
         verbose: bool,
+        /// Fetch and analyze remote repository changes
+        #[arg(short, long)]
+        remote: bool,
+        /// Dry run mode - show what would change without applying
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Analyze task complexity and quality
     Lint {
@@ -130,7 +136,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         Commands::Validate => validate::run(),
-        Commands::Sync { limit, verbose } => sync::run(limit, verbose),
+        Commands::Sync { limit, verbose, remote, dry_run } => sync::run(limit, verbose, remote, dry_run),
         Commands::Lint { verbose, area } => lint::run(verbose, area),
         Commands::Ai { input } => ai::run(input),
         Commands::Update { field, task_id, value } => update::run(field, task_id, value),
