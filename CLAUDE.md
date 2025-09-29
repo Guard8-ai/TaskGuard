@@ -498,6 +498,14 @@ priorities = ["p0", "p1", "p2", "p3"]
 
 TaskGuard is designed for natural language interaction through Claude Code:
 
+### 🚨 IMPORTANT: AI Agent Integration Guide
+**When you run `taskguard init`, you MUST also:**
+1. Copy `AGENTIC_AI_TASKGUARD_GUIDE.md` to your project root
+2. Add reference to it in your AI tool instruction files (CLAUDE.md, GEMINI.md, etc.)
+3. Update your tool configs to use TaskGuard CLI commands for task management
+
+**For optimal AI collaboration, see: `AGENTIC_AI_TASKGUARD_GUIDE.md`**
+
 ### Natural Language Commands
 Instead of CLI syntax, use conversational commands:
 - "Create a new high-priority task for setting up the database connection"

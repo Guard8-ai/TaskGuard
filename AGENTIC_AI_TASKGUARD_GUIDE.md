@@ -1,31 +1,31 @@
 # TaskGuard Usage Guide for Agentic AI Agents
 
-## Critical: Use CLI-First Approach
+## 🚀 Quick Command Reference
 
-TaskGuard is a sophisticated task management system designed for **deterministic, programmatic operations**. Agentic AI agents should use the CLI update commands for atomic task modifications instead of manual file editing.
-
-## Core Problems to Avoid
-
-### ❌ Poor Area Distribution
-**Problem**: Cramming everything into `backend` or `api` areas
-**Solution**: Use the full spectrum of available areas
-
-### ❌ No Validation Between Operations
-**Problem**: Creating tasks without checking current state
-**Solution**: Use `taskguard validate` and `taskguard list` frequently
-
-### ❌ Ignoring Dependencies
-**Problem**: Creating tasks without proper dependency chains
-**Solution**: Use `taskguard update dependencies <task-id> <deps>` immediately after creation
-
-## Correct TaskGuard Workflow for AI Agents
-
-### Step 1: Initialize and Assess
 ```bash
-# Always start here
-taskguard init
+# Essential Commands (use every session)
+taskguard init                                    # Initialize project
+taskguard create --title "Task" --area backend    # Create task
+taskguard list                                    # View all tasks
+taskguard validate                                # Check dependencies
+taskguard update status <task-id> doing           # Update status
 
-# Check current state
+# Frequent Commands
+taskguard update dependencies <task-id> "dep1,dep2"  # Set dependencies
+taskguard update priority <task-id> high             # Change priority
+taskguard list items <task-id>                       # View checklist items
+taskguard task update <task-id> 1 done              # Mark item complete
+```
+
+## ⚡ CLI-First Approach
+
+**CRITICAL**: TaskGuard is designed for **deterministic, programmatic operations**. Use CLI update commands for atomic task modifications instead of manual file editing.
+
+## 🎯 Core 5-Step Workflow for AI Agents
+
+### Step 1: Initialize and Assess (30 seconds)
+```bash
+taskguard init
 taskguard list
 taskguard validate
 ```
@@ -39,55 +39,32 @@ taskguard create --title "Verify existing system status" --area setup --priority
 taskguard create --title "Analyze project requirements" --area docs --priority high
 
 # Implementation layer (will depend on foundation)
-taskguard create --title "Extract core patterns from legacy code" --area backend --priority medium
-taskguard create --title "Implement primary API endpoints" --area api --priority medium
+taskguard create --title "Extract core patterns" --area backend --priority medium
+taskguard create --title "Implement API endpoints" --area api --priority medium
 taskguard create --title "Create UI components" --area frontend --priority medium
 
 # Validation layer (will depend on implementation)
-taskguard create --title "Create integration test suite" --area testing --priority medium
-taskguard create --title "Validate end-to-end workflows" --area integration --priority low
+taskguard create --title "Create integration tests" --area testing --priority medium
 ```
 
 ### Step 3: Validate After Each Creation
 ```bash
-# After each task creation, check the state
 taskguard list
 taskguard validate
 ```
 
-### Step 4: Update Task Metadata with CLI Commands
-**CRITICAL**: TaskGuard creates tasks with template content - use CLI commands for atomic updates!
-
+### Step 4: Update with CLI Commands
 ```bash
-# After creating a task, use CLI commands for deterministic updates
-# Example after: taskguard create --title "Setup API endpoints" --area api --priority high
-
-# Update task dependencies immediately
+# Update dependencies immediately after creation
 taskguard update dependencies api-001 "setup-001,backend-001"
 
-# Adjust priority if needed
+# Adjust priority and ownership
 taskguard update priority api-001 critical
-
-# Assign ownership
 taskguard update assignee api-001 "team-lead"
 
-# Update status as work progresses
+# Track progress
 taskguard update status api-001 doing
 ```
-
-**CLI Update Commands Available:**
-1. **Dependencies**: `taskguard update dependencies <task-id> <dep1,dep2,dep3>`
-2. **Status**: `taskguard update status <task-id> <todo|doing|review|done|blocked>`
-3. **Priority**: `taskguard update priority <task-id> <low|medium|high|critical>`
-4. **Assignee**: `taskguard update assignee <task-id> <name>`
-5. **Task Items**: `taskguard list items <task-id>` - List checklist items
-6. **Task Items**: `taskguard task update <task-id> <item-index> <done|todo>` - Update specific items
-
-**Still Required (Manual Editing):**
-- Replace template content with actual requirements
-- Update context with real project details
-- Specify concrete tasks instead of placeholder text
-- Define measurable acceptance criteria
 
 ### Step 5: Verify Dependency Chain
 ```bash
@@ -95,9 +72,9 @@ taskguard validate
 # Should show clear dependency blocking and available tasks
 ```
 
-## Available Areas for Task Distribution
+## 📋 Available Areas for Task Distribution
 
-Use these areas strategically to avoid ID conflicts:
+Use these strategically to avoid ID conflicts:
 
 - **setup**: Environment verification, prerequisites, project initialization
 - **docs**: Documentation, requirements analysis, planning
@@ -110,414 +87,142 @@ Use these areas strategically to avoid ID conflicts:
 - **integration**: System integration, connecting components
 - **deployment**: CI/CD, infrastructure, production setup
 
-## CLI Update Commands Reference
+## 🔧 CLI Update Commands
 
-TaskGuard provides deterministic CLI commands for atomic task updates and team collaboration:
-
-### Status Updates
+### Status Management
 ```bash
 taskguard update status <task-id> <new-status>
-# Valid statuses: todo, doing, review, done, blocked
-
-# Examples:
-taskguard update status api-001 doing
-taskguard update status backend-002 done
-taskguard update status frontend-001 blocked
+# Valid: todo, doing, review, done, blocked
 ```
 
-### Priority Updates
+### Priority & Assignment
 ```bash
-taskguard update priority <task-id> <new-priority>
-# Valid priorities: low, medium, high, critical
-
-# Examples:
-taskguard update priority setup-001 critical
-taskguard update priority docs-001 low
+taskguard update priority <task-id> <priority>     # low, medium, high, critical
+taskguard update assignee <task-id> <name>         # Assign ownership
 ```
 
-### Assignee Updates
+### Dependencies
 ```bash
-taskguard update assignee <task-id> <assignee-name>
-# Use "" or "none" to clear assignee
-
-# Examples:
-taskguard update assignee api-001 "backend-team"
-taskguard update assignee frontend-001 "alice"
-taskguard update assignee testing-001 ""  # Clear assignee
+taskguard update dependencies <task-id> "dep1,dep2,dep3"  # Set dependencies
+taskguard update dependencies <task-id> ""                # Clear dependencies
 ```
 
-### Dependency Updates
+### Granular Task Items (NEW)
 ```bash
-taskguard update dependencies <task-id> <comma-separated-deps>
-# Use "" or "none" to clear dependencies
-
-# Examples:
-taskguard update dependencies api-001 "setup-001,backend-001"
-taskguard update dependencies integration-001 "api-001,frontend-001,auth-001"
-taskguard update dependencies testing-001 ""  # Clear dependencies
+taskguard list items <task-id>                    # View numbered checklist
+taskguard task update <task-id> <item-index> done  # Mark specific item complete
+taskguard task update <task-id> <item-index> todo  # Mark item incomplete
 ```
 
-### Granular Task Item Management
-**NEW**: TaskGuard now supports programmatic management of individual checklist items within tasks, enabling precise progress tracking for agentic AI systems.
+## ⚠️ Critical Problems to Avoid
 
-#### List Task Items
+### ❌ Poor Area Distribution
+**Problem**: Cramming everything into `backend` or `api` areas
+**Solution**: Use the full spectrum of available areas
+
+### ❌ No Validation Between Operations
+**Problem**: Creating tasks without checking current state
+**Solution**: Use `taskguard validate` and `taskguard list` frequently
+
+### ❌ Ignoring Dependencies
+**Problem**: Creating tasks without proper dependency chains
+**Solution**: Use `taskguard update dependencies` immediately after creation
+
+### ❌ Manual File Editing
+**Problem**: Editing YAML metadata manually instead of using CLI
+**Solution**: Use CLI commands for all metadata updates
+
+## 🔄 State Management Best Practices
+
+### Check State Frequently
 ```bash
-taskguard list items <task-id>
-# Shows numbered checklist items with status and progress summary
-
-# Example output:
-# 📋 Checklist items for task backend-001:
-#    Implement user authentication system
-#
-#    1. ✅ [done] Install and configure JWT dependencies
-#    2. ⭕ [todo] Create authentication middleware
-#    3. ⭕ [todo] Implement login endpoint
-#    4. ✅ [done] Add password hashing with bcrypt
-#
-# 📊 SUMMARY
-#    Total items: 4
-#    Completed: 2 (50.0%)
-#    Remaining: 2
-```
-
-#### Update Individual Task Items
-```bash
-taskguard task update <task-id> <item-index> <status>
-# item-index: 1-based index from list output
-# status: done, todo (or completed, incomplete)
-
-# Examples:
-taskguard task update backend-001 2 done    # Mark 2nd item as completed
-taskguard task update api-001 3 todo        # Mark 3rd item as incomplete
-taskguard task update auth-001 1 done       # Mark 1st item as completed
-```
-
-### Remote Sync Commands (NEW)
-```bash
-# Local analysis (existing functionality)
-taskguard sync [--verbose] [--limit N]
-
-# Remote team collaboration
-taskguard sync --remote [--verbose] [--limit N]    # Fetch and analyze remote changes
-taskguard sync --remote --dry-run [--verbose]      # Preview remote sync without changes
-
-# Examples:
-taskguard sync --remote --verbose                  # Full remote sync with detailed output
-taskguard sync --remote --dry-run                  # Safe preview of remote changes
-taskguard sync --limit 100                         # Analyze more commit history
-```
-
-#### Benefits for Agentic AI
-- **Atomic Operations**: Each item update is a single, deterministic operation
-- **Progress Tracking**: Get precise completion percentages and remaining work
-- **Error Handling**: Clear validation for invalid indexes and task IDs
-- **Preserved Formatting**: Markdown structure remains intact during updates
-- **Consistent Indexing**: 1-based indexing matches human-readable output
-
-### CLI Command Benefits for AI Agents
-- **Atomic operations**: Updates are all-or-nothing
-- **Consistent exit codes**: 0 for success, 1 for errors
-- **Machine-parseable errors**: Clear error messages for automation
-- **Idempotent**: Safe to run multiple times
-- **Immediate validation**: Invalid values are rejected with helpful messages
-
-## Understanding TaskGuard's Create Process
-
-**Important**: TaskGuard's `create` command generates **template tasks**, not AI-generated content.
-
-### What TaskGuard Creates Automatically:
-- **YAML metadata**: ID, status (todo), priority, tags, timestamps
-- **Template structure**: Standard sections (Context, Objectives, Tasks, Testing, Version Control, etc.)
-- **Placeholder content**: Generic text like "Brief description of what needs to be done"
-- **Development workflow reminders**: Testing and Version Control sections with best practices
-
-### What AI Agents Must Do:
-1. **Immediate editing**: Replace all template content with real requirements
-2. **Add dependencies**: Specify which tasks must complete first
-3. **Define concrete deliverables**: Replace generic bullet points with specific work items
-4. **Customize testing approach**: Replace generic testing reminders with project-specific test plans
-5. **Adapt version control workflow**: Customize commit and branching strategy for the task
-6. **Validate workflow**: Use `taskguard validate` after each edit
-
-### Template vs. Real Content Example:
-```markdown
-# TEMPLATE (what TaskGuard creates):
-## Context
-Brief description of what needs to be done and why.
-
-## Tasks
-- [ ] Break down the work into specific tasks
-
-## Testing
-- [ ] Write unit tests for new functionality
-- [ ] Write integration tests if applicable
-- [ ] Ensure all tests pass before marking task complete
-- [ ] Consider edge cases and error conditions
-
-## Version Control
-- [ ] Commit changes incrementally with clear messages
-- [ ] Use descriptive commit messages that explain the "why"
-- [ ] Consider creating a feature branch for complex changes
-- [ ] Review changes before committing
-
-# REAL CONTENT (what AI agents must add):
-## Context
-The current API lacks user authentication. Need to implement JWT-based auth
-system to secure /api/users and /api/data endpoints before frontend integration.
-
-## Tasks
-- [ ] Install and configure jsonwebtoken package
-- [ ] Create auth middleware for protected routes
-- [ ] Implement POST /auth/login endpoint with bcrypt
-- [ ] Add token validation to existing user endpoints
-
-## Testing
-- [ ] Write unit tests for auth middleware with valid/invalid tokens
-- [ ] Create integration tests for login flow with real JWT tokens
-- [ ] Test protected route access with and without authentication
-- [ ] Verify error handling for malformed tokens and expired sessions
-
-## Version Control
-- [ ] Commit auth middleware implementation separately
-- [ ] Commit login endpoint with clear description of JWT flow
-- [ ] Create feature branch for auth implementation
-- [ ] Review security implications before merging to main
-```
-
-## AI Agent Best Practices
-
-### 🔄 Check State Frequently
-```bash
-# Use these commands between operations
 taskguard list --area backend    # Check specific area
 taskguard validate              # See dependency status
-taskguard list                  # See full overview
+taskguard list                  # Full overview
 ```
 
-### ⚡ Use Deterministic CLI Operations
-```bash
-# Prefer CLI commands over manual file editing
-taskguard update status backend-001 doing          # Start work
-taskguard update priority setup-001 critical       # Adjust priority
-taskguard update dependencies api-001 "setup-001,backend-001"  # Set dependencies
-taskguard update assignee frontend-001 "ui-team"   # Assign ownership
-
-# NEW: Granular task item management
-taskguard list items backend-001                   # View checklist items
-taskguard task update backend-001 1 done           # Mark specific items complete
-taskguard task update api-001 3 todo              # Revert items if needed
-
-# Commands provide consistent exit codes for automation
-echo $?  # 0 for success, 1 for error
-```
-
-### 📊 Start Small, Expand Gradually
-1. Create 5-7 high-level tasks across different areas
-2. Let dependencies guide which tasks are ready
-3. Break down tasks into smaller subtasks as needed
-4. Use TaskGuard's validation to stay organized
-
-### 🔗 Think in Dependency Chains
+### Think in Dependency Chains
 ```
 setup-001 → backend-001 → api-001 → testing-001
          → frontend-001 → integration-001
 ```
 
-### 🎯 Priority Guidelines
+### Priority Guidelines
 - **high**: Critical path items, blockers, foundation work
 - **medium**: Core implementation, dependent features
 - **low**: Nice-to-have, documentation, optimization
 
-## Example: Complete AI Agent Workflow
+## ✅ Success Metrics
+
+A successful TaskGuard session shows:
+
+1. **Clean task distribution**: Tasks spread across multiple areas
+2. **Clear dependency chains**: `taskguard validate` shows logical blocking
+3. **No parse errors**: All tasks validate successfully
+4. **Actionable queue**: Clear list of available tasks
+5. **Deterministic operations**: All metadata updates via CLI commands
+6. **No template content**: All tasks have real requirements
+7. **Granular progress tracking**: Individual items managed via CLI
+
+## 🚨 Quick Troubleshooting
+
+### Tasks Not Showing
+```bash
+taskguard validate  # Check for parse errors
+ls -la tasks/*/     # Verify file structure
+```
+
+### Dependencies Not Working
+```bash
+taskguard update dependencies api-001 "setup-001,backend-001"  # Use CLI instead of manual editing
+taskguard validate  # Verify dependency chain
+```
+
+### CLI Commands Failing
+```bash
+taskguard list | grep task-id  # Check if task exists
+echo $?                        # Check exit code (0=success, 1=error)
+```
+
+## 🎬 Complete Example Workflow
 
 ```bash
 # 1. Initialize
 taskguard init
 
-# 2. Create foundation task
-taskguard create --title "Verify existing API endpoints" --area setup --priority high
-
-# 3. Start work immediately with CLI commands
+# 2. Create foundation
+taskguard create --title "Verify API endpoints" --area setup --priority high
 taskguard update status setup-001 doing
-taskguard validate
 
-# 4. Create next task and set dependencies
-taskguard create --title "Extract data processing patterns" --area data --priority medium
+# 3. Create dependent tasks
+taskguard create --title "Extract data patterns" --area data --priority medium
 taskguard update dependencies data-001 "setup-001"
 
-# 5. Validate dependency chain
+# 4. Validate chain
 taskguard validate
-# Should show setup-001 doing, data-001 blocked
+# Shows: setup-001 doing, data-001 blocked
 
-# 6. Create API task with multiple dependencies
-taskguard create --title "Implement strategy execution endpoint" --area api --priority medium
-taskguard update dependencies api-001 "setup-001,data-001"
-taskguard update priority api-001 high  # Increase priority
-
-# 7. Complete setup task and see chain reaction
+# 5. Complete setup
 taskguard update status setup-001 done
+
+# 6. Validate again
 taskguard validate
-# Now data-001 becomes available
+# Shows: data-001 now available
 
-# 8. Continue with deterministic operations
-taskguard update status data-001 doing
-taskguard update assignee data-001 "data-team"
-
-# 9. Track granular progress within tasks
+# 7. Track granular progress
 taskguard list items data-001
-taskguard task update data-001 1 done  # Mark first checklist item complete
-taskguard task update data-001 2 done  # Mark second item complete
-
-# 10. Result: Clean dependency chain with granular progress tracking
+taskguard task update data-001 1 done
+taskguard task update data-001 2 done
 ```
 
-## Debugging TaskGuard Issues
+## 🔗 Advanced Features
 
-### When Tasks Aren't Showing Up
-```bash
-# Check for parsing errors
-taskguard validate
+For complex workflows, see detailed documentation:
+- **Remote team collaboration**: `taskguard sync --remote`
+- **Template customization**: `.taskguard/templates/`
+- **Complex debugging**: Comprehensive error analysis
+- **Batch operations**: Multi-task management strategies
 
-# Verify file structure
-ls -la tasks/*/
-```
+---
 
-### When IDs Are Conflicting
-```bash
-# Check current tasks by area
-taskguard list --area backend
-taskguard list --area api
-
-# Ensure you're not creating multiple tasks in same area rapidly
-```
-
-### When Dependencies Aren't Working
-```bash
-# Use CLI commands instead of manual editing
-taskguard update dependencies api-001 "setup-001,backend-001"
-
-# Verify dependency chain
-taskguard validate
-
-# Check specific task details
-taskguard list --area api
-```
-
-### When CLI Commands Fail
-```bash
-# Check if task exists
-taskguard list | grep task-id
-
-# Verify valid status values
-taskguard update status task-001 invalid-status
-# Error: Invalid status 'invalid-status'. Valid statuses: todo, doing, review, done, blocked
-
-# Check exit codes in scripts
-taskguard update priority api-001 high
-echo $?  # 0 for success, 1 for error
-
-# Test granular item management errors
-taskguard list items nonexistent-001
-# Error: Task file not found
-
-taskguard task update backend-001 99 done
-# Error: Invalid item index 99. Valid range: 1-10
-
-taskguard task update backend-001 1 invalid
-# Error: Invalid status 'invalid'. Valid values: done, todo
-```
-
-## Key Success Metrics
-
-A successful TaskGuard session should show:
-
-1. **Clean task distribution**: Tasks spread across multiple areas
-2. **Clear dependency chains**: `taskguard validate` shows logical blocking
-3. **No parse errors**: All tasks validate successfully
-4. **Actionable queue**: Clear list of available tasks to work on
-5. **Deterministic operations**: All metadata updates done via CLI commands
-6. **Consistent exit codes**: CLI commands return 0 for success, 1 for errors
-7. **Atomic updates**: Task state changes are atomic and reversible
-8. **No template content**: All tasks have real requirements, not generic placeholders
-9. **Concrete deliverables**: Each task has specific, measurable work items
-10. **Proper status tracking**: Tasks progress through logical status transitions
-11. **Granular progress tracking**: Individual task items managed via CLI commands
-12. **Precise completion metrics**: Real-time progress percentages for complex tasks
-
-## Remote Team Collaboration (NEW)
-
-TaskGuard now supports **remote synchronization** for team collaboration while preserving the local-first approach.
-
-### Remote Sync Commands
-```bash
-# Analyze local Git history (existing functionality)
-taskguard sync --verbose
-
-# Fetch and analyze remote repository changes
-taskguard sync --remote --verbose
-
-# Preview remote sync without applying changes
-taskguard sync --remote --dry-run --verbose
-
-# Quick remote sync check
-taskguard sync --remote
-```
-
-### Remote Sync Features
-- **Automatic Remote Detection**: Uses 'origin' remote by default, fallback to first available
-- **Conflict Detection**: Compares local vs remote task activity suggestions
-- **Interactive Resolution**: User-controlled conflict resolution with confidence-based recommendations
-- **Network Resilience**: Gracefully handles authentication failures, proceeds with cached data
-- **Progress Indicators**: Real-time feedback during remote fetching operations
-
-### Team Collaboration Workflow
-```bash
-# 1. Team member A works on tasks and commits with task IDs
-git commit -m "Complete backend-007: Implement remote sync functionality"
-
-# 2. Team member B syncs to see remote activity
-taskguard sync --remote --verbose
-# Shows: backend-007 - Remote suggests "done" (80% confidence)
-
-# 3. Handle conflicts if local/remote suggestions differ
-taskguard sync --remote
-# Interactive prompts guide resolution decisions
-
-# 4. Preview changes before applying
-taskguard sync --remote --dry-run
-# Shows what would change without modifying files
-```
-
-### Remote Sync Benefits for AI Agents
-- **Team Awareness**: See task progress from all team members
-- **Conflict Prevention**: Detect divergent task states early
-- **Consistent State**: Maintain task consistency across distributed teams
-- **Safe Operations**: Dry-run mode prevents unintended changes
-- **Local-First**: Always preserves local control and decision-making
-
-### Remote Sync Error Handling
-TaskGuard provides comprehensive error handling for network issues:
-
-```bash
-# Authentication errors (SSH/HTTPS)
-taskguard sync --remote
-# ⚠️ Warning: SSH authentication error: Check your SSH keys and permissions
-#    Proceeding with locally cached remote data...
-
-# Network connectivity issues
-taskguard sync --remote
-# ⚠️ Warning: Network error: Check your internet connection and repository URL
-#    Proceeding with locally cached remote data...
-```
-
-**Key Principle**: Remote sync failures never block local operations - TaskGuard always falls back to cached data and continues analysis.
-
-## Remember: TaskGuard is the Manager
-
-Let TaskGuard guide the workflow:
-- It tells you which tasks are ready to work on
-- It validates your dependency logic
-- It organizes work by area and priority
-- It prevents you from working on blocked tasks
-
-**The AI agent's job**: Create well-structured tasks and let TaskGuard manage the execution flow.
+**Remember**: TaskGuard is the manager - it tells you which tasks are ready, validates dependencies, and organizes work by priority. Your job: create well-structured tasks and let TaskGuard manage execution flow.

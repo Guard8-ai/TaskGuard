@@ -61,6 +61,12 @@ cd my-project
 taskguard init
 ```
 
+**🤖 AI Agent Integration**: TaskGuard automatically creates AI collaboration files when initialized:
+- `AGENTIC_AI_TASKGUARD_GUIDE.md` - Complete guide for AI agents
+- `AI_AGENT_SETUP_NOTIFICATION.md` - Setup instructions for tool integration
+
+**For AI tools**: Update your instruction files (CLAUDE.md, GEMINI.md, etc.) with TaskGuard integration after running `taskguard init`.
+
 ### Create Your First Tasks
 
 ```bash
