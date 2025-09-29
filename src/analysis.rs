@@ -60,11 +60,17 @@ impl Default for ComplexityThresholds {
     }
 }
 
-impl TaskAnalyzer {
-    pub fn new() -> Self {
+impl Default for TaskAnalyzer {
+    fn default() -> Self {
         Self {
             complexity_thresholds: ComplexityThresholds::default(),
         }
+    }
+}
+
+impl TaskAnalyzer {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn with_thresholds(thresholds: ComplexityThresholds) -> Self {

@@ -52,7 +52,48 @@ pub enum ConflictResolution {
 impl GitAnalyzer {
     /// Create a new GitAnalyzer for the given repository path
     pub fn new<P: AsRef<Path>>(repo_path: P) -> Result<Self> {
-        let repo = Repository::open(repo_path)
+        // Validate and canonicalize the repository path to prevent path traversal
+        let canonical_path = repo_path.as_ref()
+            .canonicalize()
+            .context("Invalid repository path")?;
+
+        // Get current working directory for validation
+        let current_dir = std::env::current_dir()
+            .context("Failed to get current directory")?;
+
+        // Validate repository path to prevent malicious path traversal
+        // Allow temp directories for testing, current directory and reasonable parent access
+        let is_temp_dir = canonical_path.starts_with("/tmp") ||
+                         canonical_path.starts_with(std::env::temp_dir());
+        let is_current_or_child = canonical_path.starts_with(&current_dir);
+        let is_reasonable_parent = if let Some(parent) = current_dir.parent() {
+            canonical_path.starts_with(parent)
+        } else {
+            false
+        };
+
+        // Reject paths that could be malicious traversals (like /etc, /root, etc.)
+        let is_suspicious_system_path = canonical_path.starts_with("/etc") ||
+                                       canonical_path.starts_with("/root") ||
+                                       canonical_path.starts_with("/sys") ||
+                                       canonical_path.starts_with("/proc") ||
+                                       canonical_path.ancestors().count() > 10; // Prevent deep traversal
+
+        if is_suspicious_system_path {
+            return Err(anyhow::anyhow!(
+                "Repository access denied for security reasons: {}",
+                canonical_path.display()
+            ));
+        }
+
+        if !is_temp_dir && !is_current_or_child && !is_reasonable_parent {
+            return Err(anyhow::anyhow!(
+                "Repository access outside allowed scope: {}",
+                canonical_path.display()
+            ));
+        }
+
+        let repo = Repository::open(&canonical_path)
             .context("Failed to open Git repository")?;
 
         Ok(GitAnalyzer { repo })
@@ -68,7 +109,7 @@ impl GitAnalyzer {
         for commit in task_commits {
             for task_id in &commit.task_ids {
                 task_groups.entry(task_id.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(commit.clone());
             }
         }
@@ -99,23 +140,48 @@ impl GitAnalyzer {
         Ok(activities)
     }
 
-    /// Get recent commits from the repository
+    /// Get recent commits from the repository with streaming and memory limits
     fn get_recent_commits(&self, limit: usize) -> Result<Vec<Commit<'_>>> {
+        const MAX_COMMITS: usize = 1000; // Maximum commits to process for security
+        const MAX_COMMIT_MESSAGE_SIZE: usize = 64 * 1024; // 64KB max message size
+
         let mut revwalk = self.repo.revwalk()
             .context("Failed to create revision walker")?;
 
         revwalk.push_head()
             .context("Failed to push HEAD to revwalk")?;
 
+        // Limit the requested commits to a safe maximum
+        let safe_limit = std::cmp::min(limit, MAX_COMMITS);
+
         let mut commits = Vec::new();
+        let mut total_memory_used = 0usize;
+        const MAX_TOTAL_MEMORY: usize = 10 * 1024 * 1024; // 10MB total memory limit
+
         for (i, oid) in revwalk.enumerate() {
-            if i >= limit {
+            if i >= safe_limit {
                 break;
             }
 
             let oid = oid.context("Failed to get commit OID")?;
             let commit = self.repo.find_commit(oid)
-                .context("Failed to find commit")?;
+                .with_context(|| format!("Failed to find commit {}", oid))?;
+
+            // Check commit message size for security
+            if let Some(message) = commit.message() {
+                if message.len() > MAX_COMMIT_MESSAGE_SIZE {
+                    // Skip commits with excessively large messages
+                    continue;
+                }
+                total_memory_used += message.len();
+            }
+
+            // Basic memory usage estimation and limit
+            total_memory_used += 200; // Approximate overhead per commit object
+            if total_memory_used > MAX_TOTAL_MEMORY {
+                break; // Prevent memory exhaustion
+            }
+
             commits.push(commit);
         }
 
@@ -148,30 +214,133 @@ impl GitAnalyzer {
         Ok(task_commits)
     }
 
-    /// Extract task IDs from commit message using common patterns
+    /// Extract task IDs from commit message using common patterns with Unicode safety
     pub fn extract_task_ids(&self, message: &str) -> Vec<String> {
+        const MAX_TASK_IDS: usize = 100;
+        const MAX_MESSAGE_SIZE: usize = 1024 * 1024; // 1MB - allow large messages but with processing limits
+
         let mut task_ids = Vec::new();
 
+        // Normalize Unicode and sanitize the message first
+        let normalized_message = self.normalize_unicode_message(message);
+
+        // For very large messages, process only first portion to prevent memory exhaustion
+        let working_message = if normalized_message.len() > MAX_MESSAGE_SIZE {
+            // Find safe UTF-8 character boundary near the limit
+            let mut safe_end = MAX_MESSAGE_SIZE;
+            while safe_end > 0 && !normalized_message.is_char_boundary(safe_end) {
+                safe_end -= 1;
+            }
+            &normalized_message[..safe_end]
+        } else {
+            &normalized_message
+        };
+
         // Pattern 1: area-number format (e.g., "setup-001", "backend-002")
-        let task_pattern = regex::Regex::new(r"\b([a-zA-Z]+)-(\d{3})\b").unwrap();
-        for cap in task_pattern.captures_iter(message) {
+        // Pattern with word boundaries to avoid false positives in version strings
+        let task_pattern = match regex::Regex::new(r"\b([a-zA-Z]{1,20})-(\d{3})\b") {
+            Ok(pattern) => pattern,
+            Err(_) => return Vec::new(), // Safe fallback
+        };
+
+        // Process message using iterator to prevent ReDoS while finding legitimate task IDs
+        for cap in task_pattern.captures_iter(working_message) {
+            if task_ids.len() >= MAX_TASK_IDS {
+                break; // Prevent unbounded allocation
+            }
             if let (Some(area), Some(number)) = (cap.get(1), cap.get(2)) {
-                task_ids.push(format!("{}-{}", area.as_str(), number.as_str()));
+                let area_str = area.as_str();
+                let num_str = number.as_str();
+                let match_start = cap.get(0).unwrap().start();
+
+                // Basic validation - area should be reasonable length and alphanumeric
+                if area_str.len() <= 20 && area_str.chars().all(|c| c.is_ascii_alphabetic()) {
+                    // Check for false positives in version strings or similar contexts
+                    // Look at preceding context with safe UTF-8 handling
+                    let safe_start = match_start.saturating_sub(10);
+                    let context_result = working_message.get(safe_start..match_start);
+
+                    if let Some(preceding_context) = context_result {
+                        // Skip if this looks like part of a version number (contains digits and dots before the match)
+                        if preceding_context.contains('.') && preceding_context.chars().any(|c| c.is_ascii_digit()) {
+                            continue; // Skip version-like patterns like "1.2.3-backend-001"
+                        }
+                    }
+
+                    task_ids.push(format!("{}-{}", area_str, num_str));
+                }
             }
         }
 
         // Pattern 2: Issue/task references (e.g., "#123", "task 456", "issue 123")
-        let issue_pattern = regex::Regex::new(r"(?i)(?:\b(?:task|issue)\s*|#)(\d+)\b").unwrap();
-        for cap in issue_pattern.captures_iter(message) {
-            if let Some(number) = cap.get(1) {
-                task_ids.push(format!("task-{}", number.as_str()));
+        // Case-insensitive pattern to handle "Task" and "Issue"
+        let issue_pattern = match regex::Regex::new(r"(?i)#(\d{1,6})|(?:task|issue)\s+(\d{1,6})") {
+            Ok(pattern) => pattern,
+            Err(_) => return task_ids, // Continue with what we have
+        };
+
+        for cap in issue_pattern.captures_iter(working_message) {
+            if task_ids.len() >= MAX_TASK_IDS {
+                break; // Prevent unbounded allocation
+            }
+            // Check both capture groups (for different patterns)
+            let number = cap.get(1).or_else(|| cap.get(2));
+            if let Some(num) = number {
+                let num_str = num.as_str();
+                // Validate reasonable number range
+                if let Ok(task_num) = num_str.parse::<u32>() {
+                    if task_num > 0 && task_num < 1000000 { // Reasonable task ID range
+                        task_ids.push(format!("task-{}", num_str));
+                    }
+                }
             }
         }
 
         task_ids
     }
 
-    /// Suggest task status based on commit patterns
+    /// Normalize Unicode text and sanitize control characters for safe processing
+    fn normalize_unicode_message(&self, message: &str) -> String {
+        // Replace control characters with spaces (except common whitespace) to preserve word boundaries
+        let sanitized: String = message.chars()
+            .map(|c| {
+                if c.is_control() && !matches!(c, '\n' | '\t' | '\r' | ' ') {
+                    ' ' // Replace control characters with spaces to maintain word boundaries
+                } else {
+                    c
+                }
+            })
+            .collect();
+
+        // Basic Unicode normalization - remove common problematic characters
+        // and normalize similar-looking characters
+        let normalized = sanitized
+            .replace('\u{00A0}', " ") // Non-breaking space to regular space
+            .replace('\u{2000}', " ") // En quad to regular space
+            .replace('\u{2001}', " ") // Em quad to regular space
+            .replace('\u{2002}', " ") // En space to regular space
+            .replace('\u{2003}', " ") // Em space to regular space
+            .replace('\u{2004}', " ") // Three-per-em space to regular space
+            .replace('\u{2005}', " ") // Four-per-em space to regular space
+            .replace('\u{2006}', " ") // Six-per-em space to regular space
+            .replace('\u{2007}', " ") // Figure space to regular space
+            .replace('\u{2008}', " ") // Punctuation space to regular space
+            .replace('\u{2009}', " ") // Thin space to regular space
+            .replace('\u{200A}', " ") // Hair space to regular space
+            .replace('\u{200B}', "")  // Zero-width space removal
+            .replace('\u{200C}', "")  // Zero-width non-joiner removal
+            .replace('\u{200D}', "")  // Zero-width joiner removal
+            .replace('\u{FEFF}', ""); // Byte order mark removal
+
+        // Limit length after normalization to prevent processing issues
+        if normalized.len() > 4096 {
+            normalized.chars().take(4096).collect()
+        } else {
+            normalized
+        }
+    }
+
+    /// Suggest task status based on commit patterns with Unicode normalization
     pub fn suggest_status(&self, commits: &[TaskCommit]) -> (Option<String>, f32) {
         if commits.is_empty() {
             return (None, 0.0);
@@ -186,35 +355,63 @@ impl GitAnalyzer {
         let mut indicators = HashMap::new();
 
         for message in &recent_messages {
-            let lower = message.to_lowercase();
+            // Unicode normalization and sanitization
+            let normalized_message = self.normalize_unicode_message(message);
+            let lower = normalized_message.to_lowercase();
 
-            // Completion indicators
-            if lower.contains("complete") || lower.contains("finish") || lower.contains("done") {
+            // Check for completion indicators first (highest priority)
+            let has_completion = lower.contains("complete") || lower.contains("finish") || lower.contains("done");
+            let has_resolution = lower.contains("resolve") || lower.contains("closed");
+
+            if has_completion || has_resolution {
                 *indicators.entry("done").or_insert(0.0) += 0.8;
             }
 
-            // Testing/review indicators
-            if lower.contains("test") || lower.contains("fix") || lower.contains("bug") {
-                *indicators.entry("review").or_insert(0.0) += 0.6;
+            // Review indicators
+            if lower.contains("review") || lower.contains("refactor") ||
+               lower.contains("document") || lower.contains("docs") || lower.contains("documentation") {
+                *indicators.entry("review").or_insert(0.0) += 0.7;
+            }
+
+            // Testing/review indicators (but give less weight if completion terms are present)
+            if lower.contains("test") || lower.contains("bug") {
+                let weight = if has_completion { 0.3 } else { 0.6 };
+                *indicators.entry("review").or_insert(0.0) += weight;
+            }
+
+            // "Fix" can mean either completion or review, prioritize completion context
+            if lower.contains("fix") {
+                if has_completion || has_resolution {
+                    // If fix is used with completion terms, it indicates done
+                    *indicators.entry("done").or_insert(0.0) += 0.5;
+                } else {
+                    // Otherwise it suggests review/testing needed
+                    *indicators.entry("review").or_insert(0.0) += 0.4;
+                }
             }
 
             // Work in progress indicators
             if lower.contains("wip") || lower.contains("progress") || lower.contains("implement") {
-                *indicators.entry("doing").or_insert(0.0) += 0.7;
+                let weight = if has_completion { 0.3 } else { 0.7 };
+                *indicators.entry("doing").or_insert(0.0) += weight;
             }
 
             // Initial work indicators
             if lower.contains("start") || lower.contains("initial") || lower.contains("begin") {
-                *indicators.entry("doing").or_insert(0.0) += 0.5;
+                let weight = if has_completion { 0.2 } else { 0.5 };
+                *indicators.entry("doing").or_insert(0.0) += weight;
             }
         }
 
         // Find the highest confidence suggestion
-        let (status, confidence) = indicators.into_iter()
+        let (status, confidence): (&str, f32) = indicators.into_iter()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap_or(("doing", 0.3));
 
-        (Some(status.to_string()), confidence)
+        // Clamp confidence to valid range [0.0, 1.0] to prevent overflow
+        let clamped_confidence = confidence.clamp(0.0_f32, 1.0_f32);
+
+        (Some(status.to_string()), clamped_confidence)
     }
 
     /// Get repository statistics
@@ -250,7 +447,7 @@ impl GitAnalyzer {
     /// Fetch updates from remote repository with comprehensive error handling
     pub fn fetch_remote(&self, remote_name: &str) -> Result<()> {
         let mut remote = self.repo.find_remote(remote_name)
-            .with_context(|| format!("Failed to find remote '{}'. Available remotes: {:?}", remote_name, self.get_remotes().unwrap_or_default()))?;
+            .context("Failed to find remote repository")?;
 
         let mut callbacks = RemoteCallbacks::new();
 
@@ -262,11 +459,7 @@ impl GitAnalyzer {
             } else {
                 // Fallback to default user
                 git2::Cred::ssh_key_from_agent("git")
-            }.or_else(|_| {
-                // Fallback to username/password prompt would go here
-                // For now, return the error
-                Err(git2::Error::from_str("Authentication required but no credentials available"))
-            })
+            }.map_err(|_| git2::Error::from_str("Authentication required but no credentials available"))
         });
 
         // Progress callback for long operations
@@ -333,7 +526,7 @@ impl GitAnalyzer {
         for commit in remote_task_commits {
             for task_id in &commit.task_ids {
                 remote_task_groups.entry(task_id.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(commit.clone());
             }
         }
@@ -364,8 +557,11 @@ impl GitAnalyzer {
         Ok(remote_activities)
     }
 
-    /// Get commits from remote tracking branch
+    /// Get commits from remote tracking branch with streaming and memory limits
     fn get_remote_commits(&self, remote_name: &str, limit: usize) -> Result<Vec<Commit<'_>>> {
+        const MAX_COMMITS: usize = 1000; // Maximum commits to process for security
+        const MAX_COMMIT_MESSAGE_SIZE: usize = 64 * 1024; // 64KB max message size
+
         let remote_branch_name = format!("{}/master", remote_name); // Assuming master branch
         let remote_ref = self.repo.find_reference(&format!("refs/remotes/{}", remote_branch_name))
             .or_else(|_| self.repo.find_reference(&format!("refs/remotes/{}/main", remote_name)))
@@ -380,15 +576,37 @@ impl GitAnalyzer {
         revwalk.push(remote_oid)
             .context("Failed to push remote OID to revwalk")?;
 
+        // Limit the requested commits to a safe maximum
+        let safe_limit = std::cmp::min(limit, MAX_COMMITS);
+
         let mut commits = Vec::new();
+        let mut total_memory_used = 0usize;
+        const MAX_TOTAL_MEMORY: usize = 10 * 1024 * 1024; // 10MB total memory limit
+
         for (i, oid) in revwalk.enumerate() {
-            if i >= limit {
+            if i >= safe_limit {
                 break;
             }
 
             let oid = oid.context("Failed to get remote commit OID")?;
             let commit = self.repo.find_commit(oid)
-                .context("Failed to find remote commit")?;
+                .with_context(|| format!("Failed to find remote commit {}", oid))?;
+
+            // Check commit message size for security
+            if let Some(message) = commit.message() {
+                if message.len() > MAX_COMMIT_MESSAGE_SIZE {
+                    // Skip commits with excessively large messages
+                    continue;
+                }
+                total_memory_used += message.len();
+            }
+
+            // Basic memory usage estimation and limit
+            total_memory_used += 200; // Approximate overhead per commit object
+            if total_memory_used > MAX_TOTAL_MEMORY {
+                break; // Prevent memory exhaustion
+            }
+
             commits.push(commit);
         }
 

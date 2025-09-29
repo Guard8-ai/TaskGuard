@@ -27,7 +27,7 @@ pub fn run(limit: usize, verbose: bool, remote: bool, dry_run: bool) -> Result<(
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "md"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "md"))
         .collect();
 
     // Parse all tasks

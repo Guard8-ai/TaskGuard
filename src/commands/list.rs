@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::collections::HashMap;
+use std::path::Path;
 use walkdir::WalkDir;
 
 use crate::config::get_tasks_dir;
@@ -19,7 +20,7 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>) -> Result
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "md"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "md"))
         .collect();
 
     if task_files.is_empty() {
@@ -185,10 +186,7 @@ fn parse_checklist_items(content: &str) -> Result<Vec<ChecklistItem>> {
             let checkbox_state = captures.get(2).unwrap().as_str().trim();
             let text = captures.get(3).unwrap().as_str().trim();
 
-            let completed = match checkbox_state {
-                "x" | "X" => true,
-                _ => false,
-            };
+            let completed = matches!(checkbox_state, "x" | "X");
 
             items.push(ChecklistItem {
                 text: text.to_string(),
@@ -202,7 +200,7 @@ fn parse_checklist_items(content: &str) -> Result<Vec<ChecklistItem>> {
 }
 
 // Helper function to find task file (similar to update.rs)
-fn find_task_file(tasks_dir: &std::path::PathBuf, task_id: &str) -> Result<std::path::PathBuf> {
+fn find_task_file(tasks_dir: &Path, task_id: &str) -> Result<std::path::PathBuf> {
     // Extract area from task ID (e.g., "backend-001" -> "backend")
     let area = task_id.split('-').next()
         .ok_or_else(|| anyhow::anyhow!("Invalid task ID format. Expected format: area-number"))?;
