@@ -100,7 +100,7 @@ impl GitAnalyzer {
     }
 
     /// Get recent commits from the repository
-    fn get_recent_commits(&self, limit: usize) -> Result<Vec<Commit>> {
+    fn get_recent_commits(&self, limit: usize) -> Result<Vec<Commit<'_>>> {
         let mut revwalk = self.repo.revwalk()
             .context("Failed to create revision walker")?;
 
@@ -365,7 +365,7 @@ impl GitAnalyzer {
     }
 
     /// Get commits from remote tracking branch
-    fn get_remote_commits(&self, remote_name: &str, limit: usize) -> Result<Vec<Commit>> {
+    fn get_remote_commits(&self, remote_name: &str, limit: usize) -> Result<Vec<Commit<'_>>> {
         let remote_branch_name = format!("{}/master", remote_name); // Assuming master branch
         let remote_ref = self.repo.find_reference(&format!("refs/remotes/{}", remote_branch_name))
             .or_else(|_| self.repo.find_reference(&format!("refs/remotes/{}/main", remote_name)))

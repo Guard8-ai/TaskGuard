@@ -425,7 +425,7 @@ TaskGuard configuration is stored in `.taskguard/config.toml`. The configuration
 ```toml
 [project]
 name = "My Project"
-version = "0.2.0"
+version = "0.2.1"
 areas = ["setup", "backend", "frontend", "api", "auth", "testing", "deployment"]
 
 [settings]
@@ -496,9 +496,9 @@ priorities = ["p0", "p1", "p2", "p3"]
 
 ## Claude Code Integration
 
-TaskGuard v0.2.0 provides zero-setup AI agent integration with automatic guide distribution:
+TaskGuard v0.2.1 provides zero-setup AI agent integration with automatic guide distribution:
 
-### 🤖 Automatic AI Integration (v0.2.0)
+### 🤖 Automatic AI Integration (v0.2.1)
 **TaskGuard now handles AI setup automatically:**
 1. ✅ **Auto-copies** `AGENTIC_AI_TASKGUARD_GUIDE.md` to your project root during `taskguard init`
 2. ✅ **Auto-creates** `AI_AGENT_SETUP_NOTIFICATION.md` with tool integration instructions

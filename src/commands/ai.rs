@@ -1,11 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::path::Path;
 use std::collections::{HashMap, HashSet};
 use walkdir::WalkDir;
 use crate::task::{Task, TaskStatus, Priority};
 use crate::git::GitAnalyzer;
 use crate::analysis::TaskAnalyzer;
-use crate::config::{find_taskguard_root, get_tasks_dir};
+use crate::config::get_tasks_dir;
 
 #[derive(Debug)]
 pub struct ValidationResult {
@@ -14,6 +14,7 @@ pub struct ValidationResult {
 }
 
 pub struct AIAgent {
+    #[allow(dead_code)] // Reserved for future Git-based analysis features
     git_analyzer: Option<GitAnalyzer>,
     task_analyzer: TaskAnalyzer,
 }

@@ -138,7 +138,7 @@ fn test_complete_project_lifecycle() -> Result<()> {
     project.add_git_commit(&repo, "Complete setup-001 configuration")?;
 
     // 5. Run sync to analyze Git activity
-    sync::run(50, false)?;
+    sync::run(50, false, false, false)?;
 
     // 6. Run lint to analyze task quality
     lint::run(false, None)?;
@@ -208,7 +208,7 @@ fn test_git_analysis_workflow() -> Result<()> {
     project.add_git_commit(&repo, "Complete backend-001 authentication feature")?;
 
     // Run sync to analyze Git activity
-    sync::run(10, true)?; // Verbose mode
+    sync::run(10, true, false, false)?; // Verbose mode
 
     // Git analysis should suggest status changes
     Ok(())
@@ -247,7 +247,7 @@ fn test_complex_git_scenario() -> Result<()> {
     }
 
     // Analyze the complex Git history
-    sync::run(20, true)?;
+    sync::run(20, true, false, false)?;
 
     Ok(())
 }
@@ -627,7 +627,7 @@ Well-structured task with clear objectives.
     project.add_git_commit(&repo, "Complete backend-001 fixes")?;
 
     // 3. Sync analyzes Git activity
-    sync::run(10, true)?;
+    sync::run(10, true, false, false)?;
 
     // 4. AI integrates all information
     ai::run("What's the quality of my tasks?".to_string())?;
@@ -686,7 +686,7 @@ fn test_complete_feature_development_cycle() -> Result<()> {
 
     // 3. Analysis phase - understand progress
     validate::run()?; // Check what's now available
-    sync::run(10, true)?; // Analyze Git activity
+    sync::run(10, true, false, false)?; // Analyze Git activity
     lint::run(true, None)?; // Check task quality
 
     // 4. AI provides guidance
@@ -705,7 +705,7 @@ fn test_complete_feature_development_cycle() -> Result<()> {
 
     // Final analysis
     validate::run()?;
-    sync::run(20, false)?;
+    sync::run(20, false, false, false)?;
     ai::run("Show me the final project status".to_string())?;
 
     Ok(())

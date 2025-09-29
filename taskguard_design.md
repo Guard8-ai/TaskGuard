@@ -325,7 +325,7 @@ Create this task? [Y/n]
 ```toml
 [project]
 name = "My Web Application"
-version = "0.2.0"
+version = "0.2.1"
 areas = ["setup", "backend", "frontend", "api", "auth", "testing", "deployment"]
 
 [settings]

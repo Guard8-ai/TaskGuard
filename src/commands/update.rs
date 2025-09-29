@@ -235,6 +235,7 @@ pub fn run_task_item(task_id: String, item_index: usize, status: String) -> Resu
 struct ChecklistItem {
     text: String,
     completed: bool,
+    #[allow(dead_code)] // Reserved for future line-specific editing features
     line_number: usize,
 }
 

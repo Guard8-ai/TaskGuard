@@ -170,6 +170,7 @@ pub fn run_items(task_id: String) -> Result<()> {
 pub struct ChecklistItem {
     pub text: String,
     pub completed: bool,
+    #[allow(dead_code)] // Reserved for future line-specific editing features
     pub line_number: usize,
 }
 
