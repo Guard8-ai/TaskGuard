@@ -122,7 +122,7 @@ clone_and_install() {
 setup_path() {
     print_step "Setting up PATH..."
 
-    # /usr/local/bin should already be in PATH on macOS, but let's verify
+    # Check if cargo bin directory is in PATH
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         print_warning "$INSTALL_DIR is not in your PATH"
 
@@ -147,14 +147,19 @@ setup_path() {
         esac
 
         if [ -n "$SHELL_CONFIG" ]; then
-            echo "" >> "$SHELL_CONFIG"
-            echo "# TaskGuard installation" >> "$SHELL_CONFIG"
-            echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$SHELL_CONFIG"
-            print_success "Added $INSTALL_DIR to PATH in $SHELL_CONFIG"
+            # Check if cargo env is already sourced
+            if ! grep -q "\.cargo/env" "$SHELL_CONFIG" 2>/dev/null; then
+                echo "" >> "$SHELL_CONFIG"
+                echo "# Cargo environment (includes TaskGuard)" >> "$SHELL_CONFIG"
+                echo ". \"\$HOME/.cargo/env\"" >> "$SHELL_CONFIG"
+                print_success "Added Cargo environment to PATH in $SHELL_CONFIG"
+            else
+                print_success "Cargo environment already configured in $SHELL_CONFIG"
+            fi
             print_warning "Please restart your terminal or run: source $SHELL_CONFIG"
         fi
     else
-        print_success "PATH is already configured"
+        print_success "PATH is already configured (Cargo bin in PATH)"
     fi
 }
 
