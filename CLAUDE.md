@@ -27,7 +27,8 @@ cargo build --release
 ### Installation
 ```bash
 # Install globally (requires Rust/Cargo)
-cargo install --path .
+# This installs to ~/.cargo/bin/ which is automatically added to PATH
+cargo install --path . --locked
 
 # Or use the binary directly
 ./target/release/taskguard --help

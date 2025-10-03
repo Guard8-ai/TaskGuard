@@ -3,7 +3,7 @@
 
 param(
     [switch]$Force,
-    [string]$InstallPath = "$env:USERPROFILE\.local\bin"
+    [string]$InstallPath = "$env:USERPROFILE\.cargo\bin"
 )
 
 # Configuration

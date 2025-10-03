@@ -1,7 +1,7 @@
 ---
 id: deployment-003
 title: Improve TaskGuard installation to use consistent directory
-status: todo
+status: done
 priority: medium
 tags:
 - deployment
