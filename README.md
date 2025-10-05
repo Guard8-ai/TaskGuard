@@ -2,7 +2,12 @@
 
 > AI-ready local task management with Git integration
 
+[![Documentation](https://readthedocs.org/projects/taskguard/badge/?version=latest)](https://taskguard.readthedocs.io/en/latest/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 TaskGuard is a local-first, Git-native task management system built in Rust. It provides AI-ready task management with automatic agent integration, dependency blocking, and intelligent workflows while keeping developers in complete control.
+
+**[📖 Full Documentation](https://taskguard.readthedocs.io)**
 
 ## ✨ Features
 
@@ -19,7 +24,7 @@ TaskGuard is a local-first, Git-native task management system built in Rust. It 
 
 ### Installation
 
-TaskGuard can be installed globally to work with all your projects. Since this is a private repository, you'll need access to the Guard8.ai organization.
+TaskGuard can be installed globally to work with all your projects.
 
 **Global Installation (Recommended):**
 
@@ -242,9 +247,18 @@ This comprehensive guide covers:
 
 Key insight: AI agents must **respect TaskGuard's design patterns** rather than trying to bulldoze through with rapid commands.
 
+## 📚 Documentation
+
+Complete documentation is available at **[taskguard.readthedocs.io](https://taskguard.readthedocs.io)**:
+
+- [Getting Started Guide](https://taskguard.readthedocs.io/en/latest/getting-started/installation/)
+- [Core Concepts](https://taskguard.readthedocs.io/en/latest/core-concepts/task-structure/)
+- [API Reference](https://taskguard.readthedocs.io/en/latest/api-reference/commands/)
+- [Contributing Guidelines](https://taskguard.readthedocs.io/en/latest/contributing/development-setup/)
+
 ## 🤝 Contributing
 
-TaskGuard is in active development. See [CLAUDE.md](CLAUDE.md) for detailed technical documentation.
+TaskGuard is in active development. See [CLAUDE.md](CLAUDE.md) for detailed technical documentation or visit the [contributing section](https://taskguard.readthedocs.io/en/latest/contributing/development-setup/) in our documentation.
 
 ## 📄 License
 
