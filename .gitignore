@@ -30,3 +30,6 @@ Thumbs.db
 *.tmp
 *.temp
 .temp/
+
+# MkDocs build output
+site/
