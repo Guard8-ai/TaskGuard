@@ -63,6 +63,24 @@ check_dependencies() {
         print_success "Git is already installed"
     fi
 
+    # Check for OpenSSL (required for git2 crate)
+    if ! pkg list-installed | grep -q "^openssl/"; then
+        print_warning "OpenSSL not found. Installing OpenSSL..."
+        pkg install openssl -y
+        print_success "OpenSSL installed"
+    else
+        print_success "OpenSSL is already installed"
+    fi
+
+    # Check for pkg-config (required for build)
+    if ! command -v pkg-config &> /dev/null; then
+        print_warning "pkg-config not found. Installing pkg-config..."
+        pkg install pkg-config -y
+        print_success "pkg-config installed"
+    else
+        print_success "pkg-config is already installed"
+    fi
+
     # Check for Rust/Cargo
     if ! command -v cargo &> /dev/null; then
         print_warning "Rust/Cargo not found. Installing Rust..."
@@ -100,13 +118,15 @@ check_dependencies() {
 check_storage() {
     print_step "Checking available storage..."
 
-    # Check available storage in $HOME
-    AVAILABLE=$(df -h "$HOME" | tail -1 | awk '{print $4}')
+    # Check available storage in $HOME (use -BM for MB in Termux)
+    AVAILABLE=$(df -h "$HOME" 2>/dev/null | tail -1 | awk '{print $4}' || echo "Unknown")
     print_success "Available storage: $AVAILABLE"
 
-    # Warn if low storage
-    AVAILABLE_MB=$(df -m "$HOME" | tail -1 | awk '{print $4}')
-    if [ "$AVAILABLE_MB" -lt 500 ]; then
+    # Warn if low storage (Termux df may not support -m flag)
+    AVAILABLE_KB=$(df "$HOME" 2>/dev/null | tail -1 | awk '{print $4}' || echo "0")
+    AVAILABLE_MB=$((AVAILABLE_KB / 1024))
+
+    if [ "$AVAILABLE_MB" -gt 0 ] && [ "$AVAILABLE_MB" -lt 500 ]; then
         print_warning "Low storage space. TaskGuard build requires ~300MB temporarily"
         read -p "Continue? (y/n) " -n 1 -r
         echo
