@@ -39,6 +39,11 @@ cd TaskGuard
 ./scripts/install-wsl.sh
 ```
 
+**Termux (Android):**
+```bash
+./scripts/install-termux.sh
+```
+
 ## Manual Installation
 
 ### Step-by-Step Process
@@ -68,6 +73,12 @@ cd TaskGuard
    ```bash
    sudo apt update && sudo apt install -y git build-essential
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source ~/.cargo/env
+   ```
+
+   **Termux (Android):**
+   ```bash
+   pkg update && pkg install git rust -y
    source ~/.cargo/env
    ```
 
@@ -137,6 +148,16 @@ cd TaskGuard
   - Uses `cargo install` for consistent installation
   - Automatic dependency installation
   - Cross-filesystem optimization
+
+### Termux Installation (`install-termux.sh`)
+- **Install Location**: `~/.cargo/bin/`
+- **Features**:
+  - Termux environment detection ($PREFIX)
+  - Android-specific path handling
+  - Automatic Rust installation via pkg
+  - Storage space verification
+  - Termux:Widget integration guide
+  - Optimized build for mobile devices
 
 ## Verification
 
@@ -243,6 +264,13 @@ rustup update    # Update if needed
 - Linux environment within Windows
 - Full compatibility with Linux features
 - Optimized for cross-filesystem operations
+
+### Termux (Android)
+- Full Linux environment on Android
+- Storage location: $HOME (shared with Termux)
+- Requires ~300MB during build, ~50MB installed
+- Compatible with Termux:Widget for quick access
+- Recommended: Android 7+ with 2GB+ RAM
 
 ## Uninstalling
 
