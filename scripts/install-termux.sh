@@ -96,10 +96,8 @@ check_dependencies() {
         pkg install rust -y
         print_success "Rust installed"
 
-        # Source cargo environment
-        if [ -f "$HOME/.cargo/env" ]; then
-            source "$HOME/.cargo/env"
-        fi
+        # Add cargo bin to PATH for current session
+        export PATH="$HOME/.cargo/bin:$PATH"
     else
         print_success "Rust is already installed"
     fi
@@ -187,16 +185,17 @@ setup_path() {
         # Termux uses bash by default
         SHELL_CONFIG="$HOME/.bashrc"
 
-        # Check if cargo env is already sourced
-        if ! grep -q "\.cargo/env" "$SHELL_CONFIG" 2>/dev/null; then
+        # Check if cargo bin is already in PATH
+        if ! grep -q "\.cargo/bin" "$SHELL_CONFIG" 2>/dev/null; then
             echo "" >> "$SHELL_CONFIG"
             echo "# Cargo environment (includes TaskGuard)" >> "$SHELL_CONFIG"
-            echo ". \"\$HOME/.cargo/env\"" >> "$SHELL_CONFIG"
-            print_success "Added Cargo environment to PATH in $SHELL_CONFIG"
+            echo "export PATH=\"\$HOME/.cargo/bin:\$PATH\"" >> "$SHELL_CONFIG"
+            print_success "Added Cargo bin to PATH in $SHELL_CONFIG"
         else
-            print_success "Cargo environment already configured in $SHELL_CONFIG"
+            print_success "Cargo bin already configured in $SHELL_CONFIG"
         fi
-        print_warning "Please restart Termux or run: source $SHELL_CONFIG"
+        print_warning "⚠️  IMPORTANT: Restart Termux completely for PATH to take effect"
+        echo "           (Force stop app or swipe away, then reopen)"
     else
         print_success "PATH is already configured (Cargo bin in PATH)"
     fi
@@ -211,10 +210,8 @@ cleanup() {
 verify_installation() {
     print_step "Verifying installation..."
 
-    # Source cargo env for verification
-    if [ -f "$HOME/.cargo/env" ]; then
-        source "$HOME/.cargo/env"
-    fi
+    # Add cargo bin to PATH for verification
+    export PATH="$HOME/.cargo/bin:$PATH"
 
     # Test if binary is accessible
     if command -v "$BINARY_NAME" &> /dev/null; then
@@ -228,7 +225,7 @@ verify_installation() {
             print_success "TaskGuard installed successfully!"
             echo "Version: $VERSION"
             print_warning "Binary is at $INSTALL_DIR/$BINARY_NAME"
-            print_warning "Restart Termux to use 'taskguard' command globally"
+            print_warning "⚠️  Restart Termux to use 'taskguard' command globally"
         else
             print_error "Installation verification failed"
             exit 1
@@ -240,9 +237,13 @@ print_usage_info() {
     echo ""
     echo -e "${GREEN}🎉 TaskGuard Installation Complete on Termux!${NC}"
     echo ""
-    echo "Quick Start:"
-    echo "  1. Restart Termux or run: source ~/.bashrc"
-    echo "  2. Navigate to any project directory: cd ~/projects/myapp"
+    echo -e "${YELLOW}⚠️  IMPORTANT: RESTART TERMUX NOW${NC}"
+    echo "   To restart: Force stop Termux app (long-press → App info → Force stop)"
+    echo "   Or swipe away from recent apps, then reopen Termux"
+    echo ""
+    echo "Quick Start (after restart):"
+    echo "  1. Verify installation: taskguard --version"
+    echo "  2. Navigate to any project: cd ~/projects/myapp"
     echo "  3. Initialize TaskGuard: taskguard init"
     echo "  4. Create your first task: taskguard create --title \"Setup project\" --area setup"
     echo "  5. List tasks: taskguard list"
