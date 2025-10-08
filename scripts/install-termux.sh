@@ -72,6 +72,15 @@ check_dependencies() {
         print_success "OpenSSL is already installed"
     fi
 
+    # Check for libgit2 (use system library to avoid build issues)
+    if ! pkg list-installed | grep -q "^libgit2/"; then
+        print_warning "libgit2 not found. Installing libgit2..."
+        pkg install libgit2 -y
+        print_success "libgit2 installed"
+    else
+        print_success "libgit2 is already installed"
+    fi
+
     # Check for pkg-config (required for build)
     if ! command -v pkg-config &> /dev/null; then
         print_warning "pkg-config not found. Installing pkg-config..."
@@ -161,8 +170,9 @@ clone_and_install() {
     print_warning "This is a one-time build. Please be patient..."
 
     # Use cargo install for consistent installation to ~/.cargo/bin
+    # Use system libgit2 to avoid build issues on Termux
     # Set lower optimization for faster builds on mobile if needed
-    CARGO_BUILD_JOBS=2 cargo install --path . --locked
+    LIBGIT2_SYS_USE_PKG_CONFIG=1 CARGO_BUILD_JOBS=2 cargo install --path . --locked
 
     print_success "TaskGuard installed to $INSTALL_DIR/$BINARY_NAME"
 }
