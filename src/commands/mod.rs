@@ -7,3 +7,4 @@ pub mod lint;
 pub mod ai;
 pub mod update;
 pub mod clean;
+pub mod stats;

@@ -7,7 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 
-use commands::{init, list, create, validate, sync, lint, ai, update, clean};
+use commands::{init, list, create, validate, sync, lint, ai, update, clean, stats};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -128,6 +128,8 @@ enum Commands {
         #[arg(short, long)]
         days: Option<u32>,
     },
+    /// Show storage statistics and usage breakdown (mobile optimization)
+    Stats,
 }
 
 fn main() -> Result<()> {
@@ -157,5 +159,6 @@ fn main() -> Result<()> {
             Ok(())
         }
         Commands::Clean { dry_run, days } => clean::run(dry_run, days),
+        Commands::Stats => stats::run(),
     }
 }
