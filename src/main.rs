@@ -119,7 +119,7 @@ enum Commands {
     },
     /// Show project status
     Status,
-    /// Clean old completed tasks and empty directories (mobile optimization)
+    /// Clean old completed tasks and empty directories (efficiency optimization)
     Clean {
         /// Dry run - show what would be deleted without actually deleting
         #[arg(long)]
@@ -128,9 +128,9 @@ enum Commands {
         #[arg(short, long)]
         days: Option<u32>,
     },
-    /// Show storage statistics and usage breakdown (mobile optimization)
+    /// Show storage statistics and usage breakdown (efficiency optimization)
     Stats,
-    /// Archive old completed tasks to preserve history without bloat (mobile optimization)
+    /// Archive old completed tasks to preserve history without bloat (efficiency optimization)
     Archive {
         /// Dry run - show what would be archived without actually moving files
         #[arg(long)]
@@ -139,7 +139,7 @@ enum Commands {
         #[arg(short, long)]
         days: Option<u32>,
     },
-    /// Compact task files to reduce storage (mobile optimization)
+    /// Compact task files to reduce storage (efficiency optimization)
     Compact {
         /// Dry run - show what would be compacted without actually modifying files
         #[arg(long)]

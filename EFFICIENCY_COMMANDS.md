@@ -1,4 +1,4 @@
-# Mobile Optimization Commands
+# Efficiency Commands
 
 ## Test Commands Reference
 
@@ -21,46 +21,44 @@ taskguard stats
 
 ---
 
-### 2. Clean Command - Delete Old Completed Tasks
+### 2. Clean Command - Delete Completed Tasks
 ```bash
 # DRY RUN first (safe, shows what would be deleted)
 taskguard clean --dry-run
 
 # Actually delete (removes files)
 taskguard clean
-
-# Custom retention period
-taskguard clean --days 60
 ```
 **What it does:**
-- Finds: Tasks with `status: done` older than 30 days (default)
+- Finds: ALL tasks with `status: done` (no age filtering)
 - Deletes: Those task files from `tasks/` directory
 - Shows: Files deleted, space saved
 
 **Expected output:**
-- If tasks < 30 days old: "No cleanup needed"
-- If old tasks found: List of files to delete + size savings
+- If no completed tasks: "No cleanup needed"
+- If completed tasks found: List of ALL files to delete + size savings
 
 ---
 
-### 3. Archive Command - Preserve Old Tasks
+### 3. Archive Command - Preserve Completed Tasks
 ```bash
 # DRY RUN first
 taskguard archive --dry-run
 
 # Actually archive
 taskguard archive
-
-# Custom retention period
-taskguard archive --days 60
 ```
+**What it does:**
+- Finds: ALL tasks with `status: done` (no age filtering)
+- Archives: Those tasks to preserve history without cluttering active tasks
+
 **Where files are saved:**
 - **From:** `tasks/backend/backend-001.md`
 - **To:** `.taskguard/archive/backend/backend-001.md`
 - Files moved (not copied), preserves structure by area
 
 **Expected output:**
-- List of tasks to archive
+- List of ALL completed tasks to archive
 - Archive location: `.taskguard/archive/`
 - Files moved and freed space shown
 
@@ -86,7 +84,7 @@ taskguard compact
 
 ---
 
-## Mobile Storage Optimization Workflow
+## Storage Efficiency Workflow
 
 ### Initial Analysis
 ```bash
@@ -101,14 +99,14 @@ taskguard compact --dry-run
 
 **Option A: Preserve History (Archive)**
 ```bash
-# Archive old completed tasks instead of deleting
+# Archive ALL completed tasks to preserve history
 taskguard archive --dry-run
 taskguard archive
 ```
 
-**Option B: Delete Old Tasks (Clean)**
+**Option B: Delete Completed Tasks (Clean)**
 ```bash
-# Permanently delete old completed tasks
+# Permanently delete ALL completed tasks
 taskguard clean --dry-run
 taskguard clean
 ```
@@ -118,14 +116,14 @@ taskguard clean
 # 1. Compact files first (reduce size)
 taskguard compact
 
-# 2. Then archive or clean old tasks
+# 2. Then archive or clean completed tasks
 taskguard archive  # OR taskguard clean
 ```
 
-### Binary Size
+### Binary Size Optimization
 - **Before optimization:** 5.8M
 - **After optimization:** 2.8M (51% reduction)
-- **Savings:** 3MB on mobile devices
+- **Savings:** 3MB per installation
 
 ## Safety Notes
 - Always use `--dry-run` first to preview changes
