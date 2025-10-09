@@ -7,7 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 
-use commands::{init, list, create, validate, sync, lint, ai, update, clean, stats, archive};
+use commands::{init, list, create, validate, sync, lint, ai, update, clean, stats, archive, compact};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -139,6 +139,12 @@ enum Commands {
         #[arg(short, long)]
         days: Option<u32>,
     },
+    /// Compact task files to reduce storage (mobile optimization)
+    Compact {
+        /// Dry run - show what would be compacted without actually modifying files
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -170,5 +176,6 @@ fn main() -> Result<()> {
         Commands::Clean { dry_run, days } => clean::run(dry_run, days),
         Commands::Stats => stats::run(),
         Commands::Archive { dry_run, days } => archive::run(dry_run, days),
+        Commands::Compact { dry_run } => compact::run(dry_run),
     }
 }
