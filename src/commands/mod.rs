@@ -6,3 +6,7 @@ pub mod sync;
 pub mod lint;
 pub mod ai;
 pub mod update;
+pub mod clean;
+pub mod stats;
+pub mod archive;
+pub mod compact;

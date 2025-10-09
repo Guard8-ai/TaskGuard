@@ -7,7 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 
-use commands::{init, list, create, validate, sync, lint, ai, update};
+use commands::{init, list, create, validate, sync, lint, ai, update, clean, stats, archive, compact};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -119,6 +119,32 @@ enum Commands {
     },
     /// Show project status
     Status,
+    /// Clean old completed tasks and empty directories (efficiency optimization)
+    Clean {
+        /// Dry run - show what would be deleted without actually deleting
+        #[arg(long)]
+        dry_run: bool,
+        /// Number of days to retain completed tasks (default: 30)
+        #[arg(short, long)]
+        days: Option<u32>,
+    },
+    /// Show storage statistics and usage breakdown (efficiency optimization)
+    Stats,
+    /// Archive old completed tasks to preserve history without bloat (efficiency optimization)
+    Archive {
+        /// Dry run - show what would be archived without actually moving files
+        #[arg(long)]
+        dry_run: bool,
+        /// Number of days to retain completed tasks (default: 30)
+        #[arg(short, long)]
+        days: Option<u32>,
+    },
+    /// Compact task files to reduce storage (efficiency optimization)
+    Compact {
+        /// Dry run - show what would be compacted without actually modifying files
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -147,5 +173,9 @@ fn main() -> Result<()> {
             println!("Project status overview");
             Ok(())
         }
+        Commands::Clean { dry_run, days } => clean::run(dry_run, days),
+        Commands::Stats => stats::run(),
+        Commands::Archive { dry_run, days } => archive::run(dry_run, days),
+        Commands::Compact { dry_run } => compact::run(dry_run),
     }
 }
