@@ -7,7 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 
-use commands::{init, list, create, validate, sync, lint, ai, update};
+use commands::{init, list, create, validate, sync, lint, ai, update, clean};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -119,6 +119,15 @@ enum Commands {
     },
     /// Show project status
     Status,
+    /// Clean old completed tasks and empty directories (mobile optimization)
+    Clean {
+        /// Dry run - show what would be deleted without actually deleting
+        #[arg(long)]
+        dry_run: bool,
+        /// Number of days to retain completed tasks (default: 30)
+        #[arg(short, long)]
+        days: Option<u32>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -147,5 +156,6 @@ fn main() -> Result<()> {
             println!("Project status overview");
             Ok(())
         }
+        Commands::Clean { dry_run, days } => clean::run(dry_run, days),
     }
 }
