@@ -7,7 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 
-use commands::{init, list, create, validate, sync, lint, ai, update, clean, stats};
+use commands::{init, list, create, validate, sync, lint, ai, update, clean, stats, archive};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -130,6 +130,15 @@ enum Commands {
     },
     /// Show storage statistics and usage breakdown (mobile optimization)
     Stats,
+    /// Archive old completed tasks to preserve history without bloat (mobile optimization)
+    Archive {
+        /// Dry run - show what would be archived without actually moving files
+        #[arg(long)]
+        dry_run: bool,
+        /// Number of days to retain completed tasks (default: 30)
+        #[arg(short, long)]
+        days: Option<u32>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -160,5 +169,6 @@ fn main() -> Result<()> {
         }
         Commands::Clean { dry_run, days } => clean::run(dry_run, days),
         Commands::Stats => stats::run(),
+        Commands::Archive { dry_run, days } => archive::run(dry_run, days),
     }
 }
