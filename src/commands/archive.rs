@@ -1,13 +1,11 @@
 use anyhow::{Context, Result};
 use std::fs;
-use std::path::PathBuf;
 use walkdir::WalkDir;
-use chrono::{DateTime, Utc, Duration};
 
 use crate::config::{get_tasks_dir, find_taskguard_root};
 use crate::task::{Task, TaskStatus};
 
-pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
+pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
     let root = find_taskguard_root()
         .context("Not in a TaskGuard project")?;
@@ -18,17 +16,14 @@ pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
         return Ok(());
     }
 
-    let retention_days = days.unwrap_or(30);
-    let cutoff_date = Utc::now() - Duration::days(retention_days as i64);
-
-    println!("📦 TaskGuard Archive - Mobile Storage Optimization");
-    println!("   Retention: {} days (completed tasks older than this will be archived)", retention_days);
+    println!("📦 TaskGuard Archive - Efficiency Optimization");
+    println!("   Action: Archive ALL completed tasks");
     if dry_run {
         println!("   Mode: DRY RUN (no files will be moved)");
     }
     println!();
 
-    // Find old completed tasks
+    // Find ALL completed tasks (no age filtering)
     let mut files_to_archive = Vec::new();
     let mut total_size: u64 = 0;
 
@@ -42,7 +37,7 @@ pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
 
         match Task::from_file(path) {
             Ok(task) => {
-                if task.status == TaskStatus::Done && task.created < cutoff_date {
+                if task.status == TaskStatus::Done {
                     let metadata = fs::metadata(path)?;
                     total_size += metadata.len();
                     files_to_archive.push((
@@ -59,13 +54,13 @@ pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
 
     if files_to_archive.is_empty() {
         println!("✅ No tasks to archive!");
-        println!("   All completed tasks are within {} day retention period", retention_days);
+        println!("   No completed tasks found");
         return Ok(());
     }
 
     println!("📋 ARCHIVE SUMMARY");
     println!();
-    println!("   Old completed tasks to archive ({}):", files_to_archive.len());
+    println!("   Completed tasks to archive ({}):", files_to_archive.len());
     for (_, _, id, title) in &files_to_archive {
         println!("   📦 {} - {}", id, title);
     }

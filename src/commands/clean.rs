@@ -1,13 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::fs;
-use std::path::PathBuf;
 use walkdir::WalkDir;
-use chrono::{DateTime, Utc, Duration};
 
 use crate::config::get_tasks_dir;
 use crate::task::Task;
 
-pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
+pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
 
     if !tasks_dir.exists() {
@@ -15,17 +13,14 @@ pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
         return Ok(());
     }
 
-    let retention_days = days.unwrap_or(30);
-    let cutoff_date = Utc::now() - Duration::days(retention_days as i64);
-
-    println!("🧹 TaskGuard Clean - Mobile Storage Optimization");
-    println!("   Retention: {} days (completed tasks older than this will be removed)", retention_days);
+    println!("🧹 TaskGuard Clean - Efficiency Optimization");
+    println!("   Action: Delete ALL completed tasks");
     if dry_run {
         println!("   Mode: DRY RUN (no files will be deleted)");
     }
     println!();
 
-    // Find old completed tasks
+    // Find ALL completed tasks (no age filtering)
     let mut files_to_delete = Vec::new();
     let mut total_size: u64 = 0;
 
@@ -39,8 +34,8 @@ pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
 
         match Task::from_file(path) {
             Ok(task) => {
-                // Check if task is completed and old
-                if task.status == crate::task::TaskStatus::Done && task.created < cutoff_date {
+                // Check if task is completed (no age check)
+                if task.status == crate::task::TaskStatus::Done {
                     let metadata = fs::metadata(path)?;
                     total_size += metadata.len();
                     files_to_delete.push((path.to_path_buf(), task.id.clone(), task.title.clone()));
@@ -74,7 +69,7 @@ pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
     // Display what will be deleted
     if files_to_delete.is_empty() && empty_dirs.is_empty() {
         println!("✅ No cleanup needed!");
-        println!("   All completed tasks are within {} day retention period", retention_days);
+        println!("   No completed tasks found");
         println!("   No empty directories found");
         return Ok(());
     }
@@ -83,9 +78,9 @@ pub fn run(dry_run: bool, days: Option<u32>) -> Result<()> {
     println!();
 
     if !files_to_delete.is_empty() {
-        println!("   Old completed tasks to remove ({}):", files_to_delete.len());
-        for (path, id, title) in &files_to_delete {
-            println!("   ❌ {} - {} ({})", id, title, format_size(*&total_size / files_to_delete.len() as u64));
+        println!("   Completed tasks to remove ({}):", files_to_delete.len());
+        for (_path, id, title) in &files_to_delete {
+            println!("   ❌ {} - {}", id, title);
         }
         println!();
     }
