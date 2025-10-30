@@ -1,7 +1,7 @@
 ---
 id: fix-2
 title: Clean Command - Add Dependency Protection
-status: todo
+status: done
 priority: medium
 tags:
 - causality

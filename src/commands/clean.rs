@@ -2,8 +2,8 @@ use anyhow::Result;
 use std::fs;
 use walkdir::WalkDir;
 
-use crate::config::get_tasks_dir;
-use crate::task::Task;
+use crate::config::{get_tasks_dir, load_tasks_from_dir};
+use crate::task::{Task, TaskStatus};
 
 pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
@@ -20,8 +20,12 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     }
     println!();
 
-    // Find ALL completed tasks (no age filtering)
+    // Load ALL tasks to check dependencies
+    let all_tasks = load_tasks_from_dir(&tasks_dir)?;
+
+    // Find completed tasks that are SAFE to delete
     let mut files_to_delete = Vec::new();
+    let mut protected_tasks = Vec::new();
     let mut total_size: u64 = 0;
 
     for entry in WalkDir::new(&tasks_dir)
@@ -35,10 +39,15 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
         match Task::from_file(path) {
             Ok(task) => {
                 // Check if task is completed (no age check)
-                if task.status == crate::task::TaskStatus::Done {
-                    let metadata = fs::metadata(path)?;
-                    total_size += metadata.len();
-                    files_to_delete.push((path.to_path_buf(), task.id.clone(), task.title.clone()));
+                if task.status == TaskStatus::Done {
+                    // CRITICAL: Check if any active task depends on this
+                    if is_task_referenced(&task.id, &all_tasks) {
+                        protected_tasks.push((task.id.clone(), task.title.clone()));
+                    } else {
+                        let metadata = fs::metadata(path)?;
+                        total_size += metadata.len();
+                        files_to_delete.push((path.to_path_buf(), task.id.clone(), task.title.clone()));
+                    }
                 }
             }
             Err(_) => {
@@ -64,6 +73,17 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
         if fs::read_dir(path)?.next().is_none() {
             empty_dirs.push(path.to_path_buf());
         }
+    }
+
+    // Show protected tasks
+    if !protected_tasks.is_empty() {
+        println!("🔒 PROTECTED TASKS (cannot delete - still referenced):");
+        for (id, title) in &protected_tasks {
+            println!("   🛡️  {} - {}", id, title);
+        }
+        println!();
+        println!("💡 TIP: Use 'taskguard archive' instead to preserve history");
+        println!();
     }
 
     // Display what will be deleted
@@ -153,4 +173,17 @@ fn format_size(bytes: u64) -> String {
     } else {
         format!("{} B", bytes)
     }
+}
+
+/// Check if a task is referenced by any active (non-done) tasks
+fn is_task_referenced(task_id: &str, all_tasks: &[Task]) -> bool {
+    for task in all_tasks {
+        // Only check active tasks (not completed ones)
+        if task.status != TaskStatus::Done {
+            if task.dependencies.contains(&task_id.to_string()) {
+                return true;
+            }
+        }
+    }
+    false
 }
