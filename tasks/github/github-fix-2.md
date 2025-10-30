@@ -1,19 +1,31 @@
 ---
 id: github-fix-2
-title: Archive Command GitHub Integration
+title: Archive Command GitHub Issues Integration
 status: todo
 priority: medium
 tags:
 - github
 - fix
-dependencies: []
+dependencies: [github-infra-005]
 assignee: developer
 created: 2025-10-30T14:22:23.822200055Z
-estimate: ~
-complexity: 6
+estimate: 2h
+complexity: 5
 area: github
 ---
 
+# Archive Command GitHub Issues Integration
+
+## Context
+Now that we have Git commit tracking (github-infra-001) and full GitHub API infrastructure (github-infra-002 through 005), we can integrate GitHub Issues with the archive command.
+
+When archiving done tasks that have associated GitHub issues, we should close those issues automatically.
+
+## Dependencies
+**Requires:** github-infra-005 (Complete GitHub API: client, mapper, mutations, queries)
+**Why:** Need mapper to find issues, mutations to close them
+
+## Implementation
 
 **Location:** `src/commands/archive.rs`
 
