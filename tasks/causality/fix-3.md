@@ -1,7 +1,7 @@
 ---
 id: fix-3
 title: Create Task Loading Helper
-status: todo
+status: done
 priority: medium
 tags:
 - causality

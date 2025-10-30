@@ -1,7 +1,7 @@
 ---
 id: fix-1
 title: Archive Command - Add Dependency Protection
-status: todo
+status: done
 priority: medium
 tags:
 - causality
