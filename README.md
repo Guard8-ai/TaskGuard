@@ -44,6 +44,11 @@ cd TaskGuard
 .\scripts\install-windows.ps1
 ```
 
+**Termux (Android):**
+```bash
+./scripts/install-termux.sh
+```
+
 **Manual Build:**
 ```bash
 # Clone and build
@@ -176,6 +181,7 @@ Brief description of what needs to be done and why.
 | macOS | `./scripts/install-macos.sh` |
 | Windows | `.\scripts\install-windows.ps1` |
 | WSL/WSL2 | `./scripts/install-wsl.sh` |
+| Termux (Android) | `./scripts/install-termux.sh` |
 
 ## 🏗️ Project Organization
 

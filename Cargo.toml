@@ -27,3 +27,9 @@ regex = "1.10"
 
 [dev-dependencies]
 tempfile = "3.8"
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Better optimization
+strip = true        # Strip symbols
