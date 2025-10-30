@@ -1,7 +1,7 @@
 ---
 id: fix-4
 title: Update List Command to Show Archive
-status: todo
+status: done
 priority: medium
 tags:
 - causality

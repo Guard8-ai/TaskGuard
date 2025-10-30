@@ -54,6 +54,9 @@ enum Commands {
         /// Filter by area (when listing tasks)
         #[arg(short, long)]
         area: Option<String>,
+        /// Include archived tasks in the list
+        #[arg(long)]
+        include_archive: bool,
     },
     /// Create a new task
     Create {
@@ -175,9 +178,9 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Init => init::run(),
-        Commands::List { command, status, area } => match command {
+        Commands::List { command, status, area, include_archive } => match command {
             Some(ListCommands::Items { task_id }) => list::run_items(task_id),
-            None => list::run(status, area),
+            None => list::run(status, area, include_archive),
         },
         Commands::Create { title, area, priority } => create::run(title, area, priority),
         Commands::Show { task_id } => {
