@@ -15,6 +15,9 @@ taskguard update dependencies <task-id> "dep1,dep2"  # Set dependencies
 taskguard update priority <task-id> high             # Change priority
 taskguard list items <task-id>                       # View checklist items
 taskguard task update <task-id> 1 done              # Mark item complete
+
+# Bulk Import (convert markdown analysis files to tasks)
+taskguard import-md file.md --area github --prefix gh [--dry-run]
 ```
 
 ## ⚡ CLI-First Approach
@@ -216,6 +219,18 @@ taskguard task update data-001 2 done
 ```
 
 ## 🔗 Advanced Features
+
+### Bulk Import from Markdown
+```bash
+# Preview tasks before creating (recommended first step)
+taskguard import-md ANALYSIS.md --area github --prefix gh --dry-run
+
+# Create tasks from markdown sections (## Tasks, ## Action Items, etc.)
+taskguard import-md ANALYSIS.md --area github --prefix gh
+
+# Supports: [HIGH]/[CRITICAL]/[MEDIUM]/[LOW] priority markers
+# Extracts: Numbered lists, checklists, action items
+```
 
 For complex workflows, see detailed documentation:
 - **Remote team collaboration**: `taskguard sync --remote`

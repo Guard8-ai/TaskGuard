@@ -7,7 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 
-use commands::{init, list, create, validate, sync, lint, ai, update};
+use commands::{init, list, create, validate, sync, lint, ai, update, import_md};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -119,6 +119,29 @@ enum Commands {
     },
     /// Show project status
     Status,
+    /// Import tasks from structured markdown file
+    ImportMd {
+        /// Path to markdown file to import
+        file: std::path::PathBuf,
+        /// Default area for imported tasks
+        #[arg(short, long)]
+        area: Option<String>,
+        /// Task ID prefix (default: inferred from file)
+        #[arg(short, long)]
+        prefix: Option<String>,
+        /// Show what would be created without creating
+        #[arg(long)]
+        dry_run: bool,
+        /// Starting task number (default: auto-detect)
+        #[arg(long)]
+        start_number: Option<u32>,
+        /// Additional tags (comma-separated)
+        #[arg(short, long)]
+        tags: Option<String>,
+        /// Override inferred priority
+        #[arg(long)]
+        priority: Option<String>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -146,6 +169,34 @@ fn main() -> Result<()> {
         Commands::Status => {
             println!("Project status overview");
             Ok(())
+        }
+        Commands::ImportMd { file, area, prefix, dry_run, start_number, tags, priority } => {
+            let priority_override = match priority.as_deref() {
+                Some("low") => Some(crate::task::Priority::Low),
+                Some("medium") => Some(crate::task::Priority::Medium),
+                Some("high") => Some(crate::task::Priority::High),
+                Some("critical") => Some(crate::task::Priority::Critical),
+                Some(p) => {
+                    println!("⚠️  Invalid priority '{}'. Will use inferred or default.", p);
+                    None
+                }
+                None => None,
+            };
+
+            let tag_list = tags
+                .map(|t| t.split(',').map(|s| s.trim().to_string()).collect())
+                .unwrap_or_default();
+
+            let options = import_md::ImportOptions {
+                area,
+                prefix,
+                dry_run,
+                start_number,
+                tags: tag_list,
+                priority_override,
+            };
+
+            import_md::run(file, options)
         }
     }
 }
