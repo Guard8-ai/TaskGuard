@@ -17,6 +17,17 @@ area: causality
 
 # Enhanced Task Template - Add Causality-Preserving Sections
 
+> **⚠️ CRITICAL WORKFLOW NOTICE:**
+>
+> **This task MUST be completed in ONE dedicated session.**
+>
+> When this task is marked `done`, the AI agent completing it MUST:
+> 1. Fill the "Session Handoff" section below with complete implementation details
+> 2. Document what was changed, what runtime behavior to expect, and what dependencies were affected
+> 3. Create a clear handoff for the developer/next AI agent working on `causality-upgrade-002`
+>
+> **The next task (`causality-upgrade-002`) will be handled in a NEW session** and depends on this handoff for context.
+
 ## Intent
 Upgrade TaskGuard's default task template to preserve causality chains by default, solving vibe coding's temporal drift problem. This makes causality preservation built into TaskGuard's task format, not an afterthought.
 

@@ -17,6 +17,17 @@ area: causality
 
 # Update Documentation - Add Causality-Aware System Guide
 
+> **⚠️ CRITICAL WORKFLOW NOTICE:**
+>
+> **This task MUST be completed in ONE dedicated session.**
+>
+> When this task is marked `done`, the AI agent completing it MUST:
+> 1. Fill the "Session Handoff" section below with complete implementation details
+> 2. Document what was changed, what runtime behavior to expect, and what dependencies were affected
+> 3. Create a clear handoff for the developer/next AI agent working on `causality-upgrade-005`
+>
+> **The next task (`causality-upgrade-005`) will be handled in a NEW session** and depends on this handoff for context.
+
 ## Intent
 Document the causality-aware task system in AGENTIC_AI_TASKGUARD_GUIDE.md so AI agents understand how to use the enhanced format effectively. This enables AI agents to naturally fill in causality sections and preserve temporal context across sessions.
 

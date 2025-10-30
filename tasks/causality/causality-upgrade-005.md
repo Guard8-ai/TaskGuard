@@ -17,6 +17,17 @@ area: causality
 
 # Integration Testing - Verify Complete Causality-Aware System Workflow
 
+> **⚠️ CRITICAL WORKFLOW NOTICE:**
+>
+> **This task MUST be completed in ONE dedicated session.**
+>
+> When this task is marked `done`, the AI agent completing it MUST:
+> 1. Fill the "Session Handoff" section below with complete implementation details
+> 2. Document what was changed, what runtime behavior to expect, and what dependencies were affected
+> 3. Create a clear handoff for the developer explaining the complete causality-aware system
+>
+> **This is the FINAL task in the causality-upgrade series.** The session handoff should summarize the entire causality system implementation.
+
 ## Intent
 Create comprehensive integration tests that verify the entire causality-aware system works end-to-end, from task creation through upgrade to validation. This ensures the system achieves its goal of preventing temporal drift in AI agent workflows.
 
