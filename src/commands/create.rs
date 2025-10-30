@@ -58,6 +58,17 @@ pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Res
         area: area.clone(),
         content: format!(r#"# {}
 
+> **⚠️ SESSION WORKFLOW NOTICE (for AI Agents):**
+>
+> **This task should be completed in ONE dedicated session.**
+>
+> When you mark this task as `done`, you MUST:
+> 1. Fill the "Session Handoff" section at the bottom with complete implementation details
+> 2. Document what was changed, what runtime behavior to expect, and what dependencies were affected
+> 3. Create a clear handoff for the developer/next AI agent working on dependent tasks
+>
+> **If this task has dependents,** the next task will be handled in a NEW session and depends on your handoff for context.
+
 ## Context
 Brief description of what needs to be done and why.
 
@@ -97,7 +108,35 @@ Brief description of what needs to be done and why.
 
 ## Updates
 - {}: Task created
+
+## Session Handoff (AI: Complete this when marking task done)
+**For the next session/agent working on dependent tasks:**
+
+### What Changed
+- [Document code changes, new files, modified functions]
+- [What runtime behavior is new or different]
+
+### Causality Impact
+- [What causal chains were created or modified]
+- [What events trigger what other events]
+- [Any async flows or timing considerations]
+
+### Dependencies & Integration
+- [What dependencies were added/changed]
+- [How this integrates with existing code]
+- [What other tasks/areas are affected]
+
+### Verification & Testing
+- [How to verify this works]
+- [What to test when building on this]
+- [Any known edge cases or limitations]
+
+### Context for Next Task
+- [What the next developer/AI should know]
+- [Important decisions made and why]
+- [Gotchas or non-obvious behavior]
 "#, title, Utc::now().format("%Y-%m-%d")),
+        file_path: std::path::PathBuf::new(), // Will be set when saved
     };
 
     // Ensure area directory exists
