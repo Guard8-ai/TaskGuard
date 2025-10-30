@@ -1,164 +1,94 @@
 ---
 id: testing-003
-title: Fix AI integration test failures
-status: todo
-priority: high
+title: Test Archive Integration
+status: done
+priority: low
 tags:
 - testing
-- ai
-- integration
 dependencies: []
 assignee: developer
-created: 2025-10-30T14:42:35.872155832Z
-estimate: 8h
-complexity: 7
+created: 2025-10-30T19:44:57.203940918Z
+estimate: ~
+complexity: 3
 area: testing
 ---
 
-# Fix AI integration test failures
+# Test Archive Integration
+
+> **⚠️ SESSION WORKFLOW NOTICE (for AI Agents):**
+>
+> **This task should be completed in ONE dedicated session.**
+>
+> When you mark this task as `done`, you MUST:
+> 1. Fill the "Session Handoff" section at the bottom with complete implementation details
+> 2. Document what was changed, what runtime behavior to expect, and what dependencies were affected
+> 3. Create a clear handoff for the developer/next AI agent working on dependent tasks
+>
+> **If this task has dependents,** the next task will be handled in a NEW session and depends on your handoff for context.
 
 ## Context
-Currently 11 out of 20 AI integration tests are failing in `tests/ai_integration_tests.rs`. These tests validate the AI agent's ability to recognize patterns in user input and provide appropriate responses for task management. The failures suggest that the AI pattern recognition logic needs to be implemented or fixed.
-
-**Test File:** [tests/ai_integration_tests.rs](tests/ai_integration_tests.rs)
-
-## Current Status
-
-### Passing Tests (9/20) ✅
-- test_ai_agent_initialization
-- test_ai_agent_initialization_without_taskguard
-- test_all_tasks_blocked_scenario
-- test_ai_with_git_integration
-- test_empty_project_handling
-- test_malformed_input_handling
-- test_response_actionability
-- test_task_creation_pattern_recognition
-- test_very_long_input_handling
-
-### Failing Tests (11/20) ❌
-1. **test_status_inquiry_pattern_recognition** - Should recognize "What's the current status?"
-2. **test_dependency_query_pattern** - Should show dependency analysis for "What tasks are blocked?"
-3. **test_complexity_analysis_integration** - Should provide complexity analysis
-4. **test_ai_task_validation_integration** - Should show available tasks
-5. **test_next_task_recommendation_pattern** - Should recommend high priority tasks
-6. **test_response_formatting_quality** - Should use bullet points in responses
-7. **test_task_prioritization_logic** - Should prioritize critical tasks first
-8. **test_task_title_extraction** - Should extract task titles from natural language
-9. **test_priority_inference** - Should infer priority from user input
-10. **test_area_inference** - Should infer task area from context
-11. **test_completion_announcement_pattern** - Should recognize task completion
+Brief description of what needs to be done and why.
 
 ## Objectives
-- Fix all 11 failing AI integration tests
-- Ensure AI pattern recognition works correctly
-- Maintain backward compatibility with passing tests
-- Document any changes to AI behavior
+- Clear, actionable objectives
+- Measurable outcomes
+- Success criteria
 
 ## Tasks
-
-### Phase 1: Analysis
-- [ ] Review each failing test in detail
-- [ ] Identify root causes (missing implementation vs. broken logic)
-- [ ] Check if AIAgent methods exist for each test case
-- [ ] Review src/commands/ai.rs implementation
-
-### Phase 2: Pattern Recognition
-- [ ] Fix status inquiry pattern recognition
-- [ ] Fix dependency query pattern matching
-- [ ] Fix completion announcement detection
-- [ ] Fix next task recommendation logic
-
-### Phase 3: Inference Logic
-- [ ] Implement task title extraction from natural language
-- [ ] Implement priority inference from keywords
-- [ ] Implement area inference from context
-- [ ] Fix task prioritization algorithm
-
-### Phase 4: Response Quality
-- [ ] Fix response formatting (bullet points, structure)
-- [ ] Ensure complexity analysis integration works
-- [ ] Validate task validation integration
-- [ ] Test all edge cases
-
-### Phase 5: Validation
-- [ ] Run all 20 AI integration tests
-- [ ] Ensure 20/20 tests pass
-- [ ] Run full test suite to verify no regressions
-- [ ] Update documentation if behavior changes
+- [ ] Break down the work into specific tasks
+- [ ] Each task should be clear and actionable
+- [ ] Mark tasks as completed when done
 
 ## Acceptance Criteria
+✅ **Criteria 1:**
+- Specific, testable criteria
 
-✅ **All Tests Passing:**
-- 20/20 AI integration tests pass
-- No regressions in other test suites
-- All edge cases handled
-
-✅ **Pattern Recognition:**
-- Status inquiries recognized correctly
-- Dependency queries work
-- Completion announcements detected
-
-✅ **Inference Logic:**
-- Task titles extracted from natural language
-- Priorities inferred from keywords like "important", "urgent"
-- Areas inferred from context like "testing", "backend"
-
-✅ **Response Quality:**
-- Responses use proper formatting (bullet points)
-- Complex queries handled appropriately
-- Actionable recommendations provided
+✅ **Criteria 2:**
+- Additional criteria as needed
 
 ## Technical Notes
+- Implementation details
+- Architecture considerations
+- Dependencies and constraints
 
-### Key Files to Investigate
-- [tests/ai_integration_tests.rs](tests/ai_integration_tests.rs) - Test suite with failures
-- [src/commands/ai.rs](src/commands/ai.rs) - AI agent implementation
-- [src/task.rs](src/task.rs) - Task data structures
-
-### Potential Issues
-1. **Missing Methods:** Some test cases may expect methods that don't exist in AIAgent
-2. **Incomplete Logic:** Pattern matching logic may be partially implemented
-3. **Response Formatting:** AIAgent responses may not follow expected format
-4. **State Management:** Agent may not properly track task state
-
-### Implementation Strategy
-1. Start with simplest failing tests (pattern recognition)
-2. Move to inference logic (title/priority/area extraction)
-3. Fix response formatting and quality
-4. Validate integration with task validation
-
-### Testing Strategy
-```bash
-# Run AI tests only
-cargo test --test ai_integration_tests -- --nocapture
-
-# Run specific failing test
-cargo test --test ai_integration_tests test_status_inquiry_pattern_recognition -- --nocapture
-
-# Run all tests to check for regressions
-cargo test --all
-```
-
-## Testing Checklist
-- [ ] test_status_inquiry_pattern_recognition passes
-- [ ] test_dependency_query_pattern passes
-- [ ] test_complexity_analysis_integration passes
-- [ ] test_ai_task_validation_integration passes
-- [ ] test_next_task_recommendation_pattern passes
-- [ ] test_response_formatting_quality passes
-- [ ] test_task_prioritization_logic passes
-- [ ] test_task_title_extraction passes
-- [ ] test_priority_inference passes
-- [ ] test_area_inference passes
-- [ ] test_completion_announcement_pattern passes
-- [ ] All 9 previously passing tests still pass
-- [ ] No regressions in other test suites
+## Testing
+- [ ] Write unit tests for new functionality
+- [ ] Write integration tests if applicable
+- [ ] Ensure all tests pass before marking task complete
+- [ ] Consider edge cases and error conditions
 
 ## Version Control
-- [ ] Create feature branch: `fix/ai-integration-tests`
-- [ ] Commit fixes incrementally per test group
-- [ ] Use descriptive commit messages
-- [ ] Merge to master after all tests pass
+- [ ] Commit changes incrementally with clear messages
+- [ ] Use descriptive commit messages that explain the "why"
+- [ ] Consider creating a feature branch for complex changes
+- [ ] Review changes before committing
 
 ## Updates
-- 2025-10-30: Task created with detailed analysis of 11 failing tests
+- 2025-10-30: Task created
+
+## Session Handoff (AI: Complete this when marking task done)
+**For the next session/agent working on dependent tasks:**
+
+### What Changed
+- [Document code changes, new files, modified functions]
+- [What runtime behavior is new or different]
+
+### Causality Impact
+- [What causal chains were created or modified]
+- [What events trigger what other events]
+- [Any async flows or timing considerations]
+
+### Dependencies & Integration
+- [What dependencies were added/changed]
+- [How this integrates with existing code]
+- [What other tasks/areas are affected]
+
+### Verification & Testing
+- [How to verify this works]
+- [What to test when building on this]
+- [Any known edge cases or limitations]
+
+### Context for Next Task
+- [What the next developer/AI should know]
+- [Important decisions made and why]
+- [Gotchas or non-obvious behavior]

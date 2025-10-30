@@ -1,7 +1,7 @@
 ---
 id: github-fix-1
 title: Update `load_all_tasks()` to Include Archive
-status: todo
+status: done
 priority: medium
 tags:
 - github
@@ -14,6 +14,44 @@ complexity: 6
 area: github
 ---
 
+## Implementation Summary
+
+✅ **COMPLETED** - Unified task loading across all commands
+
+### Changes Made
+
+1. **Updated sync.rs** ([sync.rs:1-18](src/commands/sync.rs#L1-L18))
+   - Replaced manual task loading with `config::load_all_tasks()`
+   - Removed duplicate WalkDir logic
+   - Now includes archived tasks in Git sync analysis
+
+2. **Updated ai.rs** ([ai.rs:1-8](src/commands/ai.rs#L1-L8), [ai.rs:36-345](src/commands/ai.rs#L36-L345))
+   - Removed local `load_all_tasks()` method
+   - Updated all 4 handler methods to use `config::load_all_tasks()`
+   - Now includes archived tasks in AI analysis
+
+3. **Verification**
+   - Build successful: ✅ `cargo build --release`
+   - Sync command tested: ✅ Shows 27 tasks with activity (including archived)
+   - Validate command confirmed: ✅ 57 total tasks (25 archived + 32 active)
+
+### Technical Details
+
+**Central Implementation:** `config::load_all_tasks()` at [config.rs:155-171](src/config.rs#L155-L171)
+- Already loads from both `tasks/` and `.taskguard/archive/`
+- Implemented in fix-5
+
+**Commands Now Using Archive:**
+- `taskguard sync` - Git analysis with archived tasks
+- `taskguard ai` - AI assistant with archived task context
+- `taskguard validate` - Dependency checking (already had this)
+
+**Impact:**
+- GitHub sync won't suggest orphaning archived tasks
+- AI assistant has full project history context
+- Consistent task loading across all commands
+
+---
 
 **Location:** `src/commands/sync.rs` or create `src/task_loader.rs`
 

@@ -433,6 +433,7 @@ fn sections_to_tasks(
             complexity: estimate_complexity(&section.content),
             area: area.to_string(),
             content,
+            file_path: std::path::PathBuf::new(), // Will be set when saved
         };
 
         tasks.push(task);

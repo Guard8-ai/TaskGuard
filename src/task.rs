@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskYaml {
@@ -39,6 +39,8 @@ pub struct Task {
     pub area: String,
     #[serde(skip)]
     pub content: String,
+    #[serde(skip)]
+    pub file_path: PathBuf,
 }
 
 fn default_status() -> TaskStatus {
@@ -107,7 +109,9 @@ impl Task {
         let content = fs::read_to_string(&path)
             .with_context(|| format!("Failed to read task file: {}", path.as_ref().display()))?;
 
-        Self::parse_content(&content)
+        let mut task = Self::parse_content(&content)?;
+        task.file_path = path.as_ref().to_path_buf();
+        Ok(task)
     }
 
     pub fn parse_content(content: &str) -> Result<Self> {
@@ -127,6 +131,9 @@ impl Task {
 
         // Add markdown content
         task.content = markdown_content.to_string();
+
+        // Initialize file_path as empty (will be set by from_file)
+        task.file_path = PathBuf::new();
 
         Ok(task)
     }

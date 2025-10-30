@@ -3,8 +3,7 @@ use std::env;
 use std::io::{self, Write};
 use crate::git::{GitAnalyzer, ConflictResolution};
 use crate::task::Task;
-use crate::config::get_tasks_dir;
-use walkdir::WalkDir;
+use crate::config::load_all_tasks;
 
 pub fn run(limit: usize, verbose: bool, remote: bool, dry_run: bool) -> Result<()> {
     let current_dir = env::current_dir()
@@ -14,29 +13,9 @@ pub fn run(limit: usize, verbose: bool, remote: bool, dry_run: bool) -> Result<(
     let git_analyzer = GitAnalyzer::new(&current_dir)
         .context("Failed to initialize Git analyzer. Make sure you're in a Git repository.")?;
 
-    // Load current tasks
-    let tasks_dir = get_tasks_dir()
-        .context("Failed to get tasks directory")?;
-
-    if !tasks_dir.exists() {
-        return Err(anyhow::anyhow!("No tasks directory found. Run 'taskguard init' first."));
-    }
-
-    // Find all task files
-    let task_files: Vec<_> = WalkDir::new(&tasks_dir)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .filter(|e| e.path().extension().is_some_and(|ext| ext == "md"))
-        .collect();
-
-    // Parse all tasks
-    let mut current_tasks = Vec::new();
-    for file in task_files {
-        if let Ok(task) = Task::from_file(file.path()) {
-            current_tasks.push(task);
-        }
-    }
+    // Load all tasks (including archived)
+    let current_tasks = load_all_tasks()
+        .context("Failed to load tasks")?;
 
     if remote {
         println!("🌐 REMOTE SYNC MODE");

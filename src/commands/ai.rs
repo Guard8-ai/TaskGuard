@@ -1,11 +1,10 @@
 use anyhow::Result;
 use std::path::Path;
 use std::collections::{HashMap, HashSet};
-use walkdir::WalkDir;
 use crate::task::{Task, TaskStatus, Priority};
 use crate::git::GitAnalyzer;
 use crate::analysis::TaskAnalyzer;
-use crate::config::get_tasks_dir;
+use crate::config::load_all_tasks;
 
 #[derive(Debug)]
 pub struct ValidationResult {
@@ -32,26 +31,6 @@ impl AIAgent {
             git_analyzer,
             task_analyzer,
         })
-    }
-
-    fn load_all_tasks(&self) -> Result<Vec<Task>> {
-        let tasks_dir = get_tasks_dir()?;
-
-        if !tasks_dir.exists() {
-            return Ok(Vec::new());
-        }
-
-        let mut tasks = Vec::new();
-
-        for entry in WalkDir::new(&tasks_dir).into_iter().filter_map(|e| e.ok()) {
-            if entry.file_type().is_file() && entry.path().extension().and_then(|s| s.to_str()) == Some("md") {
-                if let Ok(task) = Task::from_file(entry.path()) {
-                    tasks.push(task);
-                }
-            }
-        }
-
-        Ok(tasks)
     }
 
     fn validate_tasks(&self, tasks: &[Task]) -> Result<ValidationResult> {
@@ -218,7 +197,7 @@ impl AIAgent {
     }
 
     fn handle_status_inquiry(&self) -> Result<String> {
-        let tasks = self.load_all_tasks()?;
+        let tasks = load_all_tasks()?;
         let validation_result = self.validate_tasks(&tasks)?;
 
         let total_tasks = tasks.len();
@@ -250,7 +229,7 @@ impl AIAgent {
     }
 
     fn handle_next_task_recommendation(&self) -> Result<String> {
-        let tasks = self.load_all_tasks()?;
+        let tasks = load_all_tasks()?;
         let validation_result = self.validate_tasks(&tasks)?;
 
         if validation_result.available_tasks.is_empty() {
@@ -334,7 +313,7 @@ impl AIAgent {
     }
 
     fn handle_dependency_analysis(&self) -> Result<String> {
-        let tasks = self.load_all_tasks()?;
+        let tasks = load_all_tasks()?;
         let validation_result = self.validate_tasks(&tasks)?;
 
         let mut response = String::from("🔗 **Dependency Analysis**\n\n");
@@ -363,7 +342,7 @@ impl AIAgent {
     }
 
     fn handle_complexity_analysis(&self) -> Result<String> {
-        let tasks = self.load_all_tasks()?;
+        let tasks = load_all_tasks()?;
         let _complexity_results = self.task_analyzer.analyze_all_tasks(&tasks);
 
         let mut response = String::from("🧠 **Complexity Analysis**\n\n");
