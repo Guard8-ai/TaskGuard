@@ -1,8 +1,9 @@
 use anyhow::Result;
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use walkdir::WalkDir;
 
-use crate::config::get_tasks_dir;
+use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};
 use crate::task::{Task, TaskStatus};
 
 pub fn run() -> Result<()> {
@@ -38,6 +39,17 @@ pub fn run() -> Result<()> {
         }
     }
 
+    // Load archived tasks for dependency validation
+    let archive_dir = find_taskguard_root()
+        .ok_or_else(|| anyhow::anyhow!("Not in a TaskGuard project"))?
+        .join(".taskguard")
+        .join("archive");
+
+    if archive_dir.exists() {
+        let archived_tasks = load_tasks_from_dir(&archive_dir).unwrap_or_default();
+        tasks.extend(archived_tasks);
+    }
+
     // Show parse errors
     if !parse_errors.is_empty() {
         println!("🔍 PARSE ERRORS");
@@ -56,11 +68,28 @@ pub fn run() -> Result<()> {
     let task_map: HashMap<String, &Task> = tasks.iter().map(|t| (t.id.clone(), t)).collect();
     let all_ids: HashSet<String> = task_map.keys().cloned().collect();
 
-    // Find dependency issues
+    // Separate active and archived tasks
+    let archived_ids: HashSet<String> = tasks
+        .iter()
+        .filter(|t| t.file_path.starts_with(&archive_dir))
+        .map(|t| t.id.clone())
+        .collect();
+
+    let active_tasks: Vec<&Task> = tasks
+        .iter()
+        .filter(|t| !archived_ids.contains(&t.id))
+        .collect();
+
+    // Find dependency issues (only check non-done active tasks)
     let mut dependency_issues = Vec::new();
     let mut circular_deps = Vec::new();
 
-    for task in &tasks {
+    for task in &active_tasks {
+        // Skip done tasks - they don't need dependency validation
+        if matches!(task.status, TaskStatus::Done) {
+            continue;
+        }
+
         for dep in &task.dependencies {
             if !all_ids.contains(dep) {
                 dependency_issues.push(format!(
@@ -140,7 +169,13 @@ pub fn run() -> Result<()> {
     if !blocked_tasks.is_empty() {
         println!("   🚫 Blocked tasks:");
         for (task, missing_deps) in &blocked_tasks {
-            let deps_str: Vec<String> = missing_deps.iter().map(|s| s.to_string()).collect();
+            let deps_str: Vec<String> = missing_deps.iter().map(|dep_id| {
+                if archived_ids.contains(*dep_id) {
+                    format!("{} 📦", dep_id)
+                } else {
+                    dep_id.to_string()
+                }
+            }).collect();
             println!("      ❌ {} - {} (waiting for: {})",
                 task.id, task.title, deps_str.join(", "));
         }
@@ -163,6 +198,9 @@ pub fn run() -> Result<()> {
     println!("   Total tasks: {}", tasks.len());
     println!("   Available: {}", available_tasks.len());
     println!("   Blocked: {}", blocked_tasks.len());
+    if !archived_ids.is_empty() {
+        println!("   Archived tasks: {}", archived_ids.len());
+    }
     println!("   Parse errors: {}", parse_errors.len());
     println!("   Dependency issues: {}", dependency_issues.len());
 

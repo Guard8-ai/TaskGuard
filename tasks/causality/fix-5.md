@@ -1,7 +1,7 @@
 ---
 id: fix-5
 title: Update Validate Command to Handle Archive
-status: todo
+status: done
 priority: medium
 tags:
 - causality
