@@ -215,11 +215,15 @@ fn pull_issues_from_github(
         Some(100),
     )?;
 
+    let mut mapped_count = 0;
+    let mut orphaned_issues = Vec::new();
     let mut updates_needed = Vec::new();
 
     for issue in issues {
         // Check if this issue is tracked
         if let Some(task_id) = mapper.get_task_id_by_issue(issue.number) {
+            mapped_count += 1;
+
             // Find the task
             if let Some(task) = tasks.iter().find(|t| t.id == task_id) {
                 let github_state = map_github_state_to_taskguard(&issue.state);
@@ -229,13 +233,33 @@ fn pull_issues_from_github(
                     updates_needed.push((task.id.clone(), local_state, github_state));
                 }
             }
+        } else {
+            // Orphaned issue - no TaskGuard task
+            orphaned_issues.push(issue);
         }
     }
 
-    if updates_needed.is_empty() {
-        println!("   ✅ All tasks in sync with GitHub");
-    } else {
-        println!("   ⚠️  {} tasks have changes on GitHub:", updates_needed.len());
+    println!("   ✅ {} issues mapped to existing tasks", mapped_count);
+
+    // Report orphaned issues
+    if !orphaned_issues.is_empty() {
+        println!();
+        println!("   ⚠️  {} ORPHANED ISSUES (no matching TaskGuard task):", orphaned_issues.len());
+        for issue in &orphaned_issues {
+            println!("      #{} - \"{}\"", issue.number, issue.title);
+        }
+
+        println!();
+        println!("   💡 SUGGESTED ACTIONS:");
+        println!("      1. Create tasks manually for these issues");
+        println!("      2. Or ignore them (they'll stay on GitHub only)");
+        println!("      3. Or ask AI: \"Create TaskGuard tasks for orphaned GitHub issues\"");
+    }
+
+    // Report status mismatches
+    if !updates_needed.is_empty() {
+        println!();
+        println!("   ⚠️  {} tasks have status changes on GitHub:", updates_needed.len());
         for (task_id, local, github) in &updates_needed {
             println!("      {} - Local: {}, GitHub: {}", task_id, local, github);
         }
@@ -243,8 +267,12 @@ fn pull_issues_from_github(
         if !dry_run {
             println!();
             println!("   💡 TIP: Update local task files to match GitHub state");
-            println!("      Future versions will support automatic updates");
+            println!("      Or next sync will push local status back to GitHub");
         }
+    }
+
+    if orphaned_issues.is_empty() && updates_needed.is_empty() {
+        println!("   ✅ All tasks in sync with GitHub");
     }
 
     Ok(())
