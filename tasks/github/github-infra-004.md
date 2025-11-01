@@ -1,7 +1,7 @@
 ---
 id: github-infra-004
 title: Implement GitHub Mutations (Create/Update/Close Issues)
-status: todo
+status: done
 priority: high
 tags:
 - github

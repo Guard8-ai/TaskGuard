@@ -42,12 +42,18 @@
 pub mod client;
 pub mod config;
 pub mod mapper;
+pub mod mutations;
+pub mod queries;
+pub mod setup;
 pub mod types;
 
 // Re-export commonly used items
 pub use client::GitHubClient;
 pub use config::{is_github_sync_enabled, load_github_config, get_github_config_path};
 pub use mapper::{IssueMapping, TaskIssueMapper};
+pub use mutations::GitHubMutations;
+pub use queries::{GitHubQueries, ProjectField};
+pub use setup::GitHubProjectSetup;
 pub use types::{
     GitHubConfig, GitHubIssue, ProjectItem, FieldValue,
     ProjectV2StatusUpdate, TaskMapping,
