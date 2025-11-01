@@ -383,7 +383,7 @@ impl GitHubProjectSetup {
     }
 
     /// Get project GraphQL node ID from owner and number
-    fn get_project_id(client: &GitHubClient, owner: &str, project_number: i64) -> Result<String> {
+    pub fn get_project_id(client: &GitHubClient, owner: &str, project_number: i64) -> Result<String> {
         // Try organization first
         let query = r#"
             query($owner: String!, $number: Int!) {

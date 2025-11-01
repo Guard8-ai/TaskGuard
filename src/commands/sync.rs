@@ -2,20 +2,31 @@ use anyhow::{Result, Context};
 use std::env;
 use std::io::{self, Write};
 use crate::git::{GitAnalyzer, ConflictResolution};
-use crate::task::Task;
+use crate::task::{Task, TaskStatus};
 use crate::config::load_all_tasks;
 
-pub fn run(limit: usize, verbose: bool, remote: bool, dry_run: bool) -> Result<()> {
+use crate::github::{
+    GitHubClient, GitHubMutations, GitHubQueries, GitHubProjectSetup,
+    TaskIssueMapper, IssueMapping, load_github_config, is_github_sync_enabled,
+    GitHubConfig,
+};
+
+pub fn run(limit: usize, verbose: bool, remote: bool, github: bool, dry_run: bool) -> Result<()> {
+    // Load all tasks first
+    let current_tasks = load_all_tasks()
+        .context("Failed to load tasks")?;
+
+    // GitHub sync mode
+    if github {
+        return run_github_sync(&current_tasks, dry_run);
+    }
+
     let current_dir = env::current_dir()
         .context("Failed to get current directory")?;
 
     // Initialize git analyzer
     let git_analyzer = GitAnalyzer::new(&current_dir)
         .context("Failed to initialize Git analyzer. Make sure you're in a Git repository.")?;
-
-    // Load all tasks (including archived)
-    let current_tasks = load_all_tasks()
-        .context("Failed to load tasks")?;
 
     if remote {
         println!("🌐 REMOTE SYNC MODE");
@@ -365,5 +376,332 @@ fn prompt_interactive_resolution() -> Result<UserChoice> {
             println!("   Invalid input. Please enter r, l, or s.");
             prompt_interactive_resolution()
         }
+    }
+}
+
+// ========================================
+// GITHUB SYNC FUNCTIONS
+// ========================================
+
+fn run_github_sync(tasks: &[Task], dry_run: bool) -> Result<()> {
+    println!("🌐 GITHUB SYNC MODE");
+    println!("   Syncing local tasks with GitHub Issues and Projects...\n");
+
+    // Check if GitHub is configured
+    if !is_github_sync_enabled()? {
+        println!("❌ GitHub sync not configured");
+        println!();
+        println!("📝 SETUP INSTRUCTIONS:");
+        println!("   Create `.taskguard/github.toml` with:");
+        println!();
+        println!("   owner = \"your-username\"");
+        println!("   repo = \"your-repo\"");
+        println!("   project_number = 1");
+        println!();
+        println!("💡 TIP: Run `gh auth login` to authenticate with GitHub CLI");
+        return Ok(());
+    }
+
+    // Load configuration
+    let config = load_github_config()
+        .context("Failed to load GitHub configuration")?;
+
+    // Create GitHub client
+    let client = GitHubClient::new()
+        .context("Failed to create GitHub client. Make sure you've run `gh auth login`")?;
+
+    // Load or create task-issue mapper
+    let mut mapper = TaskIssueMapper::new()
+        .context("Failed to load task-issue mapper")?;
+
+    println!("📤 PUSH: Local Tasks → GitHub Issues");
+    push_tasks_to_github(&client, &config, tasks, &mut mapper, dry_run)?;
+
+    println!();
+    println!("📥 PULL: GitHub Issues → Local Tasks");
+    pull_issues_from_github(&client, &config, tasks, &mapper, dry_run)?;
+
+    // Save updated mapping
+    if !dry_run {
+        mapper.save()
+            .context("Failed to save task-issue mapping")?;
+        println!();
+        println!("✅ Sync mapping saved to .taskguard/github-mapping.json");
+    }
+
+    Ok(())
+}
+
+fn push_tasks_to_github(
+    client: &GitHubClient,
+    config: &GitHubConfig,
+    tasks: &[Task],
+    mapper: &mut TaskIssueMapper,
+    dry_run: bool,
+) -> Result<()> {
+    let mut created = 0;
+    let mut updated = 0;
+    let mut skipped = 0;
+
+    for task in tasks {
+        // Skip archived tasks (they should already be closed)
+        if task.file_path.to_string_lossy().contains("archive") {
+            continue;
+        }
+
+        // Check if task already has a GitHub issue
+        if let Some(mapping) = mapper.get_by_task_id(&task.id) {
+            // Task has issue - check if update needed
+            let issue = GitHubQueries::get_issue_by_id(client, &mapping.issue_id)
+                .context(format!("Failed to get issue for task {}", task.id))?;
+
+            // Compare states
+            let github_state = map_github_state_to_taskguard(&issue.state);
+            let local_state = task.status.to_string();
+
+            if local_state != github_state {
+                println!("   🔄 {} - {} (status mismatch)", task.id, task.title);
+                println!("      Local: {:?}, GitHub: {}", task.status, issue.state);
+
+                if !dry_run {
+                    // Update GitHub to match local
+                    let new_state = map_taskguard_status_to_github(&task.status);
+                    GitHubMutations::update_issue_state(client, &issue.id, new_state)
+                        .context(format!("Failed to update issue state for task {}", task.id))?;
+                    println!("      ✅ Updated GitHub issue state to {}", new_state);
+
+                    // Update Projects v2 status column if issue is on the board
+                    if !mapping.project_item_id.is_empty() {
+                        println!("      🎯 Updating project status...");
+
+                        let project_id = GitHubProjectSetup::get_project_id(
+                            client,
+                            &config.owner,
+                            config.project_number
+                        ).context("Failed to get project ID")?;
+
+                        let (field_id, options) = GitHubMutations::get_status_field_info(
+                            client,
+                            &project_id
+                        ).context("Failed to get status field info")?;
+
+                        if let Some(option_id) = TaskIssueMapper::find_best_status_option(&task.status, &options) {
+                            GitHubMutations::update_project_item_status(
+                                client,
+                                &project_id,
+                                &mapping.project_item_id,
+                                &field_id,
+                                &option_id
+                            ).context(format!("Failed to update project status for task {}", task.id))?;
+                            println!("      ✅ Updated project column");
+                        }
+                    }
+
+                    updated += 1;
+                } else {
+                    println!("      Would update GitHub issue to {:?}", task.status);
+                }
+            } else {
+                skipped += 1;
+            }
+        } else {
+            // No issue exists - create one
+            println!("   ➕ {} - {} (creating issue)", task.id, task.title);
+
+            if !dry_run {
+                // Build issue body with TaskGuard ID for tracking
+                // Extract first paragraph or first 200 chars from content as description
+                let description = task.content
+                    .lines()
+                    .skip_while(|line| line.starts_with('#') || line.trim().is_empty())
+                    .take_while(|line| !line.trim().is_empty())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                let description = if description.is_empty() {
+                    "No description"
+                } else if description.len() > 200 {
+                    &description[..200]
+                } else {
+                    &description
+                };
+
+                let body = format!(
+                    "**TaskGuard ID:** {}\n\n## Description\n\n{}\n\n---\n*Synced from TaskGuard*",
+                    task.id,
+                    description
+                );
+
+                let issue = GitHubMutations::create_issue(
+                    client,
+                    &config.owner,
+                    &config.repo,
+                    &task.title,
+                    Some(&body),
+                ).context(format!("Failed to create issue for task {}", task.id))?;
+
+                println!("      ✅ Created issue #{}", issue.number);
+
+                // Add to Projects v2 board
+                println!("      📋 Adding to project...");
+
+                // 1. Get project ID
+                let project_id = GitHubProjectSetup::get_project_id(
+                    client,
+                    &config.owner,
+                    config.project_number
+                ).context("Failed to get project ID")?;
+
+                // 2. Add issue to project
+                let project_item_id = GitHubMutations::add_issue_to_project(
+                    client,
+                    &project_id,
+                    &issue.id
+                ).context(format!("Failed to add issue #{} to project", issue.number))?;
+                println!("      ✅ Added to project (item: {})", &project_item_id[..8]);
+
+                // 3. Get status field info
+                let (field_id, options) = GitHubMutations::get_status_field_info(
+                    client,
+                    &project_id
+                ).context("Failed to get status field info")?;
+
+                // 4. Find matching status column and set it
+                if let Some(option_id) = TaskIssueMapper::find_best_status_option(&task.status, &options) {
+                    // 5. Set status
+                    GitHubMutations::update_project_item_status(
+                        client,
+                        &project_id,
+                        &project_item_id,
+                        &field_id,
+                        &option_id
+                    ).context(format!("Failed to update status for issue #{}", issue.number))?;
+                    println!("      🎯 Status set successfully");
+                } else {
+                    println!("      ⚠️  No matching status column found for '{}'", task.status);
+                }
+
+                // 6. Save mapping with project_item_id
+                let mapping = IssueMapping {
+                    task_id: task.id.clone(),
+                    issue_number: issue.number,
+                    issue_id: issue.id.clone(),
+                    project_item_id,
+                    synced_at: chrono::Utc::now().to_rfc3339(),
+                    is_archived: false,
+                };
+                mapper.add_mapping(mapping)
+                    .context(format!("Failed to save mapping for task {}", task.id))?;
+
+                created += 1;
+            } else {
+                println!("      Would create GitHub issue");
+            }
+        }
+    }
+
+    println!();
+    println!("📊 PUSH SUMMARY");
+    println!("   Created: {}", created);
+    println!("   Updated: {}", updated);
+    println!("   Skipped: {} (already in sync)", skipped);
+
+    Ok(())
+}
+
+fn pull_issues_from_github(
+    client: &GitHubClient,
+    config: &GitHubConfig,
+    tasks: &[Task],
+    mapper: &TaskIssueMapper,
+    dry_run: bool,
+) -> Result<()> {
+    let issues = GitHubQueries::get_repository_issues(
+        client,
+        &config.owner,
+        &config.repo,
+        Some(100),
+    ).context("Failed to get repository issues")?;
+
+    let mut mapped_count = 0;
+    let mut orphaned_issues = Vec::new();
+    let mut updates_needed = Vec::new();
+
+    for issue in issues {
+        // Check if this issue is tracked
+        if let Some(mapping) = mapper.get_by_issue_number(issue.number) {
+            mapped_count += 1;
+
+            // Find the task
+            if let Some(task) = tasks.iter().find(|t| t.id == mapping.task_id) {
+                let github_state = map_github_state_to_taskguard(&issue.state);
+                let local_state = task.status.to_string();
+
+                if github_state != local_state {
+                    updates_needed.push((task.id.clone(), local_state, github_state.to_string()));
+                }
+            }
+        } else {
+            // Orphaned issue - no TaskGuard task
+            orphaned_issues.push(issue);
+        }
+    }
+
+    println!("   ✅ {} issues mapped to existing tasks", mapped_count);
+
+    // Report orphaned issues
+    if !orphaned_issues.is_empty() {
+        println!();
+        println!("   ⚠️  {} ORPHANED ISSUES (no matching TaskGuard task):", orphaned_issues.len());
+        for issue in orphaned_issues.iter().take(10) {
+            println!("      #{} - \"{}\"", issue.number, issue.title);
+        }
+
+        if orphaned_issues.len() > 10 {
+            println!("      ... and {} more", orphaned_issues.len() - 10);
+        }
+
+        println!();
+        println!("   💡 SUGGESTED ACTIONS:");
+        println!("      1. Create tasks manually for these issues");
+        println!("      2. Or ignore them (they'll stay on GitHub only)");
+        println!("      3. Or ask AI: \"Create TaskGuard tasks for orphaned GitHub issues\"");
+    }
+
+    // Report status mismatches
+    if !updates_needed.is_empty() {
+        println!();
+        println!("   ⚠️  {} tasks have status changes on GitHub:", updates_needed.len());
+        for (task_id, local, github) in &updates_needed {
+            println!("      {} - Local: {}, GitHub: {}", task_id, local, github);
+        }
+
+        if !dry_run {
+            println!();
+            println!("   💡 TIP: Update local task files to match GitHub state");
+            println!("      Or next sync will push local status back to GitHub");
+        }
+    }
+
+    if orphaned_issues.is_empty() && updates_needed.is_empty() {
+        println!("   ✅ All tasks in sync with GitHub");
+    }
+
+    Ok(())
+}
+
+// Helper functions for status mapping
+
+fn map_taskguard_status_to_github(status: &TaskStatus) -> &str {
+    match status {
+        TaskStatus::Done => "CLOSED",
+        _ => "OPEN",
+    }
+}
+
+fn map_github_state_to_taskguard(state: &str) -> &str {
+    match state.to_uppercase().as_str() {
+        "CLOSED" => "done",
+        _ => "todo",
     }
 }
