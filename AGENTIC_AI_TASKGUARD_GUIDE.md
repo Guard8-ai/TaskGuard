@@ -16,6 +16,11 @@ taskguard update priority <task-id> high             # Change priority
 taskguard list items <task-id>                       # View checklist items
 taskguard task update <task-id> 1 done              # Mark item complete
 
+# GitHub Integration (requires .taskguard/github.toml)
+taskguard sync --github                              # Sync tasks ↔ GitHub Issues & Projects v2
+taskguard sync --github --backfill-project           # Add existing issues to Projects v2 board
+taskguard sync --github --dry-run                    # Preview sync without changes
+
 # Bulk Import (convert markdown analysis files to tasks)
 taskguard import-md file.md --area github --prefix gh [--dry-run]
 ```
@@ -219,6 +224,26 @@ taskguard task update data-001 2 done
 ```
 
 ## 🔗 Advanced Features
+
+### GitHub Integration
+```bash
+# Setup (.taskguard/github.toml):
+# owner = "your-username"
+# repo = "your-repo"
+# project_number = 1
+
+# Sync tasks to GitHub Issues & Projects v2 board
+taskguard sync --github
+
+# Migrate existing issues to Projects v2 board
+taskguard sync --github --backfill-project
+
+# Features:
+# - Auto-creates GitHub Issues from tasks
+# - Adds issues to Projects v2 board with correct status columns
+# - Bidirectional sync (local ↔ GitHub)
+# - Status mapping: todo→Backlog, doing→In Progress, done→Done
+```
 
 ### Bulk Import from Markdown
 ```bash
