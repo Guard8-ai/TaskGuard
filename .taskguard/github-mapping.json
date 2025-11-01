@@ -1,0 +1,324 @@
+{
+  "mappings": [
+    {
+      "task_id": "fix-4",
+      "issue_number": 5,
+      "issue_id": "I_kwDOP0NTeM7VSbO7",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm98w",
+      "synced_at": "2025-11-01T19:47:07.030153966+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "issue-1",
+      "issue_number": 6,
+      "issue_id": "I_kwDOP0NTeM7VSbPF",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm980",
+      "synced_at": "2025-11-01T19:47:07.762219862+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "causality-upgrade-005",
+      "issue_number": 7,
+      "issue_id": "I_kwDOP0NTeM7VSbPT",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm984",
+      "synced_at": "2025-11-01T19:47:08.796852729+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "fix-2",
+      "issue_number": 8,
+      "issue_id": "I_kwDOP0NTeM7VSbPh",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm988",
+      "synced_at": "2025-11-01T19:47:09.846552181+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "causality-upgrade-003",
+      "issue_number": 9,
+      "issue_id": "I_kwDOP0NTeM7VSbPw",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm99E",
+      "synced_at": "2025-11-01T19:47:10.658087027+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "fix-1",
+      "issue_number": 10,
+      "issue_id": "I_kwDOP0NTeM7VSbP6",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm99M",
+      "synced_at": "2025-11-01T19:47:11.338926704+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "fix-3",
+      "issue_number": 11,
+      "issue_id": "I_kwDOP0NTeM7VSbQF",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm99Y",
+      "synced_at": "2025-11-01T19:47:12.085358341+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "causality-upgrade-002",
+      "issue_number": 12,
+      "issue_id": "I_kwDOP0NTeM7VSbQX",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm99c",
+      "synced_at": "2025-11-01T19:47:12.920143825+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "fix-5",
+      "issue_number": 13,
+      "issue_id": "I_kwDOP0NTeM7VSbQg",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm99k",
+      "synced_at": "2025-11-01T19:47:13.735819155+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "issue-4",
+      "issue_number": 14,
+      "issue_id": "I_kwDOP0NTeM7VSbQp",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm99s",
+      "synced_at": "2025-11-01T19:47:14.455047559+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "issue-3",
+      "issue_number": 15,
+      "issue_id": "I_kwDOP0NTeM7VSbQt",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm99w",
+      "synced_at": "2025-11-01T19:47:15.264606945+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "causality-upgrade-001",
+      "issue_number": 16,
+      "issue_id": "I_kwDOP0NTeM7VSbQz",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm994",
+      "synced_at": "2025-11-01T19:47:16.082030688+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "issue-2",
+      "issue_number": 17,
+      "issue_id": "I_kwDOP0NTeM7VSbQ_",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-E",
+      "synced_at": "2025-11-01T19:47:16.920535787+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "causality-upgrade-004",
+      "issue_number": 18,
+      "issue_id": "I_kwDOP0NTeM7VSbRN",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-I",
+      "synced_at": "2025-11-01T19:47:17.678441293+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-infra-004",
+      "issue_number": 19,
+      "issue_id": "I_kwDOP0NTeM7VSbRV",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-M",
+      "synced_at": "2025-11-01T19:47:18.432704858+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-fix-2",
+      "issue_number": 20,
+      "issue_id": "I_kwDOP0NTeM7VSbRg",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-Q",
+      "synced_at": "2025-11-01T19:47:19.324687174+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-infra-005",
+      "issue_number": 21,
+      "issue_id": "I_kwDOP0NTeM7VSbRp",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-c",
+      "synced_at": "2025-11-01T19:47:20.108538246+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-fix-6",
+      "issue_number": 22,
+      "issue_id": "I_kwDOP0NTeM7VSbR4",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-g",
+      "synced_at": "2025-11-01T19:47:20.902203436+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-fix-4",
+      "issue_number": 23,
+      "issue_id": "I_kwDOP0NTeM7VSbSE",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-k",
+      "synced_at": "2025-11-01T19:47:22.119387377+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-infra-002",
+      "issue_number": 24,
+      "issue_id": "I_kwDOP0NTeM7VSbSR",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-s",
+      "synced_at": "2025-11-01T19:47:22.780218527+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-fix-3",
+      "issue_number": 25,
+      "issue_id": "I_kwDOP0NTeM7VSbSh",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-4",
+      "synced_at": "2025-11-01T19:47:23.852305334+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-infra-003",
+      "issue_number": 26,
+      "issue_id": "I_kwDOP0NTeM7VSbSp",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9-8",
+      "synced_at": "2025-11-01T19:47:24.678576912+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-infra-006",
+      "issue_number": 27,
+      "issue_id": "I_kwDOP0NTeM7VSbSy",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_A",
+      "synced_at": "2025-11-01T19:47:25.497807931+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-sync-001",
+      "issue_number": 28,
+      "issue_id": "I_kwDOP0NTeM7VSbS8",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_M",
+      "synced_at": "2025-11-01T19:47:26.200656077+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-fix-5",
+      "issue_number": 29,
+      "issue_id": "I_kwDOP0NTeM7VSbTC",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_Q",
+      "synced_at": "2025-11-01T19:47:26.996558069+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-fix-1",
+      "issue_number": 30,
+      "issue_id": "I_kwDOP0NTeM7VSbTO",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_U",
+      "synced_at": "2025-11-01T19:47:27.804102291+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-research-001",
+      "issue_number": 31,
+      "issue_id": "I_kwDOP0NTeM7VSbTZ",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_c",
+      "synced_at": "2025-11-01T19:47:28.532996387+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "backend-016",
+      "issue_number": 32,
+      "issue_id": "I_kwDOP0NTeM7VSbTk",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_k",
+      "synced_at": "2025-11-01T19:47:29.192276137+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "backend-010",
+      "issue_number": 33,
+      "issue_id": "I_kwDOP0NTeM7VSbTt",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_s",
+      "synced_at": "2025-11-01T19:47:29.894021659+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "backend-015",
+      "issue_number": 34,
+      "issue_id": "I_kwDOP0NTeM7VSbTz",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_w",
+      "synced_at": "2025-11-01T19:47:30.617838978+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "backend-014",
+      "issue_number": 35,
+      "issue_id": "I_kwDOP0NTeM7VSbT9",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_4",
+      "synced_at": "2025-11-01T19:47:31.334460213+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "deployment-002",
+      "issue_number": 36,
+      "issue_id": "I_kwDOP0NTeM7VSbUI",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9_8",
+      "synced_at": "2025-11-01T19:47:32.059063550+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "deployment-001",
+      "issue_number": 37,
+      "issue_id": "I_kwDOP0NTeM7VSbUJ",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm-AA",
+      "synced_at": "2025-11-01T19:47:32.870442286+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "tools-001",
+      "issue_number": 38,
+      "issue_id": "I_kwDOP0NTeM7VSbUX",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm-AM",
+      "synced_at": "2025-11-01T19:47:33.653995304+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "tools-004",
+      "issue_number": 39,
+      "issue_id": "I_kwDOP0NTeM7VSbUg",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm-AY",
+      "synced_at": "2025-11-01T19:47:34.507567202+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "tools-003",
+      "issue_number": 40,
+      "issue_id": "I_kwDOP0NTeM7VSbUs",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm-Ak",
+      "synced_at": "2025-11-01T19:47:35.128076813+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "tools-002",
+      "issue_number": 41,
+      "issue_id": "I_kwDOP0NTeM7VSbU1",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm-As",
+      "synced_at": "2025-11-01T19:47:35.848344546+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "tools-005",
+      "issue_number": 42,
+      "issue_id": "I_kwDOP0NTeM7VSbVF",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm-A0",
+      "synced_at": "2025-11-01T19:47:36.919924477+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "testing-002",
+      "issue_number": 43,
+      "issue_id": "I_kwDOP0NTeM7VSbVV",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm-A4",
+      "synced_at": "2025-11-01T19:47:37.685189728+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-001",
+      "issue_number": 44,
+      "issue_id": "I_kwDOP0NTeM7VSk3X",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9Pg",
+      "synced_at": "2025-11-01T20:31:47.525517813+00:00",
+      "is_archived": false
+    }
+  ]
+}

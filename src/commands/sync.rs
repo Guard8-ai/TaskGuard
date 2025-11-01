@@ -11,14 +11,14 @@ use crate::github::{
     GitHubConfig,
 };
 
-pub fn run(limit: usize, verbose: bool, remote: bool, github: bool, dry_run: bool) -> Result<()> {
+pub fn run(limit: usize, verbose: bool, remote: bool, github: bool, backfill_project: bool, dry_run: bool) -> Result<()> {
     // Load all tasks first
     let current_tasks = load_all_tasks()
         .context("Failed to load tasks")?;
 
     // GitHub sync mode
     if github {
-        return run_github_sync(&current_tasks, dry_run);
+        return run_github_sync(&current_tasks, backfill_project, dry_run);
     }
 
     let current_dir = env::current_dir()
@@ -383,9 +383,14 @@ fn prompt_interactive_resolution() -> Result<UserChoice> {
 // GITHUB SYNC FUNCTIONS
 // ========================================
 
-fn run_github_sync(tasks: &[Task], dry_run: bool) -> Result<()> {
+fn run_github_sync(tasks: &[Task], backfill_project: bool, dry_run: bool) -> Result<()> {
     println!("🌐 GITHUB SYNC MODE");
-    println!("   Syncing local tasks with GitHub Issues and Projects...\n");
+    if backfill_project {
+        println!("   Mode: Backfill Projects v2 Board");
+        println!("   Adding all existing issues to Projects v2 board...\n");
+    } else {
+        println!("   Syncing local tasks with GitHub Issues and Projects...\n");
+    }
 
     // Check if GitHub is configured
     if !is_github_sync_enabled()? {
@@ -414,12 +419,19 @@ fn run_github_sync(tasks: &[Task], dry_run: bool) -> Result<()> {
     let mut mapper = TaskIssueMapper::new()
         .context("Failed to load task-issue mapper")?;
 
-    println!("📤 PUSH: Local Tasks → GitHub Issues");
-    push_tasks_to_github(&client, &config, tasks, &mut mapper, dry_run)?;
+    if backfill_project {
+        // Backfill mode: add all existing issues to project board
+        println!("🔄 BACKFILL: Adding existing issues to Projects v2 board");
+        backfill_project_board(&client, &config, tasks, &mut mapper, dry_run)?;
+    } else {
+        // Normal sync mode
+        println!("📤 PUSH: Local Tasks → GitHub Issues");
+        push_tasks_to_github(&client, &config, tasks, &mut mapper, dry_run)?;
 
-    println!();
-    println!("📥 PULL: GitHub Issues → Local Tasks");
-    pull_issues_from_github(&client, &config, tasks, &mapper, dry_run)?;
+        println!();
+        println!("📥 PULL: GitHub Issues → Local Tasks");
+        pull_issues_from_github(&client, &config, tasks, &mapper, dry_run)?;
+    }
 
     // Save updated mapping
     if !dry_run {
@@ -686,6 +698,92 @@ fn pull_issues_from_github(
     if orphaned_issues.is_empty() && updates_needed.is_empty() {
         println!("   ✅ All tasks in sync with GitHub");
     }
+
+    Ok(())
+}
+
+fn backfill_project_board(
+    client: &GitHubClient,
+    config: &GitHubConfig,
+    tasks: &[Task],
+    mapper: &mut TaskIssueMapper,
+    dry_run: bool,
+) -> Result<()> {
+    let mut added = 0;
+    let mut skipped = 0;
+    let mut already_on_board = 0;
+
+    // Get project ID once
+    let project_id = GitHubProjectSetup::get_project_id(
+        client,
+        &config.owner,
+        config.project_number
+    ).context("Failed to get project ID")?;
+
+    // Get status field info once
+    let (field_id, options) = GitHubMutations::get_status_field_info(
+        client,
+        &project_id
+    ).context("Failed to get status field info")?;
+
+    for task in tasks {
+        // Skip archived tasks
+        if task.file_path.to_string_lossy().contains("archive") {
+            continue;
+        }
+
+        // Check if task has a GitHub issue
+        if let Some(mut mapping) = mapper.get_by_task_id(&task.id).cloned() {
+            // Check if already on board
+            if !mapping.project_item_id.is_empty() {
+                already_on_board += 1;
+                continue;
+            }
+
+            println!("   🔄 {} - {}", task.id, task.title);
+
+            if !dry_run {
+                // Add issue to project
+                let project_item_id = GitHubMutations::add_issue_to_project(
+                    client,
+                    &project_id,
+                    &mapping.issue_id
+                ).context(format!("Failed to add issue for task {} to project", task.id))?;
+
+                println!("      ✅ Added to project (item: {})", &project_item_id[..8]);
+
+                // Set status column
+                if let Some(option_id) = TaskIssueMapper::find_best_status_option(&task.status, &options) {
+                    GitHubMutations::update_project_item_status(
+                        client,
+                        &project_id,
+                        &project_item_id,
+                        &field_id,
+                        &option_id
+                    ).context(format!("Failed to update status for task {}", task.id))?;
+                    println!("      🎯 Status set to '{}'", task.status);
+                } else {
+                    println!("      ⚠️  No matching status column found for '{}'", task.status);
+                }
+
+                // Update mapping with project_item_id
+                mapping.project_item_id = project_item_id;
+                mapper.update_mapping(mapping)?;
+
+                added += 1;
+            } else {
+                println!("      Would add to project and set status");
+            }
+        } else {
+            skipped += 1;
+        }
+    }
+
+    println!();
+    println!("📊 BACKFILL SUMMARY");
+    println!("   Added to board: {}", added);
+    println!("   Already on board: {}", already_on_board);
+    println!("   Skipped (no issue): {}", skipped);
 
     Ok(())
 }

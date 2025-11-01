@@ -6,6 +6,7 @@ pub mod config;
 pub mod commands;
 pub mod git;
 pub mod analysis;
+pub mod github;
 
 use commands::{init, list, create, validate, sync, lint, ai, update, import_md, clean, stats, archive, compact};
 
@@ -88,6 +89,12 @@ enum Commands {
         /// Fetch and analyze remote repository changes
         #[arg(short, long)]
         remote: bool,
+        /// Sync with GitHub Issues and Projects (requires GitHub integration)
+        #[arg(long)]
+        github: bool,
+        /// Add all existing issues to Projects v2 board (GitHub sync only)
+        #[arg(long)]
+        backfill_project: bool,
         /// Dry run mode - show what would change without applying
         #[arg(long)]
         dry_run: bool,
@@ -188,7 +195,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         Commands::Validate => validate::run(),
-        Commands::Sync { limit, verbose, remote, dry_run } => sync::run(limit, verbose, remote, dry_run),
+        Commands::Sync { limit, verbose, remote, github, backfill_project, dry_run } => sync::run(limit, verbose, remote, github, backfill_project, dry_run),
         Commands::Lint { verbose, area } => lint::run(verbose, area),
         Commands::Ai { input } => ai::run(input),
         Commands::Update { field, task_id, value } => update::run(field, task_id, value),
