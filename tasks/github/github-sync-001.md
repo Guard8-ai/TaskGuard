@@ -7,7 +7,8 @@ tags:
 - github
 - sync
 - dashboard
-dependencies: [github-infra-005]
+dependencies:
+- github-infra-005
 assignee: developer
 created: 2025-10-30T22:30:00Z
 estimate: 4h

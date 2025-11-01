@@ -1,33 +1,47 @@
 ---
 id: github-infra-005
-title: Implement GitHub Queries (Read Issues)
+title: Implement GitHub Queries (Read Issues & Projects v2)
 status: todo
 priority: high
 tags:
 - github
 - infrastructure
-dependencies: [github-infra-004]
+- projects-v2
+dependencies:
+- github-infra-004
 assignee: developer
 created: 2025-10-30T21:50:00Z
-estimate: 3h
-complexity: 6
+estimate: 4h
+complexity: 7
 area: github
 ---
 
-# Implement GitHub Queries (Read Issues)
+# Implement GitHub Queries (Read Issues & Projects v2)
 
 ## Context
-Complete the GitHub API integration with read operations. This enables TaskGuard to fetch issue data for sync comparisons and status checks.
+Complete the GitHub API integration with read operations for both Issues and Projects v2. This enables TaskGuard to:
+- Fetch issue data for sync comparisons
+- Discover project custom fields (especially Status fields)
+- Query project items and their status values
+- Support flexible status mapping for different project configurations
 
 ## Dependencies
 **Requires:** github-infra-004 (Mutations)
 **Why:** Queries complement mutations for complete read-write API coverage
 
 ## Objectives
+
+### Issue Queries
 1. Implement `get_repository_issues()` query
 2. Implement `get_issue_by_number()` query
 3. Implement `get_issue_by_id()` query
 4. Add pagination support for large repositories
+
+### Projects v2 Queries (NEW - HIGH PRIORITY)
+5. Implement `get_project_fields()` - Discover custom fields
+6. Implement `get_status_field_options()` - Get available status columns
+7. Implement `get_project_item()` - Get item with field values
+8. Implement `get_project_items_by_issue()` - Find items by issue ID
 
 ## Implementation Plan
 
@@ -186,6 +200,172 @@ impl GitHubQueries {
         let issue = Self::get_issue_by_number(client, owner, repo, issue_number)?;
         Ok(issue.id)
     }
+
+    /// Get project custom fields (especially Status field)
+    pub fn get_project_fields(
+        client: &GitHubClient,
+        project_node_id: &str,
+    ) -> Result<Vec<ProjectField>> {
+        let query = r#"
+            query($projectId: ID!) {
+                node(id: $projectId) {
+                    ... on ProjectV2 {
+                        fields(first: 20) {
+                            nodes {
+                                ... on ProjectV2Field {
+                                    id
+                                    name
+                                    dataType
+                                }
+                                ... on ProjectV2SingleSelectField {
+                                    id
+                                    name
+                                    dataType
+                                    options {
+                                        id
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        "#;
+
+        let variables = json!({ "projectId": project_node_id });
+        let response = client.query(query, variables)
+            .context("Failed to get project fields")?;
+
+        // Parse fields from response
+        let nodes = response["data"]["node"]["fields"]["nodes"]
+            .as_array()
+            .context("Invalid fields response")?;
+
+        // Convert to ProjectField structs (defined in types.rs)
+        // Implementation depends on ProjectField struct design
+        Ok(Vec::new()) // Placeholder
+    }
+
+    /// Get available status options for a project's Status field
+    pub fn get_status_field_options(
+        client: &GitHubClient,
+        project_node_id: &str,
+        status_field_name: &str,
+    ) -> Result<Vec<StatusOption>> {
+        let query = r#"
+            query($projectId: ID!) {
+                node(id: $projectId) {
+                    ... on ProjectV2 {
+                        fields(first: 20) {
+                            nodes {
+                                ... on ProjectV2SingleSelectField {
+                                    id
+                                    name
+                                    options {
+                                        id
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        "#;
+
+        let variables = json!({ "projectId": project_node_id });
+        let response = client.query(query, variables)
+            .context("Failed to get status field options")?;
+
+        // Find the Status field and extract options
+        // Implementation depends on StatusOption struct design
+        Ok(Vec::new()) // Placeholder
+    }
+
+    /// Get a project item with its field values
+    pub fn get_project_item(
+        client: &GitHubClient,
+        project_item_id: &str,
+    ) -> Result<ProjectItem> {
+        let query = r#"
+            query($itemId: ID!) {
+                node(id: $itemId) {
+                    ... on ProjectV2Item {
+                        id
+                        content {
+                            ... on Issue {
+                                id
+                                number
+                                title
+                            }
+                        }
+                        fieldValues(first: 20) {
+                            nodes {
+                                ... on ProjectV2ItemFieldSingleSelectValue {
+                                    name
+                                    field {
+                                        ... on ProjectV2SingleSelectField {
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        "#;
+
+        let variables = json!({ "itemId": project_item_id });
+        let response = client.query(query, variables)
+            .context("Failed to get project item")?;
+
+        // Parse into ProjectItem struct (defined in types.rs)
+        Ok(ProjectItem {
+            id: project_item_id.to_string(),
+            issue_id: String::new(), // Placeholder
+            status: String::new(),   // Placeholder
+        })
+    }
+
+    /// Find project items by issue ID
+    pub fn get_project_items_by_issue(
+        client: &GitHubClient,
+        project_node_id: &str,
+        issue_node_id: &str,
+    ) -> Result<Vec<ProjectItem>> {
+        let query = r#"
+            query($projectId: ID!, $issueId: ID!) {
+                node(id: $projectId) {
+                    ... on ProjectV2 {
+                        items(first: 100) {
+                            nodes {
+                                id
+                                content {
+                                    ... on Issue {
+                                        id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        "#;
+
+        let variables = json!({
+            "projectId": project_node_id,
+            "issueId": issue_node_id,
+        });
+
+        let response = client.query(query, variables)
+            .context("Failed to get project items by issue")?;
+
+        // Filter items that match the issue_node_id
+        // Implementation depends on ProjectItem struct design
+        Ok(Vec::new()) // Placeholder
+    }
 }
 ```
 
@@ -198,6 +378,7 @@ pub use queries::*;
 
 ## Acceptance Criteria
 
+### Issue Queries
 ✅ **Repository Issues:**
 - Can fetch all issues from repository
 - Results ordered by last updated
@@ -212,7 +393,29 @@ pub use queries::*;
 - Helper converts issue number to node ID
 - Used by mutations that need node IDs
 
-✅ **Performance:**
+### Projects v2 Queries (NEW)
+✅ **Field Discovery:**
+- Can query all custom fields in a project
+- Identifies Status/SingleSelect fields
+- Returns field IDs and available options
+
+✅ **Status Field Mapping:**
+- Can get available status columns (Backlog, In Progress, etc.)
+- Supports custom column names
+- Returns option IDs needed for updates
+
+✅ **Project Item Queries:**
+- Can get project item by ID with field values
+- Can find project items by issue ID
+- Returns current status value
+
+✅ **Flexible Status Support:**
+- Works with different project configurations
+- Handles custom status field names
+- Supports varied column naming conventions
+
+### Performance
+✅ **Efficiency:**
 - Large repositories handled efficiently
 - Rate limiting respected
 - Unnecessary data not fetched
@@ -231,45 +434,75 @@ cargo build
 
 ## Technical Notes
 
+### Issue Queries
 - GraphQL allows fetching exactly the fields needed
 - Pagination with `first: N` and `after: cursor`
 - Rate limit: 5000 points/hour (queries cost varies)
 - Consider caching for repeated queries
 - Future: Add filtering by labels, state, assignee
 
+### Projects v2 Queries (Critical for Dashboard Integration)
+- **Field Discovery Pattern**: Query project → get fields → find Status field
+- **Status Options**: SingleSelectField has `options` array with id/name pairs
+- **Flexible Mapping**: Must support custom column names:
+  - "Backlog", "Ready", "Todo" → TaskGuard `todo`
+  - "In progress", "In Progress", "Working" → TaskGuard `doing`
+  - "In review", "Review" → TaskGuard `review`
+  - "Done", "Completed" → TaskGuard `done`
+- **Project Item Structure**: ProjectV2Item contains:
+  - `id`: Item node ID (needed for updates)
+  - `content`: The linked issue
+  - `fieldValues`: Array of field values including status
+- **User Experience**: Users see tasks on GitHub Projects Dashboard (see WhatsApp screenshot)
+- **2025 API Changes**: ProjectV2StatusUpdate is the recommended pattern
+
 ## Session Handoff Template
 
 ### What Changed
 - [Created src/github/queries.rs with GitHubQueries]
-- [Implemented get_repository_issues, get_issue_by_number, get_issue_by_id]
+- [Implemented issue queries: get_repository_issues, get_issue_by_number, get_issue_by_id]
 - [Added issue number to ID conversion helper]
+- **[NEW]** [Implemented Projects v2 queries: get_project_fields, get_status_field_options]
+- **[NEW]** [Implemented project item queries: get_project_item, get_project_items_by_issue]
 
 ### Causality Impact
+
+#### Issue Query Chain
 - **Fetch Issues → Compare**: Query results compared with local tasks
 - **Get by Number → Update**: Number lookup enables targeted updates
 - **Get by ID → Sync**: ID-based access for efficient sync
 - **Query → Cache**: Results can be cached to reduce API calls
 
+#### Projects v2 Query Chain (NEW - CRITICAL PATH)
+- **Get Fields → Discover Status**: Find available status columns in user's project
+- **Status Options → Map**: Map TaskGuard statuses to project columns
+- **Get Item by Issue → Current State**: Check current status on dashboard
+- **Field IDs → Update Mutations**: Query results feed into status update mutations
+
 ### Dependencies Unblocked
-- github-fix-2 (updated): Archive can now close issues (full API ready)
-- github-fix-4: Sync can query and update issues
-- github-fix-5: Validate can check GitHub issue states
+- **github-infra-004**: Can now query field IDs needed for mutations
+- **github-sync-001**: Full read-write cycle now possible (query + update)
+- **github-fix-2**: Archive can close issues AND update project status
+- **github-fix-4**: Sync can query issues, project items, and update both
 
 ### Next Task Context
-With the complete API infrastructure (infra-001 through infra-005), we can now update the original github-fix-* tasks to use these modules:
 
-**github-fix-2 (Archive)** can now:
-1. Load mapper to find task's GitHub issue
-2. Use GitHubMutations::update_issue_state() to close issue
-3. Mark mapping as archived
+#### For github-sync-001 (Sync Command)
+The complete workflow is now possible:
+1. Query project fields to discover Status field
+2. Get status options and build mapping
+3. Fetch all issues from repository
+4. For each issue, get project item and current status
+5. Compare with local task status
+6. Use mutations to update mismatches
 
-**github-fix-4 (Sync)** can now:
-1. Use GitHubQueries to fetch all issues
-2. Compare with local tasks (including archived)
-3. Use GitHubMutations to update issue states
-4. Update mapper with sync results
+#### For User Experience
+When user runs `taskguard sync --github`:
+```
+✅ Synced task: backend-001
+   Issue #123: Open
+   Project status: In progress ✅
+   Dashboard: https://github.com/users/me/projects/1
+```
 
-**github-fix-5 (Validate)** can now:
-1. Query issues for mapped tasks
-2. Check for state mismatches
-3. Report issues needing attention
+User sees their tasks on GitHub Projects Dashboard with proper status columns (Backlog, In Progress, Done, etc.), not just as a list of issues.
