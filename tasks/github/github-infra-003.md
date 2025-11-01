@@ -1,7 +1,7 @@
 ---
 id: github-infra-003
 title: Implement Task-Issue Mapper
-status: todo
+status: done
 priority: high
 tags:
 - github
