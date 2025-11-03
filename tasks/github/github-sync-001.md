@@ -1,7 +1,7 @@
 ---
 id: github-sync-001
 title: Add --github flag to sync command for bidirectional GitHub sync
-status: todo
+status: done
 priority: critical
 tags:
 - github
