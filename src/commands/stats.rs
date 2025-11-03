@@ -4,7 +4,7 @@ use std::fs;
 use walkdir::WalkDir;
 
 use crate::config::get_tasks_dir;
-use crate::task::{Task, TaskStatus};
+use crate::task::Task;
 
 pub fn run() -> Result<()> {
     let tasks_dir = get_tasks_dir()?;

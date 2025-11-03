@@ -1,7 +1,7 @@
 ---
 id: backend-014
 title: Fix unused import warning in stats.rs
-status: todo
+status: done
 priority: low
 tags:
 - backend
