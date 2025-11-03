@@ -125,5 +125,24 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
 ```
 
 
+## Bug Found During Analysis (2025-11-03)
+
+**Issue:** Currently archived tasks are completely skipped during sync (src/commands/sync.rs:459-462)
+
+**Impact:**
+1. If a task is marked `done` and archived BEFORE first sync, no GitHub issue is created
+2. The 26 existing archived tasks (created Sept-Oct 2025) have NO GitHub issues
+3. `--backfill-project` flag also skips archived tasks (line 729-733)
+
+**Root Cause:**
+```rust
+// Line 459-462 in sync.rs
+if task.file_path.to_string_lossy().contains("archive") {
+    continue;  // Skips archived tasks entirely
+}
+```
+
+**Related Issue:** This blocks the ability to retroactively create GitHub issues for completed work
+
 ## Technical Notes
 Location: `src/commands/archive.rs`

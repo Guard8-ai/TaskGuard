@@ -62,5 +62,31 @@ fn pull_from_github(
 ```
 
 
+## Bug Found During Analysis (2025-11-03)
+
+**Current Behavior:**
+Sync completely skips archived tasks at two locations:
+- Line 459-462: `push_tasks_to_github()` skips archived tasks
+- Line 729-733: `backfill_project_board()` skips archived tasks
+
+**Problems:**
+1. Tasks archived before first sync never get GitHub issues created
+2. Can't use backfill to retroactively sync old completed work
+3. 26 archived tasks have no GitHub representation
+
+**Example Scenario:**
+```
+1. Task marked done
+2. Task archived (moved to .taskguard/archive/)
+3. Run sync --github → SKIPPED (no issue created)
+4. Run sync --github --backfill-project → ALSO SKIPPED
+```
+
+**Fix Required:**
+- Remove archive skip in normal sync (or add flag to include archived)
+- Add `--include-archived` flag for backfill
+- Create closed issues for archived tasks
+- Keep them on Projects board in "Done" column
+
 ## Technical Notes
 Location: `src/commands/sync.rs` - Update GitHub sync functions
