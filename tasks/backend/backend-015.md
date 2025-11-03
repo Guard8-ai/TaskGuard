@@ -1,7 +1,7 @@
 ---
 id: backend-015
 title: Fix unused import warning in compact.rs
-status: todo
+status: done
 priority: low
 tags:
 - backend
