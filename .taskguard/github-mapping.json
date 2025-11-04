@@ -319,6 +319,30 @@
       "project_item_id": "PVTI_lADODcinKs4BHAJUzggm9Pg",
       "synced_at": "2025-11-01T20:31:47.525517813+00:00",
       "is_archived": false
+    },
+    {
+      "task_id": "github-002",
+      "issue_number": 45,
+      "issue_id": "I_kwDOP0NTeM7VmB0D",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggq75w",
+      "synced_at": "2025-11-03T19:53:49.974610397+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "github-003",
+      "issue_number": 46,
+      "issue_id": "I_kwDOP0NTeM7VmB6D",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggq77E",
+      "synced_at": "2025-11-03T19:53:53.700032652+00:00",
+      "is_archived": false
+    },
+    {
+      "task_id": "backend-017",
+      "issue_number": 47,
+      "issue_id": "I_kwDOP0NTeM7Vz8qe",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggt5do",
+      "synced_at": "2025-11-04T15:48:45.745346218+00:00",
+      "is_archived": false
     }
   ]
 }

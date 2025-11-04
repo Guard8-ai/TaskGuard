@@ -1,7 +1,7 @@
 ---
 id: backend-016
 title: Fix unused field warning in stats.rs AreaStats
-status: todo
+status: done
 priority: low
 tags:
 - backend

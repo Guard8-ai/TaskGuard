@@ -1,6 +1,5 @@
 use anyhow::Result;
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 use walkdir::WalkDir;
 
 use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};

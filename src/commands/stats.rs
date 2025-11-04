@@ -37,7 +37,6 @@ pub fn run() -> Result<()> {
                 let area_stat = area_stats.entry(task.area.clone()).or_insert(AreaStats {
                     count: 0,
                     total_size: 0,
-                    area: task.area.clone(),
                 });
                 area_stat.count += 1;
                 area_stat.total_size += size;
@@ -100,7 +99,6 @@ pub fn run() -> Result<()> {
 
 #[derive(Debug)]
 struct AreaStats {
-    area: String,
     count: usize,
     total_size: u64,
 }
