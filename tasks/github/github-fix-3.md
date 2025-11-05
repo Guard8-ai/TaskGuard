@@ -1,7 +1,7 @@
 ---
 id: github-fix-3
 title: Clean Command GitHub Protection
-status: todo
+status: done
 priority: medium
 tags:
 - github
@@ -13,7 +13,6 @@ estimate: ~
 complexity: 6
 area: github
 ---
-
 
 **Location:** `src/commands/clean.rs`
 

@@ -6,6 +6,10 @@ use git2::Repository;
 
 use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};
 use crate::task::{Task, TaskStatus};
+use crate::github::{
+    GitHubClient, GitHubMutations,
+    TaskIssueMapper, is_github_sync_enabled,
+};
 
 pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
@@ -25,12 +29,21 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     }
     println!();
 
+    // Check for GitHub integration
+    let github_enabled = is_github_sync_enabled()?;
+    let mut mapper = if github_enabled {
+        Some(TaskIssueMapper::new()?)
+    } else {
+        None
+    };
+
     // Load ALL tasks to check dependencies
     let all_tasks = load_tasks_from_dir(&tasks_dir)?;
 
     // Find ALL completed tasks (no age filtering)
     let mut files_to_archive = Vec::new();
     let mut blocked_from_archive = Vec::new();
+    let mut github_issues_to_close = Vec::new();
     let mut total_size: u64 = 0;
 
     for entry in WalkDir::new(&tasks_dir)
@@ -56,6 +69,17 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
                             task.id.clone(),
                             task.title.clone(),
                         ));
+
+                        // Check if task has GitHub issue
+                        if let Some(ref mapper) = mapper {
+                            if let Some(mapping) = mapper.get_by_task_id(&task.id) {
+                                github_issues_to_close.push((
+                                    task.id.clone(),
+                                    mapping.issue_number,
+                                    mapping.issue_id.clone(),
+                                ));
+                            }
+                        }
                     }
                 }
             }
@@ -96,6 +120,19 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     println!("   Archive location: {}", archive_dir.display());
     println!();
 
+    // Display GitHub integration summary
+    if github_enabled && !github_issues_to_close.is_empty() {
+        println!("🌐 GITHUB INTEGRATION");
+        println!("   The following GitHub issues will be closed:");
+        for (task_id, issue_num, _) in &github_issues_to_close {
+            println!("   📌 {} → Issue #{} (will close)", task_id, issue_num);
+        }
+        println!();
+        println!("   ⚠️  Archived tasks remain synced via .taskguard/archive/");
+        println!("   ℹ️  Run 'taskguard restore <task-id>' to unarchive if needed");
+        println!();
+    }
+
     if dry_run {
         println!("🔍 DRY RUN MODE - No files were moved");
         println!("   Run without --dry-run to actually archive");
@@ -134,6 +171,21 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     println!("   Freed {} in tasks directory", format_size(total_size));
     println!("   Archive: {}", archive_dir.display());
 
+    // Close GitHub issues if enabled
+    if github_enabled && !github_issues_to_close.is_empty() {
+        println!();
+        match close_github_issues(&github_issues_to_close, &mut mapper) {
+            Ok(closed_count) => {
+                println!("🌐 GITHUB SYNC COMPLETE");
+                println!("   Closed {} GitHub issues", closed_count);
+            }
+            Err(e) => {
+                eprintln!("\n⚠️  Warning: Failed to close some GitHub issues: {}", e);
+                eprintln!("   Tasks were archived successfully, but GitHub sync may be incomplete.");
+            }
+        }
+    }
+
     // Create Git commit for tracking
     if !archived_task_ids.is_empty() {
         if let Err(e) = create_archive_commit(&root, &archived_task_ids) {
@@ -169,6 +221,39 @@ fn is_task_referenced(task_id: &str, all_tasks: &[Task]) -> bool {
         }
     }
     false
+}
+
+/// Close GitHub issues for archived tasks and update mappings
+fn close_github_issues(
+    issues_to_close: &[(String, i64, String)],
+    mapper: &mut Option<TaskIssueMapper>,
+) -> Result<usize> {
+    let client = GitHubClient::new()?;
+    let mut closed_count = 0;
+
+    for (task_id, issue_num, issue_id) in issues_to_close {
+        println!("   🌐 Closing GitHub issue #{} for {}", issue_num, task_id);
+
+        match GitHubMutations::update_issue_state(&client, issue_id, "CLOSED") {
+            Ok(_) => {
+                println!("      ✅ Closed issue #{}", issue_num);
+                closed_count += 1;
+
+                // Update mapping to mark as archived
+                if let Some(m) = mapper {
+                    if let Some(mut mapping) = m.get_by_task_id(task_id).cloned() {
+                        mapping.is_archived = true;
+                        m.update_mapping(mapping)?;
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("      ⚠️  Failed to close issue #{}: {}", issue_num, e);
+            }
+        }
+    }
+
+    Ok(closed_count)
 }
 
 /// Create a Git commit to track archived tasks
