@@ -351,6 +351,14 @@
       "project_item_id": "PVTI_lADODcinKs4BHAJUzggv8-w",
       "synced_at": "2025-11-05T08:02:11.961229771+00:00",
       "is_archived": false
+    },
+    {
+      "task_id": "github-004",
+      "issue_number": 49,
+      "issue_id": "I_kwDOP0NTeM7V-P5D",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggwAzo",
+      "synced_at": "2025-11-05T08:21:57.469046586+00:00",
+      "is_archived": false
     }
   ]
 }
