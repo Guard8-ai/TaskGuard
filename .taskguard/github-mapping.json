@@ -150,7 +150,7 @@
       "issue_id": "I_kwDOP0NTeM7WELzk",
       "project_item_id": "PVTI_lADODcinKs4BHU1RzggxPNQ",
       "synced_at": "2025-11-05T14:43:05.500187974+00:00",
-      "is_archived": false
+      "is_archived": true
     },
     {
       "task_id": "github-fix-6",
@@ -238,7 +238,7 @@
       "issue_id": "I_kwDOP0NTeM7WEMT4",
       "project_item_id": "PVTI_lADODcinKs4BHU1RzggxPTw",
       "synced_at": "2025-11-05T14:43:33.960208110+00:00",
-      "is_archived": false
+      "is_archived": true
     },
     {
       "task_id": "github-research-001",
