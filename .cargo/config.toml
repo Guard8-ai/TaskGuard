@@ -1,0 +1,11 @@
+# Cargo configuration for TaskGuard
+
+[build]
+# Use RUST_TEST_THREADS environment variable to control test parallelism
+# This is required for tests that use std::env::set_current_dir()
+# which changes global process state (import_md_tests, ai_integration_tests, e2e_tests)
+rustflags = []
+
+[env]
+# Run tests single-threaded by default to avoid race conditions with set_current_dir()
+RUST_TEST_THREADS = "1"

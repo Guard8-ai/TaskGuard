@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 use taskguard::commands::import_md::{self, ImportOptions};
 use taskguard::task::{Task, Priority};
@@ -48,8 +48,8 @@ complexity_analysis = true
     Ok((temp_dir, project_dir))
 }
 
-fn create_test_markdown(content: &str) -> Result<PathBuf> {
-    let temp_file = PathBuf::from("test_import.md");
+fn create_test_markdown(content: &str, project_dir: &Path) -> Result<PathBuf> {
+    let temp_file = project_dir.join("test_import.md");
     fs::write(&temp_file, content)?;
     Ok(temp_file)
 }
@@ -79,7 +79,7 @@ Archive command should close GitHub issues when archiving completed tasks.
 - Close issues via GraphQL API
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("github".to_string()),
@@ -93,12 +93,12 @@ Archive command should close GitHub issues when archiving completed tasks.
     import_md::run(file_path.clone(), options)?;
 
     // Verify task file was created
-    let task_file = project_dir.join("tasks/github/test-fix-1.md");
+    let task_file = project_dir.join("tasks/github/test-fix-001.md");
     assert!(task_file.exists(), "Task file should be created");
 
     // Read and verify task
     let task = Task::from_file(&task_file)?;
-    assert_eq!(task.id, "test-fix-1");
+    assert_eq!(task.id, "test-fix-001");
     assert_eq!(task.title, "Update Archive to Close GitHub Issues");
     assert_eq!(task.priority, Priority::High);
     assert_eq!(task.estimate, Some("4h".to_string()));
@@ -110,7 +110,7 @@ Archive command should close GitHub issues when archiving completed tasks.
 
 #[test]
 fn test_import_multiple_sections() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let markdown = r#"
 ### Fix #1: First Fix
@@ -130,7 +130,7 @@ Content for second fix.
 Content for third fix.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -144,13 +144,13 @@ Content for third fix.
     import_md::run(file_path.clone(), options)?;
 
     // Verify all three tasks were created
-    let task1 = Task::from_file("tasks/testing/multi-1.md")?;
-    let task2 = Task::from_file("tasks/testing/multi-2.md")?;
-    let task3 = Task::from_file("tasks/testing/multi-3.md")?;
+    let task1 = Task::from_file(&project_dir.join("tasks/testing/multi-001.md"))?;
+    let task2 = Task::from_file(&project_dir.join("tasks/testing/multi-002.md"))?;
+    let task3 = Task::from_file(&project_dir.join("tasks/testing/multi-003.md"))?;
 
-    assert_eq!(task1.id, "multi-1");
-    assert_eq!(task2.id, "multi-2");
-    assert_eq!(task3.id, "multi-3");
+    assert_eq!(task1.id, "multi-001");
+    assert_eq!(task2.id, "multi-002");
+    assert_eq!(task3.id, "multi-003");
 
     assert_eq!(task1.priority, Priority::High);
     assert_eq!(task2.priority, Priority::Medium);
@@ -162,7 +162,7 @@ Content for third fix.
 
 #[test]
 fn test_import_mixed_issues_and_fixes() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let markdown = r#"
 ### ❌ Issue #1: Archive Command Problem
@@ -182,7 +182,7 @@ This fixes issue #1.
 This fixes issue #2.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -196,15 +196,15 @@ This fixes issue #2.
     import_md::run(file_path.clone(), options)?;
 
     // Verify tasks have type-specific prefixes
-    let issue1 = Task::from_file("tasks/testing/issue-1.md")?;
-    let issue2 = Task::from_file("tasks/testing/issue-2.md")?;
-    let fix1 = Task::from_file("tasks/testing/fix-1.md")?;
-    let fix2 = Task::from_file("tasks/testing/fix-2.md")?;
+    let issue1 = Task::from_file(&project_dir.join("tasks/testing/issue-001.md"))?;
+    let issue2 = Task::from_file(&project_dir.join("tasks/testing/issue-002.md"))?;
+    let fix1 = Task::from_file(&project_dir.join("tasks/testing/fix-001.md"))?;
+    let fix2 = Task::from_file(&project_dir.join("tasks/testing/fix-002.md"))?;
 
-    assert_eq!(issue1.id, "issue-1");
-    assert_eq!(issue2.id, "issue-2");
-    assert_eq!(fix1.id, "fix-1");
-    assert_eq!(fix2.id, "fix-2");
+    assert_eq!(issue1.id, "issue-001");
+    assert_eq!(issue2.id, "issue-002");
+    assert_eq!(fix1.id, "fix-001");
+    assert_eq!(fix2.id, "fix-002");
 
     fs::remove_file(file_path)?;
     Ok(())
@@ -212,7 +212,7 @@ This fixes issue #2.
 
 #[test]
 fn test_import_with_dependencies() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let markdown = r#"
 ### Fix #1: Base Fix
@@ -227,12 +227,12 @@ This depends on fix 1.
 
 ### Fix #3: Multiple Dependencies
 
-**Dependencies:** [fix-1, fix-2]
+**Dependencies:** [fix-001, fix-002]
 
 This depends on both.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -245,13 +245,13 @@ This depends on both.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task1 = Task::from_file("tasks/testing/dep-1.md")?;
-    let task2 = Task::from_file("tasks/testing/dep-2.md")?;
-    let task3 = Task::from_file("tasks/testing/dep-3.md")?;
+    let task1 = Task::from_file(&project_dir.join("tasks/testing/dep-001.md"))?;
+    let task2 = Task::from_file(&project_dir.join("tasks/testing/dep-002.md"))?;
+    let task3 = Task::from_file(&project_dir.join("tasks/testing/dep-003.md"))?;
 
     assert_eq!(task1.dependencies, Vec::<String>::new());
-    assert_eq!(task2.dependencies, vec!["dep-1"]);
-    assert_eq!(task3.dependencies, vec!["fix-1", "fix-2"]);
+    assert_eq!(task2.dependencies, vec!["dep-001"]);
+    assert_eq!(task3.dependencies, vec!["fix-001", "fix-002"]);
 
     fs::remove_file(file_path)?;
     Ok(())
@@ -267,7 +267,7 @@ fn test_import_dry_run() -> Result<()> {
 Content here.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -281,7 +281,7 @@ Content here.
     import_md::run(file_path.clone(), options)?;
 
     // Verify no task file was created
-    let task_file = project_dir.join("tasks/testing/dry-1.md");
+    let task_file = project_dir.join("tasks/testing/dry-001.md");
     assert!(!task_file.exists(), "Task file should not be created in dry-run mode");
 
     fs::remove_file(file_path)?;
@@ -290,7 +290,7 @@ Content here.
 
 #[test]
 fn test_import_with_priority_override() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let markdown = r#"
 ### Fix #1: Test Fix
@@ -300,7 +300,7 @@ fn test_import_with_priority_override() -> Result<()> {
 Content here.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -313,7 +313,7 @@ Content here.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task = Task::from_file("tasks/testing/override-1.md")?;
+    let task = Task::from_file(&project_dir.join("tasks/testing/override-001.md"))?;
     assert_eq!(task.priority, Priority::Critical); // Should use override, not LOW
 
     fs::remove_file(file_path)?;
@@ -322,7 +322,7 @@ Content here.
 
 #[test]
 fn test_import_with_custom_tags() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let markdown = r#"
 ### Fix #1: Test Fix
@@ -330,7 +330,7 @@ fn test_import_with_custom_tags() -> Result<()> {
 Content here.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -343,7 +343,7 @@ Content here.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task = Task::from_file("tasks/testing/tags-1.md")?;
+    let task = Task::from_file(&project_dir.join("tasks/testing/tags-001.md"))?;
     assert!(task.tags.contains(&"urgent".to_string()));
     assert!(task.tags.contains(&"backend".to_string()));
     assert!(task.tags.contains(&"testing".to_string())); // Area tag
@@ -355,7 +355,7 @@ Content here.
 
 #[test]
 fn test_import_no_sections_found() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let markdown = r#"
 # Regular Markdown
@@ -367,7 +367,7 @@ This is just a regular document with no Fix or Issue sections.
 Content without numbered sections.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -388,7 +388,7 @@ Content without numbered sections.
 
 #[test]
 fn test_import_skips_code_blocks_in_dependency_extraction() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let markdown = r#"
 ### Fix #1: Test Fix
@@ -407,7 +407,7 @@ for dep in &task.dependencies {
 This should not create a dependency.
 "#;
 
-    let file_path = create_test_markdown(markdown)?;
+    let file_path = create_test_markdown(markdown, &project_dir)?;
 
     let options = ImportOptions {
         area: Some("testing".to_string()),
@@ -420,7 +420,7 @@ This should not create a dependency.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task = Task::from_file("tasks/testing/code-1.md")?;
+    let task = Task::from_file(&project_dir.join("tasks/testing/code-001.md"))?;
     assert_eq!(task.dependencies, Vec::<String>::new(),
         "Should not extract dependencies from code blocks");
 
@@ -430,7 +430,7 @@ This should not create a dependency.
 
 #[test]
 fn test_complexity_estimation() -> Result<()> {
-    let (_temp_dir, _project_dir) = setup_test_env()?;
+    let (_temp_dir, project_dir) = setup_test_env()?;
 
     let short_markdown = r#"
 ### Fix #1: Short Task
@@ -456,8 +456,8 @@ fn example() {
 More content after code block.
 "#);
 
-    let file1 = create_test_markdown(short_markdown)?;
-    let file2 = PathBuf::from("test_long.md");
+    let file1 = create_test_markdown(short_markdown, &project_dir)?;
+    let file2 = project_dir.join("test_long.md");
     fs::write(&file2, &long_content)?;
 
     let options1 = ImportOptions {
@@ -471,7 +471,7 @@ More content after code block.
 
     import_md::run(file1.clone(), options1)?;
 
-    let task1 = Task::from_file("tasks/testing/complex-1.md")?;
+    let task1 = Task::from_file(&project_dir.join("tasks/testing/complex-001.md"))?;
 
     // Short task should have lower complexity
     assert!(task1.complexity.unwrap_or(0) <= 4);

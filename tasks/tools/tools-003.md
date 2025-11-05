@@ -1,11 +1,12 @@
 ---
 id: tools-003
 title: Create section-to-task mapping logic
-status: todo
+status: done
 priority: high
 tags:
 - tools
-dependencies: [tools-002]
+dependencies:
+- tools-002
 assignee: developer
 created: 2025-10-30T13:40:06.555493738Z
 estimate: ~

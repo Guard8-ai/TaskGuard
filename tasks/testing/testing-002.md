@@ -1,11 +1,12 @@
 ---
 id: testing-002
 title: Write tests for md-to-tasks converter
-status: todo
+status: done
 priority: high
 tags:
 - testing
-dependencies: [tools-005]
+dependencies:
+- tools-005
 assignee: developer
 created: 2025-10-30T13:40:26.487270247Z
 estimate: ~

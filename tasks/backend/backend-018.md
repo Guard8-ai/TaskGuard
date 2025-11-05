@@ -1,7 +1,7 @@
 ---
 id: backend-018
 title: Fix taskguard create to validate code works before committing
-status: todo
+status: done
 priority: medium
 tags:
 - backend
@@ -55,12 +55,12 @@ Agent: [Then ran tests and found pre-existing failures]
 
 ## Tasks
 
-- [ ] Review current CLAUDE.md instructions for commit workflow
-- [ ] Add explicit "MUST test before commit" requirement
-- [ ] Document testing commands to run before commit
-- [ ] Add examples showing correct test-then-commit flow
-- [ ] Consider adding pre-commit hook that runs tests
-- [ ] Update instructions to catch common rushing patterns
+- [x] Review current CLAUDE.md instructions for commit workflow
+- [x] Add explicit "MUST test before commit" requirement
+- [x] Document testing commands to run before commit
+- [x] Add examples showing correct test-then-commit flow
+- [x] Consider adding pre-commit hook that runs tests
+- [x] Update instructions to catch common rushing patterns
 
 ## Acceptance Criteria
 
@@ -110,30 +110,53 @@ Could add `.git/hooks/pre-commit` to run `cargo build` automatically, but this m
 
 ## Updates
 - 2025-11-04: Task created
+- 2025-11-04: Task completed - Updated task template in `taskguard create` command
 
 ## Session Handoff (AI: Complete this when marking task done)
 **For the next session/agent working on dependent tasks:**
 
 ### What Changed
-- [Document code changes, new files, modified functions]
-- [What runtime behavior is new or different]
+- **Modified file**: [src/commands/create.rs:103-121](src/commands/create.rs#L103-L121)
+- **Updated section**: "## Version Control" in the task template string
+- **New behavior**: All tasks created via `taskguard create` now include prominent warnings to test AND run code before committing
+
+**Specific changes to template:**
+1. Added bold warning: "⚠️ CRITICAL: Always test AND run before committing!"
+2. Added detailed checklist requiring build, test, AND runtime execution before commits
+3. Added "Testing requirements by change type" section with specific guidance
+4. Emphasized the need to "Actually run/execute the code" not just compile
 
 ### Causality Impact
-- [What causal chains were created or modified]
-- [What events trigger what other events]
-- [Any async flows or timing considerations]
+- **Template propagation**: Every new task created will now remind AI agents to test before committing
+- **Behavioral change**: AI agents reading new tasks will see explicit instructions to verify code works at runtime
+- **Prevention mechanism**: The template acts as a proactive reminder in the task file itself
 
 ### Dependencies & Integration
-- [What dependencies were added/changed]
-- [How this integrates with existing code]
-- [What other tasks/areas are affected]
+- **No new dependencies added**: Only modified string content in existing code
+- **Integration point**: The template is used in `create.rs` line 59-138 when generating task files
+- **Affected command**: `taskguard create` - all newly created tasks will have updated template
+- **Existing tasks**: Unchanged - only new tasks created after this change will include the new instructions
 
 ### Verification & Testing
-- [How to verify this works]
-- [What to test when building on this]
-- [Any known edge cases or limitations]
+- **Verification completed**:
+  - Built project successfully with `cargo build --release`
+  - Created test task and verified new template appears correctly
+  - Confirmed "CRITICAL: Always test AND run before committing!" section is present
+  - Tested task creation works: `taskguard create --title "test" --area testing`
+
+- **How to verify this works**:
+  ```bash
+  taskguard create --title "Test task" --area backend
+  grep "CRITICAL: Always test AND run" tasks/backend/backend-*.md
+  # Should show the new warning in newly created tasks
+  ```
+
+- **Known limitations**:
+  - Existing tasks created before this change do not have the new template
+  - Pre-existing test failures in the codebase are unrelated to this change
 
 ### Context for Next Task
-- [What the next developer/AI should know]
-- [Important decisions made and why]
-- [Gotchas or non-obvious behavior]
+- **Decision made**: Updated task template rather than CLAUDE.md because the issue is about tasks created by `taskguard create` not having proper workflow instructions
+- **Template location**: The task template is embedded as a format string in [src/commands/create.rs:59-138](src/commands/create.rs#L59-L138)
+- **Future considerations**: If you need to update task templates again, look in `src/commands/create.rs` in the `run()` function where the `Task` struct is created
+- **Important**: This change only affects NEW tasks - existing tasks would need manual updates or a migration tool to add this section

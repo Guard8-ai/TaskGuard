@@ -1,11 +1,13 @@
 ---
 id: tools-005
 title: Add CLI command 'taskguard import-md'
-status: todo
+status: done
 priority: high
 tags:
 - tools
-dependencies: [tools-003, tools-004]
+dependencies:
+- tools-003
+- tools-004
 assignee: developer
 created: 2025-10-30T13:40:20.059453882Z
 estimate: ~

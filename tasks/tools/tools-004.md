@@ -1,11 +1,12 @@
 ---
 id: tools-004
 title: Implement dependency extraction from markdown
-status: todo
+status: done
 priority: medium
 tags:
 - tools
-dependencies: [tools-002]
+dependencies:
+- tools-002
 assignee: developer
 created: 2025-10-30T13:40:13.439637656Z
 estimate: ~

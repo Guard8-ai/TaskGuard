@@ -1,11 +1,12 @@
 ---
 id: tools-002
 title: Implement markdown parser for structured sections
-status: todo
+status: done
 priority: high
 tags:
 - tools
-dependencies: [tools-001]
+dependencies:
+- tools-001
 assignee: developer
 created: 2025-10-30T13:40:01.798839256Z
 estimate: ~

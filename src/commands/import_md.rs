@@ -361,11 +361,11 @@ fn sections_to_tasks(
     for section in &sections {
         let section_key = format!("{}-{}", section.section_type.to_prefix(), section.number);
         let task_id = if use_type_prefixes {
-            // Use type-specific prefix: fix-1, issue-1, etc.
-            format!("{}-{}", section.section_type.to_prefix(), section.number)
+            // Use type-specific prefix: fix-001, issue-001, etc.
+            format!("{}-{:03}", section.section_type.to_prefix(), section.number)
         } else {
-            // Use provided prefix: github-fix-1, etc.
-            format!("{}-{}", prefix, section.number)
+            // Use provided prefix: github-fix-001, etc.
+            format!("{}-{:03}", prefix, section.number)
         };
         task_id_map.insert(section_key, task_id);
     }

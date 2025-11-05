@@ -1,7 +1,7 @@
 ---
 id: tools-001
 title: Design md-to-tasks command specification
-status: todo
+status: done
 priority: high
 tags:
 - tools
