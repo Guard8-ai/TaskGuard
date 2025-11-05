@@ -343,6 +343,14 @@
       "project_item_id": "PVTI_lADODcinKs4BHAJUzggt5do",
       "synced_at": "2025-11-04T15:48:45.745346218+00:00",
       "is_archived": false
+    },
+    {
+      "task_id": "backend-018",
+      "issue_number": 48,
+      "issue_id": "I_kwDOP0NTeM7V-Ae4",
+      "project_item_id": "PVTI_lADODcinKs4BHAJUzggv8-w",
+      "synced_at": "2025-11-05T08:02:11.961229771+00:00",
+      "is_archived": false
     }
   ]
 }
