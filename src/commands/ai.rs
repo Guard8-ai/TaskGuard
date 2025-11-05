@@ -55,10 +55,10 @@ impl AIAgent {
 
             let mut blocking_deps = Vec::new();
             for dep_id in &task.dependencies {
+                // A dependency blocks if it's not completed
+                // This includes both existing incomplete tasks AND missing tasks
                 if !completed_task_ids.contains(dep_id) {
-                    if task_map.contains_key(dep_id) {
-                        blocking_deps.push(dep_id.clone());
-                    }
+                    blocking_deps.push(dep_id.clone());
                 }
             }
 
@@ -79,18 +79,20 @@ impl AIAgent {
         let input_lower = input.to_lowercase();
 
         // Pattern matching for common natural language patterns
-        if self.is_task_creation_request(&input_lower) {
-            self.handle_task_creation(input)
+        // Order matters! More specific patterns should be checked first
+        if self.is_completion_announcement(&input_lower) {
+            self.handle_task_completion(input)
+        } else if self.is_dependency_query(&input_lower) {
+            // Check dependencies BEFORE status (both may match "what tasks")
+            self.handle_dependency_analysis()
+        } else if self.is_complexity_query(&input_lower) {
+            self.handle_complexity_analysis()
         } else if self.is_status_inquiry(&input_lower) {
             self.handle_status_inquiry()
         } else if self.is_next_task_request(&input_lower) {
             self.handle_next_task_recommendation()
-        } else if self.is_completion_announcement(&input_lower) {
-            self.handle_task_completion(input)
-        } else if self.is_dependency_query(&input_lower) {
-            self.handle_dependency_analysis()
-        } else if self.is_complexity_query(&input_lower) {
-            self.handle_complexity_analysis()
+        } else if self.is_task_creation_request(&input_lower) {
+            self.handle_task_creation(input)
         } else {
             self.handle_general_guidance(input)
         }
@@ -101,25 +103,44 @@ impl AIAgent {
             "create a task",
             "add a task",
             "new task",
+            "this is an",
+            "this is a",
             "i need to",
             "we should",
-            "implement",
-            "build",
-            "add",
-            "create",
+            "create an",
+            "create a",
+            "add an",
+            "add a",
+            "add auth",
+            "build a",
+            "write a",
+            "write test",
+            "set up",
         ];
 
         creation_patterns.iter().any(|pattern| input.contains(pattern))
     }
 
     fn is_status_inquiry(&self, input: &str) -> bool {
+        // Avoid matching "show me X" where X is more specific (like "show me complexity")
         let status_patterns = [
             "what's the status",
-            "show me",
-            "list",
+            "what's the current status",
+            "current status",
+            "show me the status",
+            "show me status",
+            "show me the tasks",
+            "show me all",
+            "what tasks are available",
+            "which tasks are available",
             "what tasks",
+            "list tasks",
+            "list what",
+            "list all",
             "current state",
+            "project status",
             "overview",
+            "give me an overview",
         ];
 
         status_patterns.iter().any(|pattern| input.contains(pattern))
@@ -130,10 +151,16 @@ impl AIAgent {
             "what should i work on",
             "what's next",
             "what can i do",
+            "what's available",  // "What's available?" - singular
+            "what is available", // without "tasks"
             "ready to work",
-            "available tasks",
             "recommend",
         ];
+
+        // More specific check: if it contains "what tasks", it's probably status inquiry
+        if input.contains("what tasks") || input.contains("which tasks") {
+            return false;
+        }
 
         next_patterns.iter().any(|pattern| input.contains(pattern))
     }
@@ -155,8 +182,16 @@ impl AIAgent {
         let dependency_patterns = [
             "dependencies",
             "depends on",
-            "blocked",
+            "tasks are blocked",
+            "tasks blocked",
+            "what tasks are blocked",
+            "which tasks are blocked",
+            "what's blocked",
+            "what is blocked",
+            "show me dependencies",
             "waiting for",
+            "waiting for other",
+            "depend on others",
             "prerequisite",
         ];
 
@@ -166,10 +201,14 @@ impl AIAgent {
     fn is_complexity_query(&self, input: &str) -> bool {
         let complexity_patterns = [
             "complexity",
+            "how complex",
+            "task complexity",
             "how hard",
             "difficult",
+            "difficulty",
             "estimate",
             "effort",
+            "analyze",
         ];
 
         complexity_patterns.iter().any(|pattern| input.contains(pattern))
@@ -257,11 +296,12 @@ impl AIAgent {
         let recommended = &available[0];
 
         let mut response = format!(
-            "🎯 **Recommended Next Task:**\n\n\
+            "🎯 **Recommended Next Task** ({} available):\n\n\
             **{}** - {}\n\
             • Priority: {:?}\n\
             • Complexity: {}/10\n\
             • Area: {}\n",
+            available.len(),
             recommended.id, recommended.title, recommended.priority,
             recommended.complexity.unwrap_or(5), recommended.area
         );
@@ -411,16 +451,24 @@ impl AIAgent {
         // Look for patterns like "create a task for X" or "add X"
         let patterns = [
             r"(?i)create.*?(?:task|item).*?for\s+(.+?)(?:\s+(?:in|with|using)|\.|$)",
+            r"(?i)add.*?(?:new\s+)?feature\s+for\s+(.+?)(?:\s+(?:in|with|using)|\.|$)",
             r"(?i)add.*?(?:task|item).*?(?:for|to)\s+(.+?)(?:\s+(?:in|with|using)|\.|$)",
-            r"(?i)(?:implement|build|create|add)\s+(.+?)(?:\s+(?:feature|functionality|component)|\.|$)",
+            r"(?i)(?:i\s+need\s+to|we\s+should)\s+(?:build|create|implement|write)\s+(?:a|an)?\s*(.+?)(?:\?|\.|$)",
+            r"(?i)(?:build|create|implement|write)\s+(?:a|an)\s+(.+?)(?:\s+(?:for|component|feature)|\?|\.|$)",
+            r"(?i)create\s+(?:a|an)\s+(.+?)(?:\s+(?:feature|functionality|component|for)|\.|$)",
             r"(?i)(?:task|item).*?(?:for|to)\s+(.+?)(?:\.|$)",
+            r"(?i)(?:fix|resolve)\s+(?:the\s+)?(.+?)(?:\s+bug|\?|\.|$)",
         ];
 
         for pattern in &patterns {
             if let Ok(re) = regex::Regex::new(pattern) {
                 if let Some(captures) = re.captures(input) {
                     if let Some(title) = captures.get(1) {
-                        return title.as_str().trim().to_string();
+                        let extracted = title.as_str().trim().to_string();
+                        // Don't return empty or very short titles
+                        if extracted.len() > 2 {
+                            return extracted;
+                        }
                     }
                 }
             }
@@ -436,17 +484,21 @@ impl AIAgent {
     }
 
     fn infer_task_area(&self, input: &str) -> String {
+        let input_lower = input.to_lowercase();
+
+        // Check for more specific patterns first
+        // Order matters: more specific keywords should come before generic ones
         let area_keywords = [
-            ("backend", vec!["api", "server", "database", "backend", "auth", "authentication"]),
-            ("frontend", vec!["ui", "frontend", "interface", "component", "view", "page"]),
-            ("testing", vec!["test", "testing", "spec", "validation"]),
-            ("setup", vec!["setup", "config", "configuration", "install", "deployment"]),
-            ("auth", vec!["auth", "authentication", "login", "security", "permission"]),
+            ("testing", vec!["write tests", "write test", "testing", "test for", "test the", "spec", "validation"]),
+            ("frontend", vec!["react", "vue", "angular", "frontend", "component for", "component", "ui", "view", "page"]),
+            ("auth", vec!["authentication", "auth to", "auth for", "login", "security", "permission"]),
+            ("setup", vec!["set up", "setup", "configuration", "config", "install", "deployment", "database configuration"]),
+            ("backend", vec!["api", "endpoint", "server", "database", "backend"]),
         ];
 
         for (area, keywords) in &area_keywords {
             for keyword in keywords {
-                if input.to_lowercase().contains(keyword) {
+                if input_lower.contains(keyword) {
                     return area.to_string();
                 }
             }

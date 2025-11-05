@@ -83,6 +83,12 @@ impl TaskGuardTestProject {
     }
 
     fn create_task_manually(&self, area: &str, id: &str, title: &str, status: TaskStatus, dependencies: Vec<String>) -> Result<()> {
+        let area_dir = self.tasks_dir.join(area);
+        if !area_dir.exists() {
+            fs::create_dir_all(&area_dir)?;
+        }
+
+        let file_path = area_dir.join(format!("{}.md", id));
         let task = Task {
             id: id.to_string(),
             title: title.to_string(),
@@ -96,14 +102,9 @@ impl TaskGuardTestProject {
             complexity: Some(5),
             area: area.to_string(),
             content: format!("Test content for {}", title),
+            file_path: file_path.clone(),
         };
 
-        let area_dir = self.tasks_dir.join(area);
-        if !area_dir.exists() {
-            fs::create_dir_all(&area_dir)?;
-        }
-
-        let file_path = area_dir.join(format!("{}.md", id));
         task.save_to_file(&file_path)?;
         Ok(())
     }
@@ -138,7 +139,7 @@ fn test_complete_project_lifecycle() -> Result<()> {
     project.add_git_commit(&repo, "Complete setup-001 configuration")?;
 
     // 5. Run sync to analyze Git activity
-    sync::run(50, false, false, false)?;
+    sync::run(50, false, false, false, false, false)?;
 
     // 6. Run lint to analyze task quality
     lint::run(false, None)?;
@@ -208,7 +209,7 @@ fn test_git_analysis_workflow() -> Result<()> {
     project.add_git_commit(&repo, "Complete backend-001 authentication feature")?;
 
     // Run sync to analyze Git activity
-    sync::run(10, true, false, false)?; // Verbose mode
+    sync::run(10, true, false, false, false, false)?; // Verbose mode
 
     // Git analysis should suggest status changes
     Ok(())
@@ -247,7 +248,7 @@ fn test_complex_git_scenario() -> Result<()> {
     }
 
     // Analyze the complex Git history
-    sync::run(20, true, false, false)?;
+    sync::run(20, true, false, false, false, false)?;
 
     Ok(())
 }
@@ -289,6 +290,10 @@ This task implements a comprehensive user authentication system using JWT tokens
 ✅ Session management works correctly
 "#;
 
+    let backend_dir = project.tasks_dir.join("backend");
+    fs::create_dir_all(&backend_dir)?;
+    let backend_file_path = backend_dir.join("backend-001.md");
+
     let high_quality_task = Task {
         id: "backend-001".to_string(),
         title: "Implement User Authentication System".to_string(),
@@ -302,13 +307,16 @@ This task implements a comprehensive user authentication system using JWT tokens
         complexity: Some(6),
         area: "backend".to_string(),
         content: high_quality_content.to_string(),
+        file_path: backend_file_path.clone(),
     };
 
-    let backend_dir = project.tasks_dir.join("backend");
-    fs::create_dir_all(&backend_dir)?;
-    high_quality_task.save_to_file(&backend_dir.join("backend-001.md"))?;
+    high_quality_task.save_to_file(&backend_file_path)?;
 
     // Low quality task
+    let frontend_dir = project.tasks_dir.join("frontend");
+    fs::create_dir_all(&frontend_dir)?;
+    let frontend_file_path = frontend_dir.join("frontend-001.md");
+
     let low_quality_task = Task {
         id: "frontend-001".to_string(),
         title: "UI stuff".to_string(),
@@ -322,11 +330,10 @@ This task implements a comprehensive user authentication system using JWT tokens
         complexity: None,
         area: "frontend".to_string(),
         content: "Make the UI better.".to_string(),
+        file_path: frontend_file_path.clone(),
     };
 
-    let frontend_dir = project.tasks_dir.join("frontend");
-    fs::create_dir_all(&frontend_dir)?;
-    low_quality_task.save_to_file(&frontend_dir.join("frontend-001.md"))?;
+    low_quality_task.save_to_file(&frontend_file_path)?;
 
     // Run lint analysis
     lint::run(true, None)?; // Verbose mode
@@ -342,6 +349,15 @@ fn test_complexity_analysis_workflow() -> Result<()> {
 
     init::run()?;
 
+    // Create directories and save tasks
+    let docs_dir = project.tasks_dir.join("docs");
+    let arch_dir = project.tasks_dir.join("architecture");
+    fs::create_dir_all(&docs_dir)?;
+    fs::create_dir_all(&arch_dir)?;
+
+    let simple_file_path = docs_dir.join("simple-001.md");
+    let complex_file_path = arch_dir.join("complex-001.md");
+
     // Create tasks with different complexity levels
     let simple_task = Task {
         id: "simple-001".to_string(),
@@ -356,6 +372,7 @@ fn test_complexity_analysis_workflow() -> Result<()> {
         complexity: Some(2),
         area: "docs".to_string(),
         content: "Update the project README with new installation instructions.".to_string(),
+        file_path: simple_file_path.clone(),
     };
 
     let complex_task_content = format!(
@@ -378,16 +395,11 @@ fn test_complexity_analysis_workflow() -> Result<()> {
         complexity: Some(10),
         area: "architecture".to_string(),
         content: complex_task_content,
+        file_path: complex_file_path.clone(),
     };
 
-    // Create directories and save tasks
-    let docs_dir = project.tasks_dir.join("docs");
-    let arch_dir = project.tasks_dir.join("architecture");
-    fs::create_dir_all(&docs_dir)?;
-    fs::create_dir_all(&arch_dir)?;
-
-    simple_task.save_to_file(&docs_dir.join("simple-001.md"))?;
-    complex_task.save_to_file(&arch_dir.join("complex-001.md"))?;
+    simple_task.save_to_file(&simple_file_path)?;
+    complex_task.save_to_file(&complex_file_path)?;
 
     // Run complexity analysis
     lint::run(true, None)?;
@@ -583,6 +595,12 @@ Well-structured task with clear objectives.
 ✅ Criteria 2
 "#;
 
+    let backend_dir = project.tasks_dir.join("backend");
+    fs::create_dir_all(&backend_dir)?;
+
+    let poor_file_path = backend_dir.join("backend-001.md");
+    let good_file_path = backend_dir.join("backend-002.md");
+
     let poor_task = Task {
         id: "backend-001".to_string(),
         title: "Fix stuff".to_string(),
@@ -596,6 +614,7 @@ Well-structured task with clear objectives.
         complexity: None,
         area: "backend".to_string(),
         content: poor_quality_content.to_string(),
+        file_path: poor_file_path.clone(),
     };
 
     let good_task = Task {
@@ -611,12 +630,11 @@ Well-structured task with clear objectives.
         complexity: Some(7),
         area: "backend".to_string(),
         content: good_quality_content.to_string(),
+        file_path: good_file_path.clone(),
     };
 
-    let backend_dir = project.tasks_dir.join("backend");
-    fs::create_dir_all(&backend_dir)?;
-    poor_task.save_to_file(&backend_dir.join("backend-001.md"))?;
-    good_task.save_to_file(&backend_dir.join("backend-002.md"))?;
+    poor_task.save_to_file(&poor_file_path)?;
+    good_task.save_to_file(&good_file_path)?;
 
     // 1. Lint identifies quality issues
     lint::run(true, None)?;
@@ -627,7 +645,7 @@ Well-structured task with clear objectives.
     project.add_git_commit(&repo, "Complete backend-001 fixes")?;
 
     // 3. Sync analyzes Git activity
-    sync::run(10, true, false, false)?;
+    sync::run(10, true, false, false, false, false)?;
 
     // 4. AI integrates all information
     ai::run("What's the quality of my tasks?".to_string())?;
@@ -686,7 +704,7 @@ fn test_complete_feature_development_cycle() -> Result<()> {
 
     // 3. Analysis phase - understand progress
     validate::run()?; // Check what's now available
-    sync::run(10, true, false, false)?; // Analyze Git activity
+    sync::run(10, true, false, false, false, false)?; // Analyze Git activity
     lint::run(true, None)?; // Check task quality
 
     // 4. AI provides guidance
@@ -705,7 +723,7 @@ fn test_complete_feature_development_cycle() -> Result<()> {
 
     // Final analysis
     validate::run()?;
-    sync::run(20, false, false, false)?;
+    sync::run(20, false, false, false, false, false)?;
     ai::run("Show me the final project status".to_string())?;
 
     Ok(())

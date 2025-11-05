@@ -48,6 +48,7 @@ priorities = ["low", "medium", "high", "critical"]
     }
 
     fn create_task_file(&self, area: &str, id: &str, title: &str, status: TaskStatus, priority: Priority, dependencies: Vec<String>) -> Result<()> {
+        let file_path = self.tasks_dir.join(area).join(format!("{}.md", id));
         let task = Task {
             id: id.to_string(),
             title: title.to_string(),
@@ -61,9 +62,9 @@ priorities = ["low", "medium", "high", "critical"]
             complexity: Some(5),
             area: area.to_string(),
             content: format!("Test task content for {}", title),
+            file_path: file_path.clone(),
         };
 
-        let file_path = self.tasks_dir.join(area).join(format!("{}.md", id));
         task.save_to_file(&file_path)?;
         Ok(())
     }

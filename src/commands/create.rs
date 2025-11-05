@@ -101,10 +101,24 @@ Brief description of what needs to be done and why.
 - [ ] Consider edge cases and error conditions
 
 ## Version Control
+
+**⚠️ CRITICAL: Always test AND run before committing!**
+
+- [ ] **BEFORE committing**: Build, test, AND run the code to verify it works
+  - Run `cargo build --release` (or `cargo build` for debug)
+  - Run `cargo test` to ensure tests pass
+  - **Actually run/execute the code** to verify runtime behavior
+  - Fix all errors, warnings, and runtime issues
 - [ ] Commit changes incrementally with clear messages
 - [ ] Use descriptive commit messages that explain the "why"
 - [ ] Consider creating a feature branch for complex changes
 - [ ] Review changes before committing
+
+**Testing requirements by change type:**
+- Code changes: Build + test + **run the actual program/command** to verify behavior
+- Bug fixes: Verify the bug is actually fixed by running the code, not just compiling
+- New features: Test the feature works as intended by executing it
+- Minor changes: At minimum build, check warnings, and run basic functionality
 
 ## Updates
 - {}: Task created

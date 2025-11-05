@@ -18,18 +18,26 @@ impl CLITestProject {
         let temp_dir = tempfile::tempdir()?;
         let project_path = temp_dir.path().to_path_buf();
 
-        // Find the TaskGuard binary
+        // Find the TaskGuard binary using absolute path from CARGO_MANIFEST_DIR
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
+            .unwrap_or_else(|_| ".".to_string());
+        let manifest_path = PathBuf::from(manifest_dir);
+
         let binary_path = if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
             PathBuf::from(target_dir).join("debug").join("taskguard")
         } else {
-            PathBuf::from("target").join("debug").join("taskguard")
+            manifest_path.join("target").join("debug").join("taskguard")
         };
 
         // If debug binary doesn't exist, try release
         let binary_path = if binary_path.exists() {
             binary_path
         } else {
-            PathBuf::from("target").join("release").join("taskguard")
+            if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
+                PathBuf::from(target_dir).join("release").join("taskguard")
+            } else {
+                manifest_path.join("target").join("release").join("taskguard")
+            }
         };
 
         Ok(CLITestProject {
@@ -53,6 +61,13 @@ impl CLITestProject {
     }
 
     fn create_task_file(&self, area: &str, id: &str, title: &str, status: TaskStatus, dependencies: Vec<String>) -> Result<()> {
+        let tasks_dir = self.project_path.join("tasks");
+        let area_dir = tasks_dir.join(area);
+        if !area_dir.exists() {
+            fs::create_dir_all(&area_dir)?;
+        }
+
+        let file_path = area_dir.join(format!("{}.md", id));
         let task = Task {
             id: id.to_string(),
             title: title.to_string(),
@@ -66,15 +81,9 @@ impl CLITestProject {
             complexity: Some(5),
             area: area.to_string(),
             content: format!("Test content for {}", title),
+            file_path: file_path.clone(),
         };
 
-        let tasks_dir = self.project_path.join("tasks");
-        let area_dir = tasks_dir.join(area);
-        if !area_dir.exists() {
-            fs::create_dir_all(&area_dir)?;
-        }
-
-        let file_path = area_dir.join(format!("{}.md", id));
         task.save_to_file(&file_path)?;
         Ok(())
     }
