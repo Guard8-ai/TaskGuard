@@ -8,7 +8,7 @@ pub mod git;
 pub mod analysis;
 pub mod github;
 
-use commands::{init, list, create, validate, sync, lint, ai, update, import_md, clean, stats, archive, compact};
+use commands::{init, list, create, validate, sync, lint, ai, update, import_md, clean, stats, archive, compact, restore};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -178,6 +178,14 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Restore archived task back to active tasks
+    Restore {
+        /// Task ID to restore from archive
+        task_id: String,
+        /// Dry run - show what would be restored without actually moving files
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -238,5 +246,6 @@ fn main() -> Result<()> {
         Commands::Stats => stats::run(),
         Commands::Archive { dry_run, days } => archive::run(dry_run, days),
         Commands::Compact { dry_run } => compact::run(dry_run),
+        Commands::Restore { task_id, dry_run } => restore::run(&task_id, dry_run),
     }
 }

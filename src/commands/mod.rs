@@ -11,3 +11,4 @@ pub mod clean;
 pub mod stats;
 pub mod archive;
 pub mod compact;
+pub mod restore;
