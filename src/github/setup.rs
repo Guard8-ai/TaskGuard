@@ -168,17 +168,28 @@ impl GitHubProjectSetup {
             println!("✓ Linked to repository: {}/{}", owner, repo);
         }
 
-        // 4. Verify status field exists (Projects v2 has default Status field)
-        match GitHubMutations::get_status_field_info(client, &project_id) {
-            Ok((_, options)) => {
-                if verbose {
+        // 4. Setup status columns for TaskGuard (add In Review and Blocked)
+        if verbose {
+            println!("⚙️  Setting up status columns...");
+        }
+
+        match GitHubMutations::ensure_status_columns(client, &project_id) {
+            Ok(created) => {
+                // Get updated column list
+                if let Ok((_, options)) = GitHubMutations::get_status_field_info(client, &project_id) {
                     let column_names: Vec<_> = options.iter().map(|(_, name)| name.as_str()).collect();
-                    println!("✓ Configured status columns: {}", column_names.join(", "));
+                    if verbose {
+                        println!("✓ Status columns ready: {}", column_names.join(", "));
+                        if created > 0 {
+                            println!("  (Added {} TaskGuard-specific columns)", created);
+                        }
+                    }
                 }
             }
             Err(e) => {
                 if verbose {
-                    println!("⚠️  Status columns may need manual configuration: {}", e);
+                    println!("⚠️  Could not configure all status columns: {}", e);
+                    println!("   You may need to manually add 'In Review' and 'Blocked' columns");
                 }
             }
         }

@@ -392,32 +392,99 @@ fn run_github_sync(tasks: &[Task], backfill_project: bool, dry_run: bool) -> Res
         println!("   Syncing local tasks with GitHub Issues and Projects...\n");
     }
 
-    // Check if GitHub is configured
-    if !is_github_sync_enabled()? {
-        println!("❌ GitHub sync not configured");
-        println!();
-        println!("📝 SETUP INSTRUCTIONS:");
-        println!("   Create `.taskguard/github.toml` with:");
-        println!();
-        println!("   owner = \"your-username\"");
-        println!("   repo = \"your-repo\"");
-        println!("   project_number = 1");
-        println!();
-        println!("💡 TIP: Run `gh auth login` to authenticate with GitHub CLI");
-        return Ok(());
-    }
-
-    // Load configuration
-    let config = load_github_config()
-        .context("Failed to load GitHub configuration")?;
-
-    // Create GitHub client
+    // Create GitHub client early for auto-setup
     let client = GitHubClient::new()
         .context("Failed to create GitHub client. Make sure you've run `gh auth login`")?;
+
+    // Check if GitHub is configured, if not try to auto-configure
+    let config = if !is_github_sync_enabled()? {
+        // Try to detect repository from git remote
+        println!("🔍 No GitHub configuration found, attempting auto-setup...");
+
+        let current_dir = env::current_dir()
+            .context("Failed to get current directory")?;
+
+        let git_analyzer = GitAnalyzer::new(&current_dir)
+            .context("Failed to initialize Git analyzer. Make sure you're in a Git repository.")?;
+
+        // Get remote URL and parse owner/repo
+        let remotes = git_analyzer.get_remotes()?;
+        let remote_name = if remotes.contains(&"origin".to_string()) {
+            "origin"
+        } else if !remotes.is_empty() {
+            &remotes[0]
+        } else {
+            println!("❌ No git remotes found");
+            println!("💡 TIP: Add a GitHub remote with: git remote add origin https://github.com/owner/repo");
+            return Ok(());
+        };
+
+        // Get remote URL using git command
+        let remote_url_output = std::process::Command::new("git")
+            .args(&["remote", "get-url", remote_name])
+            .current_dir(&current_dir)
+            .output()
+            .context("Failed to get git remote URL")?;
+
+        if !remote_url_output.status.success() {
+            println!("❌ Failed to get remote URL for '{}'", remote_name);
+            return Ok(());
+        }
+
+        let remote_url = String::from_utf8_lossy(&remote_url_output.stdout).trim().to_string();
+
+        // Parse GitHub owner/repo from remote URL
+        let (owner, repo) = parse_github_repo(&remote_url)
+            .context("Could not parse GitHub repository from remote URL")?;
+
+        println!("✓ Detected repository: {}/{}", owner, repo);
+
+        // Auto-create project
+        let (_project_number, _project_id) = GitHubProjectSetup::auto_create_project(
+            &client,
+            &owner,
+            &repo,
+            true  // verbose
+        )?;
+
+        // Config was written by auto_create_project, reload it
+        load_github_config()
+            .context("Failed to load auto-generated GitHub configuration")?
+    } else {
+        load_github_config()
+            .context("Failed to load GitHub configuration")?
+    };
 
     // Load or create task-issue mapper
     let mut mapper = TaskIssueMapper::new()
         .context("Failed to load task-issue mapper")?;
+
+    // Ensure all required status columns exist on the Projects v2 board
+    // This provides zero-configuration sync by auto-creating missing columns
+    if !dry_run {
+        println!("🔍 Checking GitHub Projects v2 board status columns...");
+        let project_id = GitHubProjectSetup::get_project_id(
+            &client,
+            &config.owner,
+            config.project_number
+        ).context("Failed to get project ID")?;
+
+        match GitHubMutations::ensure_status_columns(&client, &project_id) {
+            Ok(created) => {
+                if created == 0 {
+                    println!("   ✅ All required status columns exist");
+                } else {
+                    println!("   ✅ Status columns setup complete");
+                }
+            }
+            Err(e) => {
+                // Don't fail the entire sync if column creation fails
+                println!("   ⚠️  Could not verify/create status columns: {}", e);
+                println!("   💡 Sync will continue with existing columns");
+            }
+        }
+        println!();
+    }
 
     if backfill_project {
         // Backfill mode: add all existing issues to project board
@@ -802,4 +869,28 @@ fn map_github_state_to_taskguard(state: &str) -> &str {
         "CLOSED" => "done",
         _ => "todo",
     }
+}
+
+/// Parse GitHub owner and repo from a git remote URL
+///
+/// Supports HTTPS and SSH URLs:
+/// - https://github.com/owner/repo.git
+/// - git@github.com:owner/repo.git
+fn parse_github_repo(url: &str) -> Result<(String, String)> {
+    // Remove trailing .git if present
+    let url = url.trim_end_matches(".git");
+
+    // Try HTTPS format first
+    if let Some(captures) = regex::Regex::new(r"github\.com[:/]([^/]+)/(.+)$")
+        .ok()
+        .and_then(|re| re.captures(url))
+    {
+        let owner = captures.get(1).map(|m| m.as_str().to_string())
+            .context("Failed to parse owner from GitHub URL")?;
+        let repo = captures.get(2).map(|m| m.as_str().to_string())
+            .context("Failed to parse repo from GitHub URL")?;
+        return Ok((owner, repo));
+    }
+
+    Err(anyhow::anyhow!("Could not parse GitHub repository from URL: {}. Expected format: https://github.com/owner/repo or git@github.com:owner/repo", url))
 }

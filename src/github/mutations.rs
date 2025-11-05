@@ -617,6 +617,241 @@ impl GitHubMutations {
         Err(anyhow::anyhow!("Status field not found in project"))
     }
 
+    /// Ensure all TaskGuard status columns exist on GitHub Projects v2 board
+    ///
+    /// This function checks the current status columns and creates any missing ones
+    /// required by TaskGuard (todo, doing, review, done, blocked). This provides
+    /// zero-configuration GitHub sync by automatically setting up the board.
+    ///
+    /// # Required Status Columns
+    ///
+    /// - "Backlog" or "Todo" (for todo status)
+    /// - "In Progress" (for doing status)
+    /// - "In Review" (for review status) ← **CREATED IF MISSING**
+    /// - "Blocked" (for blocked status) ← **CREATED IF MISSING**
+    /// - "Done" (for done status)
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - Authenticated GitHub client
+    /// * `project_id` - GraphQL node ID of the Projects v2 board
+    ///
+    /// # Returns
+    ///
+    /// Number of status columns created (0 if all exist)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Project not found
+    /// - Status field not found
+    /// - API permission denied
+    /// - Network request fails
+    ///
+    /// Note: This function provides informative warnings but doesn't fail if column
+    /// creation is not possible. The sync will continue with existing columns.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use taskguard::github::{GitHubClient, GitHubMutations};
+    ///
+    /// let client = GitHubClient::new()?;
+    /// let created = GitHubMutations::ensure_status_columns(&client, "project_id")?;
+    /// println!("Created {} new status columns", created);
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    pub fn ensure_status_columns(
+        client: &GitHubClient,
+        project_id: &str,
+    ) -> Result<usize> {
+        use super::mapper::TaskIssueMapper;
+        use crate::task::TaskStatus;
+
+        // Get current status field and options
+        let (field_id, existing_options) = Self::get_status_field_info(client, project_id)
+            .context("Failed to get status field info")?;
+
+        // Define required TaskGuard statuses with their preferred column names
+        let required_statuses = vec![
+            (TaskStatus::Todo, "Backlog"),
+            (TaskStatus::Doing, "In Progress"),
+            (TaskStatus::Review, "In Review"),
+            (TaskStatus::Done, "Done"),
+            (TaskStatus::Blocked, "Blocked"),
+        ];
+
+        // Check which statuses are missing
+        let mut missing_columns = Vec::new();
+
+        for (status, preferred_name) in required_statuses {
+            if TaskIssueMapper::find_best_status_option(&status, &existing_options).is_none() {
+                missing_columns.push((status, preferred_name));
+            }
+        }
+
+        if missing_columns.is_empty() {
+            return Ok(0);
+        }
+
+        // Create missing columns
+        let mut created_count = 0;
+        println!("   🔧 Creating missing status columns...");
+
+        for (status, column_name) in missing_columns {
+            match Self::create_status_column(client, project_id, &field_id, column_name) {
+                Ok(_) => {
+                    println!("      ✅ Created '{}' column for {:?} status", column_name, status);
+                    created_count += 1;
+                }
+                Err(e) => {
+                    // Don't fail the entire sync if column creation fails
+                    // Just warn and continue with existing columns
+                    println!("      ⚠️  Could not create '{}' column: {}", column_name, e);
+                    println!("      💡 You may need to create this column manually on GitHub");
+                }
+            }
+        }
+
+        if created_count > 0 {
+            println!("      🎉 Successfully created {} status column(s)", created_count);
+        }
+
+        Ok(created_count)
+    }
+
+    /// Create a new status column option on a GitHub Projects v2 board
+    ///
+    /// This is an internal helper function that adds a new option to the Status
+    /// single-select field using the GitHub GraphQL API.
+    ///
+    /// Note: The GitHub API requires sending ALL existing options plus the new one.
+    /// We fetch current options from the parent function.
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - Authenticated GitHub client
+    /// * `project_id` - GraphQL node ID of the Projects v2 board
+    /// * `field_id` - GraphQL node ID of the Status field
+    /// * `option_name` - Name for the new status column (e.g., "In Review")
+    ///
+    /// # Returns
+    ///
+    /// The GraphQL node ID of the newly created option
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - User lacks project write permissions
+    /// - Option name already exists
+    /// - Network request fails
+    fn create_status_column(
+        client: &GitHubClient,
+        project_id: &str,
+        field_id: &str,
+        option_name: &str,
+    ) -> Result<String> {
+        // First, get current options so we can preserve them
+        let (_, current_options) = Self::get_status_field_info(client, project_id)?;
+
+        // Assign colors to status columns
+        let color = match option_name {
+            "In Review" => "YELLOW",
+            "Blocked" => "RED",
+            "Backlog" | "Todo" => "GRAY",
+            "In Progress" => "BLUE",
+            "Done" => "GREEN",
+            _ => "GRAY",
+        };
+
+        let description = match option_name {
+            "In Review" => "Tasks awaiting review",
+            "Blocked" => "Tasks that are blocked",
+            "Backlog" | "Todo" => "Tasks to do",
+            "In Progress" => "Tasks in progress",
+            "Done" => "Completed tasks",
+            _ => "",
+        };
+
+        // Build option list: existing options + new option with proper fields
+        let mut all_options: Vec<serde_json::Value> = current_options
+            .iter()
+            .map(|(_, name)| {
+                // For existing options, provide name, color, and description
+                let existing_color = match name.as_str() {
+                    "Todo" => "GRAY",
+                    "In Progress" => "BLUE",
+                    "Done" => "GREEN",
+                    _ => "GRAY",
+                };
+                let existing_desc = match name.as_str() {
+                    "Todo" => "Tasks to do",
+                    "In Progress" => "Tasks in progress",
+                    "Done" => "Completed tasks",
+                    _ => "",
+                };
+                json!({
+                    "name": name,
+                    "color": existing_color,
+                    "description": existing_desc
+                })
+            })
+            .collect();
+
+        // Add the new option with all required fields
+        all_options.push(json!({
+            "name": option_name,
+            "color": color,
+            "description": description
+        }));
+
+        let mutation = r#"
+            mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
+                updateProjectV2Field(input: {
+                    fieldId: $fieldId,
+                    singleSelectOptions: $options
+                }) {
+                    projectV2Field {
+                        ... on ProjectV2SingleSelectField {
+                            id
+                            options {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        "#;
+
+        let variables = json!({
+            "fieldId": field_id,
+            "options": all_options
+        });
+
+        let response = client
+            .query(mutation, variables)
+            .context(format!("Failed to create status column '{}'", option_name))?;
+
+        // Extract the new option ID from the response
+        let options = response["data"]["updateProjectV2Field"]["projectV2Field"]["options"]
+            .as_array()
+            .context("Invalid response when creating status column")?;
+
+        // Find the newly created option by name
+        for opt in options {
+            if opt["name"].as_str() == Some(option_name) {
+                let option_id = opt["id"]
+                    .as_str()
+                    .context("Missing option ID")?
+                    .to_string();
+                return Ok(option_id);
+            }
+        }
+
+        Err(anyhow::anyhow!("Created option not found in response"))
+    }
+
     // ========================================
     // HELPER FUNCTIONS
     // ========================================
