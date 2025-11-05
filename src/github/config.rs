@@ -20,6 +20,7 @@ use super::types::GitHubConfig;
 /// if is_github_sync_enabled()? {
 ///     println!("GitHub sync is enabled");
 /// }
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 pub fn is_github_sync_enabled() -> Result<bool> {
     let root = find_taskguard_root()
@@ -59,6 +60,7 @@ pub fn is_github_sync_enabled() -> Result<bool> {
 /// let config = load_github_config()?;
 /// println!("Repository: {}/{}", config.owner, config.repo);
 /// println!("Project number: {}", config.project_number);
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 pub fn load_github_config() -> Result<GitHubConfig> {
     let root = find_taskguard_root()

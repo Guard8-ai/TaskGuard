@@ -30,6 +30,7 @@ impl GitHubClient {
     /// use taskguard::github::client::GitHubClient;
     ///
     /// let client = GitHubClient::new()?;
+    /// # Ok::<(), anyhow::Error>(())
     /// ```
     pub fn new() -> Result<Self> {
         // Get token from `gh auth token` command
@@ -96,6 +97,7 @@ impl GitHubClient {
     ///     query { viewer { login } }
     /// "#;
     /// let result = client.query(query, json!({}))?;
+    /// # Ok::<(), anyhow::Error>(())
     /// ```
     pub fn query(&self, query: &str, variables: Value) -> Result<Value> {
         let body = serde_json::json!({
