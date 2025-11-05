@@ -1,7 +1,7 @@
 ---
 id: github-fix-2
 title: Archive Command GitHub Issues Integration
-status: todo
+status: done
 priority: medium
 tags:
 - github
