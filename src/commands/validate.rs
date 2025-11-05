@@ -4,6 +4,7 @@ use walkdir::WalkDir;
 
 use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};
 use crate::task::{Task, TaskStatus};
+use crate::github::{is_github_sync_enabled, TaskIssueMapper};
 
 pub fn run() -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
@@ -202,6 +203,43 @@ pub fn run() -> Result<()> {
     }
     println!("   Parse errors: {}", parse_errors.len());
     println!("   Dependency issues: {}", dependency_issues.len());
+
+    // GitHub sync validation
+    if is_github_sync_enabled().unwrap_or(false) {
+        if let Ok(mapper) = TaskIssueMapper::new() {
+            println!();
+            println!("🌐 GITHUB SYNC VALIDATION");
+
+            let mut orphaned_mappings = Vec::new();
+            let mut archived_synced_tasks = Vec::new();
+
+            for mapping in mapper.get_all_mappings() {
+                if !all_ids.contains(&mapping.task_id) {
+                    orphaned_mappings.push((mapping.task_id.clone(), mapping.issue_number));
+                } else if archived_ids.contains(&mapping.task_id) {
+                    archived_synced_tasks.push((mapping.task_id.clone(), mapping.issue_number));
+                }
+            }
+
+            if !orphaned_mappings.is_empty() {
+                println!("   ⚠️  ORPHANED MAPPINGS (task deleted but mapping remains):");
+                for (task_id, issue_num) in &orphaned_mappings {
+                    println!("      {} → Issue #{} (task not found)", task_id, issue_num);
+                }
+            }
+
+            if !archived_synced_tasks.is_empty() {
+                println!("   📦 ARCHIVED SYNCED TASKS:");
+                for (task_id, issue_num) in &archived_synced_tasks {
+                    println!("      {} → Issue #{} (task archived)", task_id, issue_num);
+                }
+            }
+
+            if orphaned_mappings.is_empty() && archived_synced_tasks.is_empty() {
+                println!("   ✅ No GitHub sync issues found");
+            }
+        }
+    }
 
     Ok(())
 }

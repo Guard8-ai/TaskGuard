@@ -1,7 +1,7 @@
 ---
 id: github-fix-5
 title: Add GitHub-Aware Validation
-status: todo
+status: done
 priority: medium
 tags:
 - github
@@ -13,7 +13,6 @@ estimate: ~
 complexity: 4
 area: github
 ---
-
 
 **Location:** `src/commands/validate.rs`
 
