@@ -1,7 +1,7 @@
 ---
 id: github-fix-4
 title: Update GitHub Sync to Handle Archive
-status: todo
+status: done
 priority: medium
 tags:
 - github

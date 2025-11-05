@@ -523,10 +523,8 @@ fn push_tasks_to_github(
     let mut skipped = 0;
 
     for task in tasks {
-        // Skip archived tasks (they should already be closed)
-        if task.file_path.to_string_lossy().contains("archive") {
-            continue;
-        }
+        // Detect if task is archived
+        let is_archived = task.file_path.to_string_lossy().contains("archive");
 
         // Check if task already has a GitHub issue
         if let Some(mapping) = mapper.get_by_task_id(&task.id) {
@@ -585,7 +583,11 @@ fn push_tasks_to_github(
             }
         } else {
             // No issue exists - create one
-            println!("   ➕ {} - {} (creating issue)", task.id, task.title);
+            if is_archived {
+                println!("   ➕ {} - {} (creating closed issue for archived task)", task.id, task.title);
+            } else {
+                println!("   ➕ {} - {} (creating issue)", task.id, task.title);
+            }
 
             if !dry_run {
                 // Build issue body with TaskGuard ID for tracking
@@ -605,13 +607,20 @@ fn push_tasks_to_github(
                     &description
                 };
 
+                let archived_note = if is_archived {
+                    "\n\n📦 **Note:** This task was archived when the issue was created."
+                } else {
+                    ""
+                };
+
                 let body = format!(
-                    "**TaskGuard ID:** {}\n\n## Description\n\n{}\n\n---\n*Synced from TaskGuard*",
+                    "**TaskGuard ID:** {}\n\n## Description\n\n{}{}\n\n---\n*Synced from TaskGuard*",
                     task.id,
-                    description
+                    description,
+                    archived_note
                 );
 
-                let issue = GitHubMutations::create_issue(
+                let mut issue = GitHubMutations::create_issue(
                     client,
                     &config.owner,
                     &config.repo,
@@ -620,6 +629,14 @@ fn push_tasks_to_github(
                 ).context(format!("Failed to create issue for task {}", task.id))?;
 
                 println!("      ✅ Created issue #{}", issue.number);
+
+                // If task is archived, immediately close the issue
+                if is_archived {
+                    GitHubMutations::update_issue_state(client, &issue.id, "CLOSED")
+                        .context(format!("Failed to close issue for archived task {}", task.id))?;
+                    println!("      🔒 Closed issue (archived task)");
+                    issue.state = "CLOSED".to_string();
+                }
 
                 // Add to Projects v2 board
                 println!("      📋 Adding to project...");
@@ -660,14 +677,14 @@ fn push_tasks_to_github(
                     println!("      ⚠️  No matching status column found for '{}'", task.status);
                 }
 
-                // 6. Save mapping with project_item_id
+                // 6. Save mapping with project_item_id and archived status
                 let mapping = IssueMapping {
                     task_id: task.id.clone(),
                     issue_number: issue.number,
                     issue_id: issue.id.clone(),
                     project_item_id,
                     synced_at: chrono::Utc::now().to_rfc3339(),
-                    is_archived: false,
+                    is_archived,
                 };
                 mapper.add_mapping(mapping)
                     .context(format!("Failed to save mapping for task {}", task.id))?;
@@ -705,19 +722,26 @@ fn pull_issues_from_github(
     let mut mapped_count = 0;
     let mut orphaned_issues = Vec::new();
     let mut updates_needed = Vec::new();
+    let mut archived_with_changes = Vec::new();
 
     for issue in issues {
         // Check if this issue is tracked
         if let Some(mapping) = mapper.get_by_issue_number(issue.number) {
             mapped_count += 1;
 
-            // Find the task
+            // Find the task (including archived)
             if let Some(task) = tasks.iter().find(|t| t.id == mapping.task_id) {
+                let is_archived = task.file_path.to_string_lossy().contains("archive");
                 let github_state = map_github_state_to_taskguard(&issue.state);
                 let local_state = task.status.to_string();
 
                 if github_state != local_state {
-                    updates_needed.push((task.id.clone(), local_state, github_state.to_string()));
+                    if is_archived {
+                        // Archived task with status mismatch - special handling
+                        archived_with_changes.push((task.id.clone(), local_state, github_state.to_string(), issue.number));
+                    } else {
+                        updates_needed.push((task.id.clone(), local_state, github_state.to_string()));
+                    }
                 }
             }
         } else {
@@ -747,10 +771,10 @@ fn pull_issues_from_github(
         println!("      3. Or ask AI: \"Create TaskGuard tasks for orphaned GitHub issues\"");
     }
 
-    // Report status mismatches
+    // Report status mismatches for active tasks
     if !updates_needed.is_empty() {
         println!();
-        println!("   ⚠️  {} tasks have status changes on GitHub:", updates_needed.len());
+        println!("   ⚠️  {} active tasks have status changes on GitHub:", updates_needed.len());
         for (task_id, local, github) in &updates_needed {
             println!("      {} - Local: {}, GitHub: {}", task_id, local, github);
         }
@@ -762,7 +786,22 @@ fn pull_issues_from_github(
         }
     }
 
-    if orphaned_issues.is_empty() && updates_needed.is_empty() {
+    // Report status mismatches for archived tasks
+    if !archived_with_changes.is_empty() {
+        println!();
+        println!("   📦 {} ARCHIVED tasks have status changes on GitHub:", archived_with_changes.len());
+        for (task_id, local, github, issue_num) in &archived_with_changes {
+            println!("      {} - Local: {}, GitHub: {} (Issue #{})", task_id, local, github, issue_num);
+        }
+
+        println!();
+        println!("   💡 ARCHIVED TASK SYNC OPTIONS:");
+        println!("      1. Run 'taskguard restore <task-id>' to unarchive and sync");
+        println!("      2. Or ignore - archived tasks won't auto-update from GitHub");
+        println!("      3. Next sync will push local archived status back to GitHub");
+    }
+
+    if orphaned_issues.is_empty() && updates_needed.is_empty() && archived_with_changes.is_empty() {
         println!("   ✅ All tasks in sync with GitHub");
     }
 
@@ -779,6 +818,7 @@ fn backfill_project_board(
     let mut added = 0;
     let mut skipped = 0;
     let mut already_on_board = 0;
+    let mut archived_added = 0;
 
     // Get project ID once
     let project_id = GitHubProjectSetup::get_project_id(
@@ -794,10 +834,8 @@ fn backfill_project_board(
     ).context("Failed to get status field info")?;
 
     for task in tasks {
-        // Skip archived tasks
-        if task.file_path.to_string_lossy().contains("archive") {
-            continue;
-        }
+        // Detect if task is archived
+        let is_archived = task.file_path.to_string_lossy().contains("archive");
 
         // Check if task has a GitHub issue
         if let Some(mut mapping) = mapper.get_by_task_id(&task.id).cloned() {
@@ -807,7 +845,11 @@ fn backfill_project_board(
                 continue;
             }
 
-            println!("   🔄 {} - {}", task.id, task.title);
+            if is_archived {
+                println!("   🔄 {} - {} (archived)", task.id, task.title);
+            } else {
+                println!("   🔄 {} - {}", task.id, task.title);
+            }
 
             if !dry_run {
                 // Add issue to project
@@ -833,11 +875,16 @@ fn backfill_project_board(
                     println!("      ⚠️  No matching status column found for '{}'", task.status);
                 }
 
-                // Update mapping with project_item_id
+                // Update mapping with project_item_id and archived status
                 mapping.project_item_id = project_item_id;
+                mapping.is_archived = is_archived;
                 mapper.update_mapping(mapping)?;
 
-                added += 1;
+                if is_archived {
+                    archived_added += 1;
+                } else {
+                    added += 1;
+                }
             } else {
                 println!("      Would add to project and set status");
             }
@@ -849,6 +896,9 @@ fn backfill_project_board(
     println!();
     println!("📊 BACKFILL SUMMARY");
     println!("   Added to board: {}", added);
+    if archived_added > 0 {
+        println!("   Archived tasks added: {} (as closed issues)", archived_added);
+    }
     println!("   Already on board: {}", already_on_board);
     println!("   Skipped (no issue): {}", skipped);
 
