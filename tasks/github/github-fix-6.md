@@ -1,7 +1,7 @@
 ---
 id: github-fix-6
 title: Add Restore Command
-status: todo
+status: done
 priority: medium
 tags:
 - github
