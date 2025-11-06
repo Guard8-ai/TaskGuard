@@ -149,11 +149,23 @@ Create middleware for JWT token validation on protected routes.
 
 ## Workflow Summary
 
+### Standard Workflow (Local-only)
+
 1. **Author** markdown file with section headers and metadata
 2. **Import** with `taskguard import-md your-file.md`
 3. **Validate** with `taskguard validate` (CRITICAL)
 4. **Fix** any dependency issues identified
 5. **Work** on tasks using `taskguard list` and dependency blocking
+
+### GitHub-integrated Workflow
+
+1. **Author** markdown file with section headers and metadata
+2. **Import** with `taskguard import-md your-file.md`
+3. **Validate** with `taskguard validate` (CRITICAL)
+4. **Fix** any dependency issues identified
+5. **Sync to GitHub** with `taskguard sync --github`
+6. **Work** on tasks (updates sync automatically)
+7. **Archive when complete** with `taskguard archive` (closes GitHub issues)
 
 ## Conflict Handling
 
@@ -174,8 +186,13 @@ To update existing tasks, edit them directly - import-md won't overwrite.
 - **Group related tasks:** Use dependencies to enforce order
 - **Run validation:** Catch dependency issues immediately after import
 - **Check for conflicts:** Import-md skips existing IDs - plan accordingly
+- **Sync after import (GitHub integration):** Run `taskguard sync --github` after importing to create GitHub issues
+- **Validate before archiving:** Always run `taskguard validate` before archiving to see sync status
+- **Preview archives:** Use `taskguard archive --dry-run` to preview what will be archived and which issues will close
 
 ## Example AI Workflow
+
+### Local-only Example
 
 ```
 Human: "Analyze the authentication system and create tasks"
@@ -196,6 +213,37 @@ AI: I'll create an analysis markdown and import it:
    - 🚫 Found 2 blocked tasks (correct - waiting on setup)
 
 5. Summary: Created 5 tasks, 2 ready to work on
+```
+
+### GitHub-integrated Example
+
+```
+Human: "Analyze the authentication system, create tasks, and sync to GitHub"
+
+AI: I'll create an analysis markdown, import it, and sync to GitHub:
+
+1. Writing analysis.md with:
+   - Setup task for dependencies
+   - Auth implementation tasks
+   - Testing tasks with dependencies
+
+2. Running: taskguard import-md analysis.md --area auth --prefix auth
+
+3. Running: taskguard validate
+   - ✅ All dependencies valid
+   - 🚫 Found 2 blocked tasks (correct - waiting on setup)
+
+4. Running: taskguard sync --github
+   - ✅ Created GitHub issue #42 for auth-001
+   - ✅ Created GitHub issue #43 for auth-002
+   - ✅ Added issues to Projects v2 board
+
+5. Summary: Created 5 tasks, synced to GitHub, 2 ready to work on
+
+6. Later, after completion:
+   - Running: taskguard archive
+   - ✅ Archived auth-001 (closed GitHub issue #42)
+   - ✅ Archived auth-002 (closed GitHub issue #43)
 ```
 
 ---

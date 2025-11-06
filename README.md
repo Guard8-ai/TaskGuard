@@ -18,6 +18,8 @@ TaskGuard is a local-first, Git-native task management system built in Rust. It 
 - **⚡ Fast & reliable**: Built in Rust for performance and safety
 - **🤖 AI-ready**: Zero-setup AI agent integration with automatic guide distribution
 - **🕰️ Git analysis**: Intelligent status suggestions based on commit history
+- **🐙 GitHub integration**: Bidirectional sync with GitHub Issues and Projects v2
+- **📦 Archive & restore**: Archive completed tasks and close/reopen GitHub issues
 - **🔒 Security-audited**: Comprehensive security testing with 17 security-focused tests
 
 ## 🚀 Quick Start
@@ -116,6 +118,38 @@ taskguard ai "what should I work on next?"
 taskguard sync --verbose
 ```
 
+### GitHub Integration (Optional)
+
+Sync your tasks with GitHub Issues and Projects v2:
+
+```bash
+# Create GitHub configuration
+cat > .taskguard/github.toml << EOF
+owner = "your-username"
+repo = "your-repo"
+project_number = 1
+EOF
+
+# Sync tasks to GitHub (creates issues and adds to Projects v2)
+taskguard sync --github
+
+# Preview sync without making changes
+taskguard sync --github --dry-run
+
+# Archive completed tasks (closes GitHub issues)
+taskguard archive
+
+# Restore archived task (reopens GitHub issue)
+taskguard restore backend-001
+```
+
+**GitHub Integration Features:**
+- Creates GitHub Issues from tasks automatically
+- Adds issues to Projects v2 board with correct status columns
+- Bidirectional sync keeps local and GitHub in sync
+- Status mapping: todo→Backlog, doing→In Progress, done→Done
+- Archive lifecycle: archiving closes issues, restoring reopens them
+
 ## 🎯 Core Concept: Dependency Blocking
 
 TaskGuard's key innovation is **dependency blocking** - tasks automatically become unavailable until their prerequisites are completed. This ensures work happens in the right order without manual tracking.
@@ -166,6 +200,8 @@ Brief description of what needs to be done and why.
 | `taskguard list [--area AREA] [--status STATUS]` | List tasks with optional filters |
 | `taskguard create --title TITLE [OPTIONS]` | Create a new task |
 | `taskguard validate` | Check dependencies and show available tasks |
+| `taskguard archive [--dry-run]` | Archive completed tasks (closes GitHub issues if synced) |
+| `taskguard restore <task-id>` | Restore archived task (reopens GitHub issue if synced) |
 
 ### Intelligence Commands
 | Command | Description |
@@ -173,6 +209,13 @@ Brief description of what needs to be done and why.
 | `taskguard sync [--verbose]` | Analyze Git history for intelligent status suggestions |
 | `taskguard lint [--verbose]` | Analyze task complexity and quality |
 | `taskguard ai "QUERY"` | Natural language task management with AI |
+
+### GitHub Integration Commands
+| Command | Description |
+|---------|-------------|
+| `taskguard sync --github` | Sync tasks with GitHub Issues and Projects v2 |
+| `taskguard sync --github --dry-run` | Preview GitHub sync without making changes |
+| `taskguard sync --github --backfill-project` | Add existing issues to Projects v2 board |
 
 ### Installation Commands
 | Platform | Command |
@@ -237,6 +280,13 @@ TaskGuard provides information and suggestions but never makes decisions for you
 - ✅ Cross-platform installation scripts (Linux, macOS, Windows, WSL)
 - ✅ Global installation for multi-project usage
 - ✅ Comprehensive documentation and guides
+
+**✅ Phase 5 (v0.3.0 - COMPLETED): GitHub Integration**
+- ✅ Bidirectional sync with GitHub Issues and Projects v2
+- ✅ Automatic issue creation and status mapping
+- ✅ Archive command with GitHub issue closing
+- ✅ Restore command with GitHub issue reopening
+- ✅ Task-issue mapping persistence with archived state tracking
 
 ## 🤖 For AI Agents & Automation
 

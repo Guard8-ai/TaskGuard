@@ -16,6 +16,10 @@ taskguard update priority <task-id> high             # Change priority
 taskguard list items <task-id>                       # View checklist items
 taskguard task update <task-id> 1 done              # Mark item complete
 
+# Archive & Restore Commands
+taskguard archive [--dry-run]                        # Archive completed tasks (closes GitHub issues if synced)
+taskguard restore <task-id>                          # Restore archived task (reopens GitHub issue if synced)
+
 # GitHub Integration (requires .taskguard/github.toml)
 taskguard sync --github                              # Sync tasks ↔ GitHub Issues & Projects v2
 taskguard sync --github --backfill-project           # Add existing issues to Projects v2 board
@@ -192,6 +196,56 @@ taskguard list | grep task-id  # Check if task exists
 echo $?                        # Check exit code (0=success, 1=error)
 ```
 
+### GitHub Integration Issues
+
+**Sync Not Working**
+```bash
+# Check GitHub configuration
+cat .taskguard/github.toml
+
+# Verify credentials (GitHub CLI must be authenticated)
+gh auth status
+
+# Test sync with dry-run
+taskguard sync --github --dry-run
+```
+
+**Issues Not Closing on Archive**
+```bash
+# Verify task is synced before archiving
+taskguard validate  # Shows "Synced to GitHub: #123" for synced tasks
+
+# Check task-issue mapping
+cat .taskguard/state/task_issue_mapping.json
+
+# Ensure task was synced at least once before archiving
+taskguard sync --github  # Sync before archiving
+taskguard archive
+```
+
+**Restore Not Reopening Issues**
+```bash
+# Verify task was previously synced
+cat .taskguard/state/task_issue_mapping.json | grep task-id
+
+# Check if issue was actually closed
+gh issue view <issue-number>
+
+# Restore should automatically reopen
+taskguard restore backend-001
+```
+
+**Archived Tasks Showing in Validation**
+```bash
+# This is expected behavior - validation shows archived synced tasks
+# Use this information to understand what was archived and synced
+
+taskguard validate
+# Example output:
+# 📦 ARCHIVED TASKS (GitHub synced):
+#    ✅ backend-001 - Feature X (synced to GitHub: #42, archived)
+```
+
 ## 🎬 Complete Example Workflow
 
 ```bash
@@ -226,23 +280,99 @@ taskguard task update data-001 2 done
 ## 🔗 Advanced Features
 
 ### GitHub Integration
-```bash
-# Setup (.taskguard/github.toml):
-# owner = "your-username"
-# repo = "your-repo"
-# project_number = 1
 
-# Sync tasks to GitHub Issues & Projects v2 board
+TaskGuard provides comprehensive GitHub integration with bidirectional sync and automatic issue lifecycle management.
+
+#### Setup
+Create `.taskguard/github.toml`:
+```toml
+owner = "your-username"
+repo = "your-repo"
+project_number = 1
+```
+
+#### Core GitHub Workflows
+
+**1. Create and Sync Tasks**
+```bash
+# Create tasks locally
+taskguard create --title "Feature X" --area backend --priority high
+
+# Sync to GitHub (creates issues and adds to Projects v2 board)
 taskguard sync --github
 
-# Migrate existing issues to Projects v2 board
-taskguard sync --github --backfill-project
+# Preview sync without making changes
+taskguard sync --github --dry-run
+```
+
+**2. Work and Update Tasks**
+```bash
+# Update task status locally
+taskguard update status backend-001 doing
+
+# Sync status to GitHub (moves issue to "In Progress" column)
+taskguard sync --github
+```
+
+**3. Archive Completed Work (GitHub-aware)**
+```bash
+# IMPORTANT: Always validate before archiving to see sync status
+taskguard validate
+
+# Preview what will be archived (shows GitHub sync status)
+taskguard archive --dry-run
+
+# Archive completed tasks (automatically closes GitHub issues)
+taskguard archive
 
 # Features:
-# - Auto-creates GitHub Issues from tasks
-# - Adds issues to Projects v2 board with correct status columns
-# - Bidirectional sync (local ↔ GitHub)
-# - Status mapping: todo→Backlog, doing→In Progress, done→Done
+# ✅ Archives completed tasks to .taskguard/archive/
+# ✅ Closes corresponding GitHub issues automatically
+# ✅ Updates task-issue mapping with archived status
+# ✅ Preserves task content for future reference
+```
+
+**4. Restore Archived Tasks (GitHub-aware)**
+```bash
+# Restore a previously archived task
+taskguard restore backend-001
+
+# Features:
+# ✅ Moves task back to active tasks/ directory
+# ✅ Reopens corresponding GitHub issue automatically
+# ✅ Updates task-issue mapping to remove archived flag
+# ✅ Preserves all task metadata and content
+```
+
+#### GitHub Sync Features
+- **Auto-creates GitHub Issues** from local tasks
+- **Adds issues to Projects v2 board** with correct status columns
+- **Bidirectional sync** (local ↔ GitHub)
+- **Status mapping**: todo→Backlog, doing→In Progress, done→Done
+- **Archive lifecycle**: Archiving closes issues, restoring reopens them
+- **Mapping persistence**: Tracks sync state and archived status
+
+#### Recommended GitHub Workflow
+```bash
+# 1. Create and sync tasks
+taskguard create --title "Feature X" --area backend
+taskguard sync --github
+
+# 2. Work on tasks, sync updates
+taskguard update status backend-001 doing
+taskguard sync --github
+
+# 3. Complete tasks
+taskguard update status backend-001 done
+taskguard sync --github
+
+# 4. Archive completed work (closes GitHub issues)
+taskguard validate                    # Verify sync status
+taskguard archive --dry-run          # Preview
+taskguard archive                    # Archives + closes issues
+
+# 5. If needed later, restore (reopens GitHub issues)
+taskguard restore backend-001
 ```
 
 ### Bulk Import from Markdown
@@ -252,6 +382,9 @@ taskguard import-md ANALYSIS.md --area github --prefix gh --dry-run
 
 # Create tasks from markdown sections (## Tasks, ## Action Items, etc.)
 taskguard import-md ANALYSIS.md --area github --prefix gh
+
+# After import, sync to GitHub
+taskguard sync --github
 
 # Supports: [HIGH]/[CRITICAL]/[MEDIUM]/[LOW] priority markers
 # Extracts: Numbered lists, checklists, action items
