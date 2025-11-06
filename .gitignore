@@ -33,3 +33,6 @@ Thumbs.db
 
 # MkDocs build output
 site/
+
+# Project-specific Claude Code instructions (keep local only)
+CLAUDE.md
