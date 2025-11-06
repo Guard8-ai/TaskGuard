@@ -2,7 +2,7 @@
 name = "taskguard"
 version = "0.3.0-dev"
 edition = "2024"
-description = "AI-ready local task management with Git integration"
+description = "AI-ready local task management with Git integration and GitHub sync"
 license = "MIT"
 
 [[bin]]
