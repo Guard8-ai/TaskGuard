@@ -5,7 +5,16 @@ use std::fs;
 use crate::config::{get_tasks_dir, get_config_path, Config};
 use crate::task::{Task, TaskStatus, Priority};
 
-pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Result<()> {
+pub fn run(
+    title: String,
+    area: Option<String>,
+    priority: Option<String>,
+    complexity: Option<u8>,
+    tags: Option<String>,
+    dependencies: Option<String>,
+    assignee: Option<String>,
+    estimate: Option<String>,
+) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
     let config_path = get_config_path()?;
     let config = Config::load_or_default(&config_path)?;
@@ -39,6 +48,32 @@ pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Res
         None => Priority::Medium,
     };
 
+    // Determine complexity (1-10 scale)
+    let complexity = match complexity {
+        Some(c) if c >= 1 && c <= 10 => Some(c),
+        Some(c) => {
+            println!("⚠️  Invalid complexity '{}'. Using default '3'. Valid range: 1-10", c);
+            Some(3)
+        }
+        None => Some(3), // Default complexity
+    };
+
+    // Parse tags (comma-separated, always include area)
+    let mut tag_list: Vec<String> = tags
+        .map(|t| t.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+        .unwrap_or_default();
+    if !tag_list.contains(&area) {
+        tag_list.insert(0, area.clone());
+    }
+
+    // Parse dependencies (comma-separated task IDs)
+    let dependency_list: Vec<String> = dependencies
+        .map(|d| d.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+        .unwrap_or_default();
+
+    // Determine assignee (default: "developer")
+    let assignee = assignee.or_else(|| Some("developer".to_string()));
+
     // Generate task ID
     let area_dir = tasks_dir.join(&area);
     let task_id = generate_task_id(&area, &area_dir)?;
@@ -49,12 +84,12 @@ pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Res
         title: title.clone(),
         status: TaskStatus::Todo,
         priority,
-        tags: vec![area.clone()],
-        dependencies: Vec::new(),
-        assignee: Some("developer".to_string()),
+        tags: tag_list,
+        dependencies: dependency_list,
+        assignee,
         created: Utc::now(),
-        estimate: None,
-        complexity: Some(3), // Default complexity
+        estimate,
+        complexity,
         area: area.clone(),
         content: format!(r#"# {}
 

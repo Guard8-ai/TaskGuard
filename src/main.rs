@@ -70,6 +70,21 @@ enum Commands {
         /// Task priority
         #[arg(short, long)]
         priority: Option<String>,
+        /// Task complexity (1-10)
+        #[arg(long)]
+        complexity: Option<u8>,
+        /// Tags (comma-separated)
+        #[arg(long)]
+        tags: Option<String>,
+        /// Dependencies (comma-separated task IDs)
+        #[arg(short, long)]
+        dependencies: Option<String>,
+        /// Assignee
+        #[arg(long)]
+        assignee: Option<String>,
+        /// Time estimate (e.g., "4h", "2d")
+        #[arg(short, long)]
+        estimate: Option<String>,
     },
     /// Show detailed task information
     Show {
@@ -197,7 +212,7 @@ fn main() -> Result<()> {
             Some(ListCommands::Items { task_id }) => list::run_items(task_id),
             None => list::run(status, area, include_archive),
         },
-        Commands::Create { title, area, priority } => create::run(title, area, priority),
+        Commands::Create { title, area, priority, complexity, tags, dependencies, assignee, estimate } => create::run(title, area, priority, complexity, tags, dependencies, assignee, estimate),
         Commands::Show { task_id } => {
             println!("Show task: {}", task_id);
             Ok(())
