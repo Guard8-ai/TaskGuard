@@ -1,7 +1,7 @@
 ---
 id: testing-004
 title: Fix CLI integration test failures
-status: todo
+status: done
 priority: high
 tags:
 - testing

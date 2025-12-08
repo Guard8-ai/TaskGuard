@@ -1,7 +1,7 @@
 ---
 id: issue-4
 title: Validate Command - Archive Blindness
-status: todo
+status: done
 priority: medium
 tags:
 - causality

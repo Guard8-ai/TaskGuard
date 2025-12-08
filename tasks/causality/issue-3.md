@@ -1,7 +1,7 @@
 ---
 id: issue-3
 title: List Command - Archive Blindness
-status: todo
+status: done
 priority: medium
 tags:
 - causality

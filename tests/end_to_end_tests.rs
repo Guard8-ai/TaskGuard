@@ -7,6 +7,20 @@ use taskguard::commands::{init, create, validate, sync, lint, ai};
 use taskguard::task::{Task, TaskStatus, Priority};
 use chrono::Utc;
 
+/// Helper to create a task with minimal arguments (title, area, priority)
+fn create_task(title: &str, area: &str, priority: &str) -> Result<()> {
+    create::run(
+        title.to_string(),
+        Some(area.to_string()),
+        Some(priority.to_string()),
+        None, // complexity
+        None, // tags
+        None, // dependencies
+        None, // assignee
+        None, // estimate
+    )
+}
+
 /// Test fixture for end-to-end TaskGuard workflows
 struct TaskGuardTestProject {
     _temp_dir: TempDir,
@@ -125,9 +139,9 @@ fn test_complete_project_lifecycle() -> Result<()> {
     assert!(project.tasks_dir.exists(), "Should create tasks directory");
 
     // 2. Create initial tasks
-    create::run("Setup development environment".to_string(), Some("setup".to_string()), Some("high".to_string()))?;
-    create::run("Implement user authentication".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
-    create::run("Build login form".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
+    create_task("Setup development environment", "setup", "high")?;
+    create_task("Implement user authentication", "backend", "medium")?;
+    create_task("Build login form", "frontend", "medium")?;
 
     // 3. Validate initial state
     validate::run()?;
@@ -196,8 +210,8 @@ fn test_git_analysis_workflow() -> Result<()> {
     let repo = project.init_git_repo()?;
 
     // Create tasks
-    create::run("Fix authentication bug".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("Add user registration".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
+    create_task("Fix authentication bug", "backend", "high")?;
+    create_task("Add user registration", "backend", "medium")?;
 
     // Simulate development workflow with Git commits
     project.add_git_commit(&repo, "Start working on backend-001 authentication fix")?;
@@ -224,9 +238,9 @@ fn test_complex_git_scenario() -> Result<()> {
     let repo = project.init_git_repo()?;
 
     // Create multiple tasks
-    create::run("Database migration".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("API endpoints".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
-    create::run("Frontend components".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
+    create_task("Database migration", "backend", "high")?;
+    create_task("API endpoints", "backend", "medium")?;
+    create_task("Frontend components", "frontend", "medium")?;
 
     // Simulate complex development with multiple tasks
     let commit_scenarios = vec![
@@ -430,9 +444,9 @@ fn test_ai_guided_development_workflow() -> Result<()> {
     ai::run("Create a testing task for the auth system".to_string())?;
 
     // Actually create the tasks based on AI suggestions
-    create::run("User Authentication API".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("Login Form Component".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
-    create::run("Authentication Tests".to_string(), Some("testing".to_string()), Some("medium".to_string()))?;
+    create_task("User Authentication API", "backend", "high")?;
+    create_task("Login Form Component", "frontend", "medium")?;
+    create_task("Authentication Tests", "testing", "medium")?;
 
     // Set up dependencies
     project.create_task_manually("testing", "testing-001", "Authentication Tests", TaskStatus::Todo, vec!["backend-001".to_string(), "frontend-001".to_string()])?;
@@ -466,7 +480,7 @@ fn test_ai_error_handling_workflow() -> Result<()> {
     ai::run("What should I work on next?".to_string())?; // No tasks available
 
     // Create a task and test more scenarios
-    create::run("Test Task".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
+    create_task("Test Task", "backend", "medium")?;
 
     ai::run("Show me tasks in non-existent area".to_string())?;
     ai::run("What should I work on in the year 3000?".to_string())?; // Temporal confusion
@@ -668,11 +682,11 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     ai::run("Create a task for user authentication system".to_string())?;
 
     // Actually create the planned tasks
-    create::run("Authentication System Setup".to_string(), Some("setup".to_string()), Some("high".to_string()))?;
-    create::run("Backend Authentication API".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("Frontend Login Components".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
-    create::run("Authentication Tests".to_string(), Some("testing".to_string()), Some("medium".to_string()))?;
-    create::run("Documentation Update".to_string(), Some("docs".to_string()), Some("low".to_string()))?;
+    create_task("Authentication System Setup", "setup", "high")?;
+    create_task("Backend Authentication API", "backend", "high")?;
+    create_task("Frontend Login Components", "frontend", "medium")?;
+    create_task("Authentication Tests", "testing", "medium")?;
+    create_task("Documentation Update", "docs", "low")?;
 
     // Set up realistic dependencies
     project.create_task_manually("backend", "backend-001", "Backend Auth API", TaskStatus::Todo, vec!["setup-001".to_string()])?;

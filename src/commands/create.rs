@@ -222,22 +222,31 @@ Brief description of what needs to be done and why.
 }
 
 fn generate_task_id(area: &str, area_dir: &std::path::Path) -> Result<String> {
-    // Find existing tasks in the area to determine next number
+    // Find existing tasks in both active and archive directories
+    // to prevent ID reuse when tasks are archived
+    let active_max = scan_dir_for_max_id(area, area_dir)?;
+    let archive_max = get_archive_max_id(area)?;
+
+    let max_num = active_max.max(archive_max);
+    let next_num = max_num + 1;
+    Ok(format!("{}-{:03}", area, next_num))
+}
+
+/// Scan a directory for the highest task ID number
+fn scan_dir_for_max_id(area: &str, dir: &std::path::Path) -> Result<u32> {
     let mut max_num = 0;
 
-    if area_dir.exists() {
-        for entry in fs::read_dir(area_dir).context("Failed to read area directory")? {
+    if dir.exists() {
+        for entry in fs::read_dir(dir).context("Failed to read directory")? {
             let entry = entry.context("Failed to read directory entry")?;
             if let Some(file_name) = entry.file_name().to_str() {
                 if file_name.ends_with(".md") {
-                    // Extract number from filename like "backend-001.md" or "area-123.md"
-                    // Expected format: area-NNN.md
+                    // Extract number from filename like "backend-001.md"
                     let stem = file_name.trim_end_matches(".md");
                     if let Some(dash_pos) = stem.rfind('-') {
                         let area_part = &stem[..dash_pos];
                         let num_part = &stem[dash_pos + 1..];
 
-                        // Only consider files that match our area prefix
                         if area_part == area {
                             if let Ok(num) = num_part.parse::<u32>() {
                                 max_num = max_num.max(num);
@@ -249,6 +258,18 @@ fn generate_task_id(area: &str, area_dir: &std::path::Path) -> Result<String> {
         }
     }
 
-    let next_num = max_num + 1;
-    Ok(format!("{}-{:03}", area, next_num))
+    Ok(max_num)
+}
+
+/// Get the max task ID from the archive directory for an area
+fn get_archive_max_id(area: &str) -> Result<u32> {
+    use crate::config::find_taskguard_root;
+
+    let root = match find_taskguard_root() {
+        Some(r) => r,
+        None => return Ok(0),
+    };
+
+    let archive_dir = root.join(".taskguard").join("archive").join(area);
+    scan_dir_for_max_id(area, &archive_dir)
 }

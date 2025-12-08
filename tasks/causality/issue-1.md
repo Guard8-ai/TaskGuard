@@ -1,7 +1,7 @@
 ---
 id: issue-1
 title: Archive Command - No Dependency Validation
-status: todo
+status: done
 priority: medium
 tags:
 - causality

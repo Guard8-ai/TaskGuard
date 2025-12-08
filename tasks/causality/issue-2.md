@@ -1,7 +1,7 @@
 ---
 id: issue-2
 title: Clean Command - Destroys Causality Chains
-status: todo
+status: done
 priority: medium
 tags:
 - causality

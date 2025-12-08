@@ -1,7 +1,7 @@
 ---
 id: backend-022
 title: Prevent task ID reuse when archived tasks exist
-status: todo
+status: done
 priority: high
 tags:
 - backend
@@ -130,30 +130,36 @@ Update this file when:
 
 ## Updates
 - 2025-11-13: Task created
+- 2025-12-08: Task completed
 
-## Session Handoff (AI: Complete this when marking task done)
+## Session Handoff
 **For the next session/agent working on dependent tasks:**
 
 ### What Changed
-- [Document code changes, new files, modified functions]
-- [What runtime behavior is new or different]
+- `src/commands/create.rs:224-275` - Refactored `generate_task_id()` to scan both active and archive directories
+- Added `scan_dir_for_max_id()` helper function to extract max ID from a directory
+- Added `get_archive_max_id()` to find highest ID in `.taskguard/archive/{area}/`
+- `tests/end_to_end_tests.rs` - Added `create_task()` helper, updated all `create::run()` calls to use new 8-arg signature
 
 ### Causality Impact
-- [What causal chains were created or modified]
-- [What events trigger what other events]
-- [Any async flows or timing considerations]
+- Task ID generation now considers archived tasks, preventing ID collisions
+- No async flows affected - this is synchronous file scanning
 
 ### Dependencies & Integration
-- [What dependencies were added/changed]
-- [How this integrates with existing code]
-- [What other tasks/areas are affected]
+- Uses existing `find_taskguard_root()` from config module
+- Integrates with archive command workflow - archived tasks now "reserve" their IDs
 
 ### Verification & Testing
-- [How to verify this works]
-- [What to test when building on this]
-- [Any known edge cases or limitations]
+```bash
+# Test: Create task in area with only archived tasks
+./target/release/taskguard create --title "Test" --area frontend
+# Expected: frontend-002 (not 001, since frontend-001 is archived)
+
+# All tests pass
+cargo test  # 32 CLI tests, 12 e2e tests
+```
 
 ### Context for Next Task
-- [What the next developer/AI should know]
-- [Important decisions made and why]
-- [Gotchas or non-obvious behavior]
+- ID generation scans both `tasks/{area}/` and `.taskguard/archive/{area}/`
+- Returns max(active_max, archive_max) + 1
+- If archive dir doesn't exist, returns 0 for archive_max
