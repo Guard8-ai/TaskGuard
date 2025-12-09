@@ -7,6 +7,7 @@ areas = [
     "backend",
     "causality",
     "deployment",
+    "docs",
     "frontend",
     "github",
     "security",

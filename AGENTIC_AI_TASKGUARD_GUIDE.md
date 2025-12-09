@@ -38,7 +38,7 @@ taskguard import-md file.md --area github --prefix gh [--dry-run]
 
 **CRITICAL**: TaskGuard is designed for **deterministic, programmatic operations**. Use CLI update commands for atomic task modifications instead of manual file editing.
 
-## 🎯 Core 5-Step Workflow for AI Agents
+## 🎯 Core 6-Step Workflow for AI Agents
 
 ### Step 1: Initialize and Assess (30 seconds)
 ```bash
@@ -107,6 +107,30 @@ taskguard update status api-001 doing
 taskguard validate
 # Should show clear dependency blocking and available tasks
 ```
+
+### Step 6: Commit Your Work
+After completing implementation work, **proactively commit changes** with descriptive messages:
+
+```bash
+# Stage and commit with conventional commit format
+git add -A
+git commit -m "feat(area): Brief description of changes
+
+- Detail 1
+- Detail 2
+
+Closes task-id"
+```
+
+**Commit conventions:**
+- `feat`: New feature or functionality
+- `fix`: Bug fix
+- `chore`: Maintenance, dependencies, config
+- `docs`: Documentation changes
+- `refactor`: Code restructuring without behavior change
+- `test`: Adding or updating tests
+
+**Best practice**: Commit after each task completion, not in batches. This preserves clear history and enables easy rollback.
 
 ## 📋 Available Areas for Task Distribution
 
