@@ -2,14 +2,16 @@
 name = "My Project"
 version = "0.2.2"
 areas = [
-    "setup",
-    "backend",
-    "frontend",
     "api",
     "auth",
-    "testing",
+    "backend",
+    "causality",
     "deployment",
+    "frontend",
+    "github",
     "security",
+    "setup",
+    "testing",
 ]
 
 [settings]

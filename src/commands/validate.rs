@@ -1,13 +1,19 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use walkdir::WalkDir;
 
-use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};
+use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir, get_config_path, Config};
 use crate::task::{Task, TaskStatus};
 use crate::github::{is_github_sync_enabled, TaskIssueMapper};
 
-pub fn run() -> Result<()> {
+pub fn run(sync_areas: bool) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
+
+    // Sync areas first if requested
+    if sync_areas {
+        sync_config_areas()?;
+    }
 
     if !tasks_dir.exists() {
         println!("📁 No tasks directory found. Run 'taskguard init' first.");
@@ -265,4 +271,63 @@ fn has_circular_dependency(
 
     visited.remove(&task.id);
     false
+}
+
+/// Sync config areas with actual task directories
+pub fn sync_config_areas() -> Result<()> {
+    let tasks_dir = get_tasks_dir()?;
+    let config_path = get_config_path()?;
+
+    // Discover actual areas from filesystem (only directories)
+    let mut discovered_areas: Vec<String> = fs::read_dir(&tasks_dir)
+        .context("Failed to read tasks directory")?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.file_type().ok().is_some_and(|ft| ft.is_dir()))
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .filter(|name| !name.starts_with('.')) // Skip hidden directories
+        .collect();
+    discovered_areas.sort();
+
+    if discovered_areas.is_empty() {
+        println!("📁 No task area directories found.");
+        return Ok(());
+    }
+
+    // Load current config
+    let mut config = Config::load_or_default(&config_path)?;
+    let current_areas: HashSet<String> = config.project.areas.iter().cloned().collect();
+
+    // Find new areas not in config
+    let new_areas: Vec<&String> = discovered_areas
+        .iter()
+        .filter(|area| !current_areas.contains(*area))
+        .collect();
+
+    if new_areas.is_empty() {
+        println!("✅ Config areas are in sync with task directories");
+        return Ok(());
+    }
+
+    // Report and add new areas
+    println!("🔄 Syncing config areas with task directories");
+    println!("   Adding new areas:");
+    for area in &new_areas {
+        println!("   + {}", area);
+    }
+
+    // Merge and update config (preserve existing, add new)
+    let mut all_areas: Vec<String> = config.project.areas.clone();
+    for area in new_areas {
+        all_areas.push(area.clone());
+    }
+    all_areas.sort();
+    all_areas.dedup();
+
+    config.project.areas = all_areas;
+
+    // Write back
+    config.save(&config_path)?;
+    println!("   ✅ Updated .taskguard/config.toml");
+
+    Ok(())
 }

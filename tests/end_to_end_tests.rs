@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 use taskguard::commands::{init, create, validate, sync, lint, ai};
+use taskguard::config::Config;
 use taskguard::task::{Task, TaskStatus, Priority};
 use chrono::Utc;
 
@@ -144,7 +145,7 @@ fn test_complete_project_lifecycle() -> Result<()> {
     create_task("Build login form", "frontend", "medium")?;
 
     // 3. Validate initial state
-    validate::run()?;
+    validate::run(false)?;
 
     // 4. Simulate work progress with Git commits
     let repo = project.init_git_repo()?;
@@ -179,7 +180,7 @@ fn test_dependency_workflow() -> Result<()> {
     project.create_task_manually("frontend", "frontend-001", "User Interface", TaskStatus::Todo, vec!["backend-002".to_string()])?;
 
     // Initial validation should show only setup-001 as available
-    validate::run()?;
+    validate::run(false)?;
 
     // Complete setup-001
     let setup_task_path = project.tasks_dir.join("setup").join("setup-001.md");
@@ -188,7 +189,7 @@ fn test_dependency_workflow() -> Result<()> {
     setup_task.save_to_file(&setup_task_path)?;
 
     // Now backend-001 should be available
-    validate::run()?;
+    validate::run(false)?;
 
     // AI should recommend backend-001
     ai::run("What should I work on next?".to_string())?;
@@ -514,7 +515,7 @@ fn test_large_project_workflow() -> Result<()> {
 
     // Test performance of various operations on large project
     let start = std::time::Instant::now();
-    validate::run()?;
+    validate::run(false)?;
     let validate_duration = start.elapsed();
 
     let start = std::time::Instant::now();
@@ -562,7 +563,7 @@ fn test_complex_dependency_chains() -> Result<()> {
         vec!["frontend-001".to_string(), "auth-004".to_string(), "backend-002".to_string()])?;
 
     // Test dependency resolution
-    validate::run()?;
+    validate::run(false)?;
     ai::run("What's blocked by dependencies?".to_string())?;
     ai::run("What can I work on right now?".to_string())?;
 
@@ -572,7 +573,7 @@ fn test_complex_dependency_chains() -> Result<()> {
     backend_task.status = TaskStatus::Done;
     backend_task.save_to_file(&backend_task_path)?;
 
-    validate::run()?;
+    validate::run(false)?;
     ai::run("What's now available after completing backend-001?".to_string())?;
 
     Ok(())
@@ -717,7 +718,7 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     backend_task.save_to_file(&backend_path)?;
 
     // 3. Analysis phase - understand progress
-    validate::run()?; // Check what's now available
+    validate::run(false)?; // Check what's now available
     sync::run(10, true, false, false, false, false)?; // Analyze Git activity
     lint::run(true, None)?; // Check task quality
 
@@ -736,9 +737,74 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     frontend_task.save_to_file(&frontend_path)?;
 
     // Final analysis
-    validate::run()?;
+    validate::run(false)?;
     sync::run(20, false, false, false, false, false)?;
     ai::run("Show me the final project status".to_string())?;
+
+    Ok(())
+}
+
+/// Test area sync functionality
+#[test]
+fn test_area_sync_workflow() -> Result<()> {
+    let project = TaskGuardTestProject::new()?;
+    project.set_current_dir()?;
+
+    init::run()?;
+
+    let config_path = project.taskguard_dir.join("config.toml");
+
+    // 1. Verify initial config areas
+    let initial_config = Config::load_or_default(&config_path)?;
+    assert!(initial_config.project.areas.contains(&"backend".to_string()));
+    assert!(!initial_config.project.areas.contains(&"research".to_string()));
+
+    // 2. Create task in new area - should auto-add area to config
+    create_task("Research task", "research", "medium")?;
+
+    // Verify config was updated with new area
+    let updated_config = Config::load_or_default(&config_path)?;
+    assert!(updated_config.project.areas.contains(&"research".to_string()));
+
+    // 3. Create another new area manually (without using create)
+    let custom_area_dir = project.tasks_dir.join("custom");
+    fs::create_dir_all(&custom_area_dir)?;
+
+    // Create a task file manually in the custom area
+    let task_content = r#"---
+id: custom-001
+title: Custom task
+status: todo
+priority: medium
+area: custom
+---
+
+# Custom task
+
+Test task content.
+"#;
+    fs::write(custom_area_dir.join("custom-001.md"), task_content)?;
+
+    // Verify custom area is NOT in config yet
+    let pre_sync_config = Config::load_or_default(&config_path)?;
+    assert!(!pre_sync_config.project.areas.contains(&"custom".to_string()));
+
+    // 4. Run validate --sync-areas to discover and add custom area
+    validate::run(true)?; // sync_areas = true
+
+    // Verify custom area was added
+    let final_config = Config::load_or_default(&config_path)?;
+    assert!(final_config.project.areas.contains(&"custom".to_string()));
+    assert!(final_config.project.areas.contains(&"research".to_string()));
+
+    // 5. Verify areas are sorted
+    let areas = &final_config.project.areas;
+    let mut sorted_areas = areas.clone();
+    sorted_areas.sort();
+    assert_eq!(areas, &sorted_areas, "Areas should be sorted alphabetically");
+
+    // 6. Run validate --sync-areas again - should report already in sync
+    validate::run(true)?; // Should succeed and report "in sync"
 
     Ok(())
 }

@@ -92,7 +92,11 @@ enum Commands {
         task_id: String,
     },
     /// Validate tasks and dependencies
-    Validate,
+    Validate {
+        /// Sync config areas with task directories
+        #[arg(long)]
+        sync_areas: bool,
+    },
     /// Analyze Git history and suggest task updates
     Sync {
         /// Number of commits to analyze
@@ -217,7 +221,7 @@ fn main() -> Result<()> {
             println!("Show task: {}", task_id);
             Ok(())
         }
-        Commands::Validate => validate::run(),
+        Commands::Validate { sync_areas } => validate::run(sync_areas),
         Commands::Sync { limit, verbose, remote, github, backfill_project, dry_run } => sync::run(limit, verbose, remote, github, backfill_project, dry_run),
         Commands::Lint { verbose, area } => lint::run(verbose, area),
         Commands::Ai { input } => ai::run(input),

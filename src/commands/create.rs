@@ -5,6 +5,22 @@ use std::fs;
 use crate::config::{get_tasks_dir, get_config_path, Config};
 use crate::task::{Task, TaskStatus, Priority};
 
+/// Add a new area to config if it doesn't exist
+fn add_area_to_config(config: &mut Config, config_path: &std::path::Path, area: &str) -> Result<bool> {
+    if config.project.areas.contains(&area.to_string()) {
+        return Ok(false); // Already exists
+    }
+
+    // Add area to config
+    config.project.areas.push(area.to_string());
+    config.project.areas.sort();
+
+    // Save config
+    config.save(config_path)?;
+
+    Ok(true) // Was added
+}
+
 pub fn run(
     title: String,
     area: Option<String>,
@@ -17,7 +33,7 @@ pub fn run(
 ) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
     let config_path = get_config_path()?;
-    let config = Config::load_or_default(&config_path)?;
+    let mut config = Config::load_or_default(&config_path)?;
 
     // Determine area
     let area = area.unwrap_or_else(|| {
@@ -28,10 +44,9 @@ pub fn run(
         }
     });
 
-    // Validate area
-    if !config.project.areas.contains(&area) {
-        println!("⚠️  Warning: Area '{}' is not in configured areas: {:?}", area, config.project.areas);
-        println!("   Continuing anyway...");
+    // Auto-add new area to config
+    if add_area_to_config(&mut config, &config_path, &area)? {
+        println!("📁 Area '{}' added to config", area);
     }
 
     // Determine priority

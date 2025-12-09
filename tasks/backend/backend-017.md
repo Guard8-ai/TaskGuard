@@ -1,7 +1,7 @@
 ---
 id: backend-017
 title: Auto-update config areas when new task area directories are created
-status: todo
+status: done
 priority: low
 tags:
 - backend
@@ -166,14 +166,14 @@ This provides:
 
 ## Tasks
 
-- [ ] Add `sync_areas` parameter to validate command
-- [ ] Implement `sync_config_areas()` function
-- [ ] Add area discovery from tasks/ directory
-- [ ] Update config.toml with new areas
-- [ ] Add auto-sync to create command
-- [ ] Update CLI help text for new flag
-- [ ] Test with new areas
-- [ ] Test preserves manually-added areas
+- [x] Add `sync_areas` parameter to validate command
+- [x] Implement `sync_config_areas()` function
+- [x] Add area discovery from tasks/ directory
+- [x] Update config.toml with new areas
+- [x] Add auto-sync to create command
+- [x] Update CLI help text for new flag
+- [x] Test with new areas
+- [x] Test preserves manually-added areas
 
 ## Acceptance Criteria
 
@@ -235,3 +235,41 @@ Scan filesystem dynamically, no config
 - 2025-11-04: Task created
 - Current mismatch: Config has 8 areas, filesystem has 8 (4 different)
 - Recommended: Hybrid approach with auto-sync + manual flag
+- 2025-12-08: Implemented hybrid approach with auto-sync on create + validate --sync-areas
+
+## Session Handoff
+
+### What Changed
+- `src/main.rs:94-99` - Added `--sync-areas` flag to Validate command
+- `src/main.rs:224` - Updated match to pass sync_areas to validate::run()
+- `src/commands/validate.rs:1-16` - Added imports and sync_areas parameter
+- `src/commands/validate.rs:276-333` - Added `sync_config_areas()` function
+- `src/commands/create.rs:8-22` - Added `add_area_to_config()` helper function
+- `src/commands/create.rs:34-50` - Changed warning to auto-add area to config
+- `tests/end_to_end_tests.rs:747-810` - Added `test_area_sync_workflow` test
+
+### Runtime Behavior
+- `taskguard create --area newarea` now automatically adds "newarea" to config with message: "📁 Area 'newarea' added to config"
+- `taskguard validate --sync-areas` scans tasks/ for directories and adds missing areas to config
+- When areas are already in sync, reports: "✅ Config areas are in sync with task directories"
+- Areas are always sorted alphabetically after sync
+- Hidden directories (starting with `.`) are skipped
+
+### Verification
+```bash
+# Test auto-sync on create
+./target/release/taskguard create --title "Test" --area newarea
+# Output: 📁 Area 'newarea' added to config
+
+# Test validate --sync-areas
+./target/release/taskguard validate --sync-areas
+# Output: 🔄 Syncing config areas... or ✅ Config areas are in sync
+
+# Run tests
+cargo test  # 152 tests pass (32 CLI + 13 e2e + others)
+```
+
+### Dependencies & Integration
+- Uses existing `Config::load_or_default()` and `Config::save()` methods
+- No new dependencies added
+- Backward compatible - existing workflows unchanged
