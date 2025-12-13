@@ -4,8 +4,23 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 use taskguard::commands::{init, create, validate, sync, lint, ai};
+use taskguard::config::Config;
 use taskguard::task::{Task, TaskStatus, Priority};
 use chrono::Utc;
+
+/// Helper to create a task with minimal arguments (title, area, priority)
+fn create_task(title: &str, area: &str, priority: &str) -> Result<()> {
+    create::run(
+        title.to_string(),
+        Some(area.to_string()),
+        Some(priority.to_string()),
+        None, // complexity
+        None, // tags
+        None, // dependencies
+        None, // assignee
+        None, // estimate
+    )
+}
 
 /// Test fixture for end-to-end TaskGuard workflows
 struct TaskGuardTestProject {
@@ -83,6 +98,12 @@ impl TaskGuardTestProject {
     }
 
     fn create_task_manually(&self, area: &str, id: &str, title: &str, status: TaskStatus, dependencies: Vec<String>) -> Result<()> {
+        let area_dir = self.tasks_dir.join(area);
+        if !area_dir.exists() {
+            fs::create_dir_all(&area_dir)?;
+        }
+
+        let file_path = area_dir.join(format!("{}.md", id));
         let task = Task {
             id: id.to_string(),
             title: title.to_string(),
@@ -96,14 +117,9 @@ impl TaskGuardTestProject {
             complexity: Some(5),
             area: area.to_string(),
             content: format!("Test content for {}", title),
+            file_path: file_path.clone(),
         };
 
-        let area_dir = self.tasks_dir.join(area);
-        if !area_dir.exists() {
-            fs::create_dir_all(&area_dir)?;
-        }
-
-        let file_path = area_dir.join(format!("{}.md", id));
         task.save_to_file(&file_path)?;
         Ok(())
     }
@@ -124,12 +140,12 @@ fn test_complete_project_lifecycle() -> Result<()> {
     assert!(project.tasks_dir.exists(), "Should create tasks directory");
 
     // 2. Create initial tasks
-    create::run("Setup development environment".to_string(), Some("setup".to_string()), Some("high".to_string()))?;
-    create::run("Implement user authentication".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
-    create::run("Build login form".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
+    create_task("Setup development environment", "setup", "high")?;
+    create_task("Implement user authentication", "backend", "medium")?;
+    create_task("Build login form", "frontend", "medium")?;
 
     // 3. Validate initial state
-    validate::run()?;
+    validate::run(false)?;
 
     // 4. Simulate work progress with Git commits
     let repo = project.init_git_repo()?;
@@ -138,7 +154,7 @@ fn test_complete_project_lifecycle() -> Result<()> {
     project.add_git_commit(&repo, "Complete setup-001 configuration")?;
 
     // 5. Run sync to analyze Git activity
-    sync::run(50, false, false, false)?;
+    sync::run(50, false, false, false, false, false)?;
 
     // 6. Run lint to analyze task quality
     lint::run(false, None)?;
@@ -164,7 +180,7 @@ fn test_dependency_workflow() -> Result<()> {
     project.create_task_manually("frontend", "frontend-001", "User Interface", TaskStatus::Todo, vec!["backend-002".to_string()])?;
 
     // Initial validation should show only setup-001 as available
-    validate::run()?;
+    validate::run(false)?;
 
     // Complete setup-001
     let setup_task_path = project.tasks_dir.join("setup").join("setup-001.md");
@@ -173,7 +189,7 @@ fn test_dependency_workflow() -> Result<()> {
     setup_task.save_to_file(&setup_task_path)?;
 
     // Now backend-001 should be available
-    validate::run()?;
+    validate::run(false)?;
 
     // AI should recommend backend-001
     ai::run("What should I work on next?".to_string())?;
@@ -195,8 +211,8 @@ fn test_git_analysis_workflow() -> Result<()> {
     let repo = project.init_git_repo()?;
 
     // Create tasks
-    create::run("Fix authentication bug".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("Add user registration".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
+    create_task("Fix authentication bug", "backend", "high")?;
+    create_task("Add user registration", "backend", "medium")?;
 
     // Simulate development workflow with Git commits
     project.add_git_commit(&repo, "Start working on backend-001 authentication fix")?;
@@ -208,7 +224,7 @@ fn test_git_analysis_workflow() -> Result<()> {
     project.add_git_commit(&repo, "Complete backend-001 authentication feature")?;
 
     // Run sync to analyze Git activity
-    sync::run(10, true, false, false)?; // Verbose mode
+    sync::run(10, true, false, false, false, false)?; // Verbose mode
 
     // Git analysis should suggest status changes
     Ok(())
@@ -223,9 +239,9 @@ fn test_complex_git_scenario() -> Result<()> {
     let repo = project.init_git_repo()?;
 
     // Create multiple tasks
-    create::run("Database migration".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("API endpoints".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
-    create::run("Frontend components".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
+    create_task("Database migration", "backend", "high")?;
+    create_task("API endpoints", "backend", "medium")?;
+    create_task("Frontend components", "frontend", "medium")?;
 
     // Simulate complex development with multiple tasks
     let commit_scenarios = vec![
@@ -247,7 +263,7 @@ fn test_complex_git_scenario() -> Result<()> {
     }
 
     // Analyze the complex Git history
-    sync::run(20, true, false, false)?;
+    sync::run(20, true, false, false, false, false)?;
 
     Ok(())
 }
@@ -289,6 +305,10 @@ This task implements a comprehensive user authentication system using JWT tokens
 ✅ Session management works correctly
 "#;
 
+    let backend_dir = project.tasks_dir.join("backend");
+    fs::create_dir_all(&backend_dir)?;
+    let backend_file_path = backend_dir.join("backend-001.md");
+
     let high_quality_task = Task {
         id: "backend-001".to_string(),
         title: "Implement User Authentication System".to_string(),
@@ -302,13 +322,16 @@ This task implements a comprehensive user authentication system using JWT tokens
         complexity: Some(6),
         area: "backend".to_string(),
         content: high_quality_content.to_string(),
+        file_path: backend_file_path.clone(),
     };
 
-    let backend_dir = project.tasks_dir.join("backend");
-    fs::create_dir_all(&backend_dir)?;
-    high_quality_task.save_to_file(&backend_dir.join("backend-001.md"))?;
+    high_quality_task.save_to_file(&backend_file_path)?;
 
     // Low quality task
+    let frontend_dir = project.tasks_dir.join("frontend");
+    fs::create_dir_all(&frontend_dir)?;
+    let frontend_file_path = frontend_dir.join("frontend-001.md");
+
     let low_quality_task = Task {
         id: "frontend-001".to_string(),
         title: "UI stuff".to_string(),
@@ -322,11 +345,10 @@ This task implements a comprehensive user authentication system using JWT tokens
         complexity: None,
         area: "frontend".to_string(),
         content: "Make the UI better.".to_string(),
+        file_path: frontend_file_path.clone(),
     };
 
-    let frontend_dir = project.tasks_dir.join("frontend");
-    fs::create_dir_all(&frontend_dir)?;
-    low_quality_task.save_to_file(&frontend_dir.join("frontend-001.md"))?;
+    low_quality_task.save_to_file(&frontend_file_path)?;
 
     // Run lint analysis
     lint::run(true, None)?; // Verbose mode
@@ -342,6 +364,15 @@ fn test_complexity_analysis_workflow() -> Result<()> {
 
     init::run()?;
 
+    // Create directories and save tasks
+    let docs_dir = project.tasks_dir.join("docs");
+    let arch_dir = project.tasks_dir.join("architecture");
+    fs::create_dir_all(&docs_dir)?;
+    fs::create_dir_all(&arch_dir)?;
+
+    let simple_file_path = docs_dir.join("simple-001.md");
+    let complex_file_path = arch_dir.join("complex-001.md");
+
     // Create tasks with different complexity levels
     let simple_task = Task {
         id: "simple-001".to_string(),
@@ -356,6 +387,7 @@ fn test_complexity_analysis_workflow() -> Result<()> {
         complexity: Some(2),
         area: "docs".to_string(),
         content: "Update the project README with new installation instructions.".to_string(),
+        file_path: simple_file_path.clone(),
     };
 
     let complex_task_content = format!(
@@ -378,16 +410,11 @@ fn test_complexity_analysis_workflow() -> Result<()> {
         complexity: Some(10),
         area: "architecture".to_string(),
         content: complex_task_content,
+        file_path: complex_file_path.clone(),
     };
 
-    // Create directories and save tasks
-    let docs_dir = project.tasks_dir.join("docs");
-    let arch_dir = project.tasks_dir.join("architecture");
-    fs::create_dir_all(&docs_dir)?;
-    fs::create_dir_all(&arch_dir)?;
-
-    simple_task.save_to_file(&docs_dir.join("simple-001.md"))?;
-    complex_task.save_to_file(&arch_dir.join("complex-001.md"))?;
+    simple_task.save_to_file(&simple_file_path)?;
+    complex_task.save_to_file(&complex_file_path)?;
 
     // Run complexity analysis
     lint::run(true, None)?;
@@ -418,9 +445,9 @@ fn test_ai_guided_development_workflow() -> Result<()> {
     ai::run("Create a testing task for the auth system".to_string())?;
 
     // Actually create the tasks based on AI suggestions
-    create::run("User Authentication API".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("Login Form Component".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
-    create::run("Authentication Tests".to_string(), Some("testing".to_string()), Some("medium".to_string()))?;
+    create_task("User Authentication API", "backend", "high")?;
+    create_task("Login Form Component", "frontend", "medium")?;
+    create_task("Authentication Tests", "testing", "medium")?;
 
     // Set up dependencies
     project.create_task_manually("testing", "testing-001", "Authentication Tests", TaskStatus::Todo, vec!["backend-001".to_string(), "frontend-001".to_string()])?;
@@ -454,7 +481,7 @@ fn test_ai_error_handling_workflow() -> Result<()> {
     ai::run("What should I work on next?".to_string())?; // No tasks available
 
     // Create a task and test more scenarios
-    create::run("Test Task".to_string(), Some("backend".to_string()), Some("medium".to_string()))?;
+    create_task("Test Task", "backend", "medium")?;
 
     ai::run("Show me tasks in non-existent area".to_string())?;
     ai::run("What should I work on in the year 3000?".to_string())?; // Temporal confusion
@@ -488,7 +515,7 @@ fn test_large_project_workflow() -> Result<()> {
 
     // Test performance of various operations on large project
     let start = std::time::Instant::now();
-    validate::run()?;
+    validate::run(false)?;
     let validate_duration = start.elapsed();
 
     let start = std::time::Instant::now();
@@ -536,7 +563,7 @@ fn test_complex_dependency_chains() -> Result<()> {
         vec!["frontend-001".to_string(), "auth-004".to_string(), "backend-002".to_string()])?;
 
     // Test dependency resolution
-    validate::run()?;
+    validate::run(false)?;
     ai::run("What's blocked by dependencies?".to_string())?;
     ai::run("What can I work on right now?".to_string())?;
 
@@ -546,7 +573,7 @@ fn test_complex_dependency_chains() -> Result<()> {
     backend_task.status = TaskStatus::Done;
     backend_task.save_to_file(&backend_task_path)?;
 
-    validate::run()?;
+    validate::run(false)?;
     ai::run("What's now available after completing backend-001?".to_string())?;
 
     Ok(())
@@ -583,6 +610,12 @@ Well-structured task with clear objectives.
 ✅ Criteria 2
 "#;
 
+    let backend_dir = project.tasks_dir.join("backend");
+    fs::create_dir_all(&backend_dir)?;
+
+    let poor_file_path = backend_dir.join("backend-001.md");
+    let good_file_path = backend_dir.join("backend-002.md");
+
     let poor_task = Task {
         id: "backend-001".to_string(),
         title: "Fix stuff".to_string(),
@@ -596,6 +629,7 @@ Well-structured task with clear objectives.
         complexity: None,
         area: "backend".to_string(),
         content: poor_quality_content.to_string(),
+        file_path: poor_file_path.clone(),
     };
 
     let good_task = Task {
@@ -611,12 +645,11 @@ Well-structured task with clear objectives.
         complexity: Some(7),
         area: "backend".to_string(),
         content: good_quality_content.to_string(),
+        file_path: good_file_path.clone(),
     };
 
-    let backend_dir = project.tasks_dir.join("backend");
-    fs::create_dir_all(&backend_dir)?;
-    poor_task.save_to_file(&backend_dir.join("backend-001.md"))?;
-    good_task.save_to_file(&backend_dir.join("backend-002.md"))?;
+    poor_task.save_to_file(&poor_file_path)?;
+    good_task.save_to_file(&good_file_path)?;
 
     // 1. Lint identifies quality issues
     lint::run(true, None)?;
@@ -627,7 +660,7 @@ Well-structured task with clear objectives.
     project.add_git_commit(&repo, "Complete backend-001 fixes")?;
 
     // 3. Sync analyzes Git activity
-    sync::run(10, true, false, false)?;
+    sync::run(10, true, false, false, false, false)?;
 
     // 4. AI integrates all information
     ai::run("What's the quality of my tasks?".to_string())?;
@@ -650,11 +683,11 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     ai::run("Create a task for user authentication system".to_string())?;
 
     // Actually create the planned tasks
-    create::run("Authentication System Setup".to_string(), Some("setup".to_string()), Some("high".to_string()))?;
-    create::run("Backend Authentication API".to_string(), Some("backend".to_string()), Some("high".to_string()))?;
-    create::run("Frontend Login Components".to_string(), Some("frontend".to_string()), Some("medium".to_string()))?;
-    create::run("Authentication Tests".to_string(), Some("testing".to_string()), Some("medium".to_string()))?;
-    create::run("Documentation Update".to_string(), Some("docs".to_string()), Some("low".to_string()))?;
+    create_task("Authentication System Setup", "setup", "high")?;
+    create_task("Backend Authentication API", "backend", "high")?;
+    create_task("Frontend Login Components", "frontend", "medium")?;
+    create_task("Authentication Tests", "testing", "medium")?;
+    create_task("Documentation Update", "docs", "low")?;
 
     // Set up realistic dependencies
     project.create_task_manually("backend", "backend-001", "Backend Auth API", TaskStatus::Todo, vec!["setup-001".to_string()])?;
@@ -685,8 +718,8 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     backend_task.save_to_file(&backend_path)?;
 
     // 3. Analysis phase - understand progress
-    validate::run()?; // Check what's now available
-    sync::run(10, true, false, false)?; // Analyze Git activity
+    validate::run(false)?; // Check what's now available
+    sync::run(10, true, false, false, false, false)?; // Analyze Git activity
     lint::run(true, None)?; // Check task quality
 
     // 4. AI provides guidance
@@ -704,9 +737,74 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     frontend_task.save_to_file(&frontend_path)?;
 
     // Final analysis
-    validate::run()?;
-    sync::run(20, false, false, false)?;
+    validate::run(false)?;
+    sync::run(20, false, false, false, false, false)?;
     ai::run("Show me the final project status".to_string())?;
+
+    Ok(())
+}
+
+/// Test area sync functionality
+#[test]
+fn test_area_sync_workflow() -> Result<()> {
+    let project = TaskGuardTestProject::new()?;
+    project.set_current_dir()?;
+
+    init::run()?;
+
+    let config_path = project.taskguard_dir.join("config.toml");
+
+    // 1. Verify initial config areas
+    let initial_config = Config::load_or_default(&config_path)?;
+    assert!(initial_config.project.areas.contains(&"backend".to_string()));
+    assert!(!initial_config.project.areas.contains(&"research".to_string()));
+
+    // 2. Create task in new area - should auto-add area to config
+    create_task("Research task", "research", "medium")?;
+
+    // Verify config was updated with new area
+    let updated_config = Config::load_or_default(&config_path)?;
+    assert!(updated_config.project.areas.contains(&"research".to_string()));
+
+    // 3. Create another new area manually (without using create)
+    let custom_area_dir = project.tasks_dir.join("custom");
+    fs::create_dir_all(&custom_area_dir)?;
+
+    // Create a task file manually in the custom area
+    let task_content = r#"---
+id: custom-001
+title: Custom task
+status: todo
+priority: medium
+area: custom
+---
+
+# Custom task
+
+Test task content.
+"#;
+    fs::write(custom_area_dir.join("custom-001.md"), task_content)?;
+
+    // Verify custom area is NOT in config yet
+    let pre_sync_config = Config::load_or_default(&config_path)?;
+    assert!(!pre_sync_config.project.areas.contains(&"custom".to_string()));
+
+    // 4. Run validate --sync-areas to discover and add custom area
+    validate::run(true)?; // sync_areas = true
+
+    // Verify custom area was added
+    let final_config = Config::load_or_default(&config_path)?;
+    assert!(final_config.project.areas.contains(&"custom".to_string()));
+    assert!(final_config.project.areas.contains(&"research".to_string()));
+
+    // 5. Verify areas are sorted
+    let areas = &final_config.project.areas;
+    let mut sorted_areas = areas.clone();
+    sorted_areas.sort();
+    assert_eq!(areas, &sorted_areas, "Areas should be sorted alphabetically");
+
+    // 6. Run validate --sync-areas again - should report already in sync
+    validate::run(true)?; // Should succeed and report "in sync"
 
     Ok(())
 }

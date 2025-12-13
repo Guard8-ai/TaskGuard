@@ -176,21 +176,45 @@ impl TaskAnalyzer {
 
     pub fn estimate_to_complexity_points(&self, estimate: &str) -> f32 {
         // Parse common estimate formats and convert to complexity points
+        // Conversion: 1 hour = 1 point, 1 day = 8 points, 1 week = 40 points, 1 month = 160 points
         let estimate_lower = estimate.to_lowercase();
 
-        if estimate_lower.contains("day") || estimate_lower.contains("d") {
-            if let Some(days) = self.extract_number(&estimate_lower) {
-                return (days as f32 / 2.0).min(2.0);
+        // Check for weeks
+        if estimate_lower.contains("week") || estimate_lower.ends_with("w") {
+            if let Some(weeks) = self.extract_number(&estimate_lower) {
+                return (weeks as f32 * 40.0).min(200.0);
             }
         }
 
+        // Check for months
+        if estimate_lower.contains("month") {
+            if let Some(months) = self.extract_number(&estimate_lower) {
+                return (months as f32 * 160.0).min(200.0);
+            }
+        }
+
+        // Check for days
+        if estimate_lower.contains("day") || (estimate_lower.ends_with("d") && !estimate_lower.contains("h")) {
+            if let Some(days) = self.extract_number(&estimate_lower) {
+                return (days as f32 * 8.0).min(200.0);
+            }
+        }
+
+        // Check for hours
         if estimate_lower.contains("hour") || estimate_lower.contains("h") {
             if let Some(hours) = self.extract_number(&estimate_lower) {
-                return (hours as f32 / 8.0).min(2.0);
+                return (hours as f32).min(200.0);
             }
         }
 
-        0.5 // Default small complexity for any estimate
+        // Check for minutes
+        if estimate_lower.contains("minute") || estimate_lower.contains("m") {
+            if let Some(minutes) = self.extract_number(&estimate_lower) {
+                return (minutes as f32 / 60.0).min(200.0);
+            }
+        }
+
+        1.0 // Default complexity for unknown estimates
     }
 
     fn extract_number(&self, text: &str) -> Option<u32> {

@@ -2,7 +2,14 @@
 
 > AI-ready local task management with Git integration
 
+[![CI](https://github.com/Guard8-ai/TaskGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/Guard8-ai/TaskGuard/actions/workflows/ci.yml)
+[![Release](https://github.com/Guard8-ai/TaskGuard/actions/workflows/release.yml/badge.svg)](https://github.com/Guard8-ai/TaskGuard/actions/workflows/release.yml)
+[![Documentation](https://readthedocs.org/projects/taskguard/badge/?version=latest)](https://taskguard.readthedocs.io/en/latest/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 TaskGuard is a local-first, Git-native task management system built in Rust. It provides AI-ready task management with automatic agent integration, dependency blocking, and intelligent workflows while keeping developers in complete control.
+
+**[📖 Full Documentation](https://taskguard.readthedocs.io)**
 
 ## ✨ Features
 
@@ -13,15 +20,37 @@ TaskGuard is a local-first, Git-native task management system built in Rust. It 
 - **⚡ Fast & reliable**: Built in Rust for performance and safety
 - **🤖 AI-ready**: Zero-setup AI agent integration with automatic guide distribution
 - **🕰️ Git analysis**: Intelligent status suggestions based on commit history
+- **🐙 GitHub integration**: Bidirectional sync with GitHub Issues and Projects v2
+- **📦 Archive & restore**: Archive completed tasks and close/reopen GitHub issues
 - **🔒 Security-audited**: Comprehensive security testing with 17 security-focused tests
 
 ## 🚀 Quick Start
 
 ### Installation
 
-TaskGuard can be installed globally to work with all your projects. Since this is a private repository, you'll need access to the Guard8.ai organization.
+TaskGuard can be installed globally to work with all your projects.
 
-**Global Installation (Recommended):**
+**Pre-built Binaries (Easiest):**
+
+Download pre-built binaries from [GitHub Releases](https://github.com/Guard8-ai/TaskGuard/releases):
+
+| Platform | Binary |
+|----------|--------|
+| Linux x86_64 | `taskguard-linux-x86_64` |
+| Linux ARM64 | `taskguard-linux-aarch64` |
+| macOS x86_64 | `taskguard-macos-x86_64` |
+| macOS ARM64 (Apple Silicon) | `taskguard-macos-aarch64` |
+| Windows x86_64 | `taskguard-windows-x86_64.exe` |
+| Windows WSL/WSL2 | `taskguard-linux-x86_64` (use Linux binary) |
+
+```bash
+# Example: Linux x86_64
+curl -L https://github.com/Guard8-ai/TaskGuard/releases/latest/download/taskguard-linux-x86_64 -o taskguard
+chmod +x taskguard
+sudo mv taskguard /usr/local/bin/
+```
+
+**Build from Source:**
 
 ```bash
 # Clone the repository
@@ -37,6 +66,11 @@ cd TaskGuard
 **Windows (PowerShell):**
 ```powershell
 .\scripts\install-windows.ps1
+```
+
+**Termux (Android):**
+```bash
+./scripts/install-termux.sh
 ```
 
 **Manual Build:**
@@ -63,9 +97,8 @@ taskguard init
 
 **🤖 Zero-Setup AI Integration**: TaskGuard automatically creates AI collaboration files when initialized:
 - `AGENTIC_AI_TASKGUARD_GUIDE.md` - Complete guide for AI agents with best practices
-- `AI_AGENT_SETUP_NOTIFICATION.md` - Automatic setup instructions for tool integration
 
-**For AI agents**: TaskGuard automatically distributes integration guides and provides notification system for updating tool instruction files (CLAUDE.md, GEMINI.md, etc.) with zero manual setup required.
+**For AI agents**: TaskGuard automatically copies the integration guide and prompts you to update your memory files (CLAUDE.md, .cursorrules, etc.) with TaskGuard workflow.
 
 ### Create Your First Tasks
 
@@ -105,6 +138,38 @@ taskguard ai "what should I work on next?"
 # Analyze Git activity for status suggestions
 taskguard sync --verbose
 ```
+
+### GitHub Integration (Optional)
+
+Sync your tasks with GitHub Issues and Projects v2:
+
+```bash
+# Create GitHub configuration
+cat > .taskguard/github.toml << EOF
+owner = "your-username"
+repo = "your-repo"
+project_number = 1
+EOF
+
+# Sync tasks to GitHub (creates issues and adds to Projects v2)
+taskguard sync --github
+
+# Preview sync without making changes
+taskguard sync --github --dry-run
+
+# Archive completed tasks (closes GitHub issues)
+taskguard archive
+
+# Restore archived task (reopens GitHub issue)
+taskguard restore backend-001
+```
+
+**GitHub Integration Features:**
+- Creates GitHub Issues from tasks automatically
+- Adds issues to Projects v2 board with correct status columns
+- Bidirectional sync keeps local and GitHub in sync
+- Status mapping: todo→Backlog, doing→In Progress, done→Done
+- Archive lifecycle: archiving closes issues, restoring reopens them
 
 ## 🎯 Core Concept: Dependency Blocking
 
@@ -156,6 +221,8 @@ Brief description of what needs to be done and why.
 | `taskguard list [--area AREA] [--status STATUS]` | List tasks with optional filters |
 | `taskguard create --title TITLE [OPTIONS]` | Create a new task |
 | `taskguard validate` | Check dependencies and show available tasks |
+| `taskguard archive [--dry-run]` | Archive completed tasks (closes GitHub issues if synced) |
+| `taskguard restore <task-id>` | Restore archived task (reopens GitHub issue if synced) |
 
 ### Intelligence Commands
 | Command | Description |
@@ -164,6 +231,13 @@ Brief description of what needs to be done and why.
 | `taskguard lint [--verbose]` | Analyze task complexity and quality |
 | `taskguard ai "QUERY"` | Natural language task management with AI |
 
+### GitHub Integration Commands
+| Command | Description |
+|---------|-------------|
+| `taskguard sync --github` | Sync tasks with GitHub Issues and Projects v2 |
+| `taskguard sync --github --dry-run` | Preview GitHub sync without making changes |
+| `taskguard sync --github --backfill-project` | Add existing issues to Projects v2 board |
+
 ### Installation Commands
 | Platform | Command |
 |----------|---------|
@@ -171,6 +245,7 @@ Brief description of what needs to be done and why.
 | macOS | `./scripts/install-macos.sh` |
 | Windows | `.\scripts\install-windows.ps1` |
 | WSL/WSL2 | `./scripts/install-wsl.sh` |
+| Termux (Android) | `./scripts/install-termux.sh` |
 
 ## 🏗️ Project Organization
 
@@ -227,6 +302,13 @@ TaskGuard provides information and suggestions but never makes decisions for you
 - ✅ Global installation for multi-project usage
 - ✅ Comprehensive documentation and guides
 
+**✅ Phase 5 (v0.3.0 - COMPLETED): GitHub Integration**
+- ✅ Bidirectional sync with GitHub Issues and Projects v2
+- ✅ Automatic issue creation and status mapping
+- ✅ Archive command with GitHub issue closing
+- ✅ Restore command with GitHub issue reopening
+- ✅ Task-issue mapping persistence with archived state tracking
+
 ## 🤖 For AI Agents & Automation
 
 TaskGuard is designed to work seamlessly with agentic AI systems like Claude Code. If you're building AI agents that need to manage tasks systematically:
@@ -242,9 +324,18 @@ This comprehensive guide covers:
 
 Key insight: AI agents must **respect TaskGuard's design patterns** rather than trying to bulldoze through with rapid commands.
 
+## 📚 Documentation
+
+Complete documentation is available at **[taskguard.readthedocs.io](https://taskguard.readthedocs.io)**:
+
+- [Getting Started Guide](https://taskguard.readthedocs.io/en/latest/getting-started/installation/)
+- [Core Concepts](https://taskguard.readthedocs.io/en/latest/core-concepts/task-structure/)
+- [API Reference](https://taskguard.readthedocs.io/en/latest/api-reference/commands/)
+- [Contributing Guidelines](https://taskguard.readthedocs.io/en/latest/contributing/development-setup/)
+
 ## 🤝 Contributing
 
-TaskGuard is in active development. See [CLAUDE.md](CLAUDE.md) for detailed technical documentation.
+TaskGuard is in active development. See [CLAUDE.md](CLAUDE.md) for detailed technical documentation or visit the [contributing section](https://taskguard.readthedocs.io/en/latest/contributing/development-setup/) in our documentation.
 
 ## 📄 License
 

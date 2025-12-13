@@ -1,12 +1,19 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use walkdir::WalkDir;
 
-use crate::config::get_tasks_dir;
+use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir, get_config_path, Config};
 use crate::task::{Task, TaskStatus};
+use crate::github::{is_github_sync_enabled, TaskIssueMapper};
 
-pub fn run() -> Result<()> {
+pub fn run(sync_areas: bool) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
+
+    // Sync areas first if requested
+    if sync_areas {
+        sync_config_areas()?;
+    }
 
     if !tasks_dir.exists() {
         println!("📁 No tasks directory found. Run 'taskguard init' first.");
@@ -38,6 +45,17 @@ pub fn run() -> Result<()> {
         }
     }
 
+    // Load archived tasks for dependency validation
+    let archive_dir = find_taskguard_root()
+        .ok_or_else(|| anyhow::anyhow!("Not in a TaskGuard project"))?
+        .join(".taskguard")
+        .join("archive");
+
+    if archive_dir.exists() {
+        let archived_tasks = load_tasks_from_dir(&archive_dir).unwrap_or_default();
+        tasks.extend(archived_tasks);
+    }
+
     // Show parse errors
     if !parse_errors.is_empty() {
         println!("🔍 PARSE ERRORS");
@@ -56,11 +74,28 @@ pub fn run() -> Result<()> {
     let task_map: HashMap<String, &Task> = tasks.iter().map(|t| (t.id.clone(), t)).collect();
     let all_ids: HashSet<String> = task_map.keys().cloned().collect();
 
-    // Find dependency issues
+    // Separate active and archived tasks
+    let archived_ids: HashSet<String> = tasks
+        .iter()
+        .filter(|t| t.file_path.starts_with(&archive_dir))
+        .map(|t| t.id.clone())
+        .collect();
+
+    let active_tasks: Vec<&Task> = tasks
+        .iter()
+        .filter(|t| !archived_ids.contains(&t.id))
+        .collect();
+
+    // Find dependency issues (only check non-done active tasks)
     let mut dependency_issues = Vec::new();
     let mut circular_deps = Vec::new();
 
-    for task in &tasks {
+    for task in &active_tasks {
+        // Skip done tasks - they don't need dependency validation
+        if matches!(task.status, TaskStatus::Done) {
+            continue;
+        }
+
         for dep in &task.dependencies {
             if !all_ids.contains(dep) {
                 dependency_issues.push(format!(
@@ -140,7 +175,13 @@ pub fn run() -> Result<()> {
     if !blocked_tasks.is_empty() {
         println!("   🚫 Blocked tasks:");
         for (task, missing_deps) in &blocked_tasks {
-            let deps_str: Vec<String> = missing_deps.iter().map(|s| s.to_string()).collect();
+            let deps_str: Vec<String> = missing_deps.iter().map(|dep_id| {
+                if archived_ids.contains(*dep_id) {
+                    format!("{} 📦", dep_id)
+                } else {
+                    dep_id.to_string()
+                }
+            }).collect();
             println!("      ❌ {} - {} (waiting for: {})",
                 task.id, task.title, deps_str.join(", "));
         }
@@ -163,8 +204,48 @@ pub fn run() -> Result<()> {
     println!("   Total tasks: {}", tasks.len());
     println!("   Available: {}", available_tasks.len());
     println!("   Blocked: {}", blocked_tasks.len());
+    if !archived_ids.is_empty() {
+        println!("   Archived tasks: {}", archived_ids.len());
+    }
     println!("   Parse errors: {}", parse_errors.len());
     println!("   Dependency issues: {}", dependency_issues.len());
+
+    // GitHub sync validation
+    if is_github_sync_enabled().unwrap_or(false) {
+        if let Ok(mapper) = TaskIssueMapper::new() {
+            println!();
+            println!("🌐 GITHUB SYNC VALIDATION");
+
+            let mut orphaned_mappings = Vec::new();
+            let mut archived_synced_tasks = Vec::new();
+
+            for mapping in mapper.get_all_mappings() {
+                if !all_ids.contains(&mapping.task_id) {
+                    orphaned_mappings.push((mapping.task_id.clone(), mapping.issue_number));
+                } else if archived_ids.contains(&mapping.task_id) {
+                    archived_synced_tasks.push((mapping.task_id.clone(), mapping.issue_number));
+                }
+            }
+
+            if !orphaned_mappings.is_empty() {
+                println!("   ⚠️  ORPHANED MAPPINGS (task deleted but mapping remains):");
+                for (task_id, issue_num) in &orphaned_mappings {
+                    println!("      {} → Issue #{} (task not found)", task_id, issue_num);
+                }
+            }
+
+            if !archived_synced_tasks.is_empty() {
+                println!("   📦 ARCHIVED SYNCED TASKS:");
+                for (task_id, issue_num) in &archived_synced_tasks {
+                    println!("      {} → Issue #{} (task archived)", task_id, issue_num);
+                }
+            }
+
+            if orphaned_mappings.is_empty() && archived_synced_tasks.is_empty() {
+                println!("   ✅ No GitHub sync issues found");
+            }
+        }
+    }
 
     Ok(())
 }
@@ -190,4 +271,63 @@ fn has_circular_dependency(
 
     visited.remove(&task.id);
     false
+}
+
+/// Sync config areas with actual task directories
+pub fn sync_config_areas() -> Result<()> {
+    let tasks_dir = get_tasks_dir()?;
+    let config_path = get_config_path()?;
+
+    // Discover actual areas from filesystem (only directories)
+    let mut discovered_areas: Vec<String> = fs::read_dir(&tasks_dir)
+        .context("Failed to read tasks directory")?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.file_type().ok().is_some_and(|ft| ft.is_dir()))
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .filter(|name| !name.starts_with('.')) // Skip hidden directories
+        .collect();
+    discovered_areas.sort();
+
+    if discovered_areas.is_empty() {
+        println!("📁 No task area directories found.");
+        return Ok(());
+    }
+
+    // Load current config
+    let mut config = Config::load_or_default(&config_path)?;
+    let current_areas: HashSet<String> = config.project.areas.iter().cloned().collect();
+
+    // Find new areas not in config
+    let new_areas: Vec<&String> = discovered_areas
+        .iter()
+        .filter(|area| !current_areas.contains(*area))
+        .collect();
+
+    if new_areas.is_empty() {
+        println!("✅ Config areas are in sync with task directories");
+        return Ok(());
+    }
+
+    // Report and add new areas
+    println!("🔄 Syncing config areas with task directories");
+    println!("   Adding new areas:");
+    for area in &new_areas {
+        println!("   + {}", area);
+    }
+
+    // Merge and update config (preserve existing, add new)
+    let mut all_areas: Vec<String> = config.project.areas.clone();
+    for area in new_areas {
+        all_areas.push(area.clone());
+    }
+    all_areas.sort();
+    all_areas.dedup();
+
+    config.project.areas = all_areas;
+
+    // Write back
+    config.save(&config_path)?;
+    println!("   ✅ Updated .taskguard/config.toml");
+
+    Ok(())
 }

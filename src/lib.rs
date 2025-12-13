@@ -3,3 +3,5 @@ pub mod config;
 pub mod commands;
 pub mod git;
 pub mod analysis;
+pub mod github;
+pub mod templates;

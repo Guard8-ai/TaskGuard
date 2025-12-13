@@ -2,13 +2,39 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 use std::fs;
 
-use crate::config::{get_tasks_dir, get_config_path, Config};
+use crate::config::{get_tasks_dir, get_config_path, Config, find_taskguard_root};
 use crate::task::{Task, TaskStatus, Priority};
+use crate::templates::TemplateManager;
 
-pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Result<()> {
+/// Add a new area to config if it doesn't exist
+fn add_area_to_config(config: &mut Config, config_path: &std::path::Path, area: &str) -> Result<bool> {
+    if config.project.areas.contains(&area.to_string()) {
+        return Ok(false); // Already exists
+    }
+
+    // Add area to config
+    config.project.areas.push(area.to_string());
+    config.project.areas.sort();
+
+    // Save config
+    config.save(config_path)?;
+
+    Ok(true) // Was added
+}
+
+pub fn run(
+    title: String,
+    area: Option<String>,
+    priority: Option<String>,
+    complexity: Option<u8>,
+    tags: Option<String>,
+    dependencies: Option<String>,
+    assignee: Option<String>,
+    estimate: Option<String>,
+) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
     let config_path = get_config_path()?;
-    let config = Config::load_or_default(&config_path)?;
+    let mut config = Config::load_or_default(&config_path)?;
 
     // Determine area
     let area = area.unwrap_or_else(|| {
@@ -19,10 +45,9 @@ pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Res
         }
     });
 
-    // Validate area
-    if !config.project.areas.contains(&area) {
-        println!("⚠️  Warning: Area '{}' is not in configured areas: {:?}", area, config.project.areas);
-        println!("   Continuing anyway...");
+    // Auto-add new area to config
+    if add_area_to_config(&mut config, &config_path, &area)? {
+        println!("📁 Area '{}' added to config", area);
     }
 
     // Determine priority
@@ -39,9 +64,41 @@ pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Res
         None => Priority::Medium,
     };
 
+    // Determine complexity (1-10 scale)
+    let complexity = match complexity {
+        Some(c) if c >= 1 && c <= 10 => Some(c),
+        Some(c) => {
+            println!("⚠️  Invalid complexity '{}'. Using default '3'. Valid range: 1-10", c);
+            Some(3)
+        }
+        None => Some(3), // Default complexity
+    };
+
+    // Parse tags (comma-separated, always include area)
+    let mut tag_list: Vec<String> = tags
+        .map(|t| t.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+        .unwrap_or_default();
+    if !tag_list.contains(&area) {
+        tag_list.insert(0, area.clone());
+    }
+
+    // Parse dependencies (comma-separated task IDs)
+    let dependency_list: Vec<String> = dependencies
+        .map(|d| d.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+        .unwrap_or_default();
+
+    // Determine assignee (default: "developer")
+    let assignee = assignee.or_else(|| Some("developer".to_string()));
+
     // Generate task ID
     let area_dir = tasks_dir.join(&area);
     let task_id = generate_task_id(&area, &area_dir)?;
+
+    // Get domain-specific template
+    let taskguard_root = find_taskguard_root();
+    let template = TemplateManager::get_template(&area, taskguard_root.as_deref());
+    let date = Utc::now().format("%Y-%m-%d").to_string();
+    let content = TemplateManager::render(&template, &title, &date);
 
     // Create task
     let task = Task {
@@ -49,55 +106,15 @@ pub fn run(title: String, area: Option<String>, priority: Option<String>) -> Res
         title: title.clone(),
         status: TaskStatus::Todo,
         priority,
-        tags: vec![area.clone()],
-        dependencies: Vec::new(),
-        assignee: Some("developer".to_string()),
+        tags: tag_list,
+        dependencies: dependency_list,
+        assignee,
         created: Utc::now(),
-        estimate: None,
-        complexity: Some(3), // Default complexity
+        estimate,
+        complexity,
         area: area.clone(),
-        content: format!(r#"# {}
-
-## Context
-Brief description of what needs to be done and why.
-
-## Objectives
-- Clear, actionable objectives
-- Measurable outcomes
-- Success criteria
-
-## Tasks
-- [ ] Break down the work into specific tasks
-- [ ] Each task should be clear and actionable
-- [ ] Mark tasks as completed when done
-
-## Acceptance Criteria
-✅ **Criteria 1:**
-- Specific, testable criteria
-
-✅ **Criteria 2:**
-- Additional criteria as needed
-
-## Technical Notes
-- Implementation details
-- Architecture considerations
-- Dependencies and constraints
-
-## Testing
-- [ ] Write unit tests for new functionality
-- [ ] Write integration tests if applicable
-- [ ] Ensure all tests pass before marking task complete
-- [ ] Consider edge cases and error conditions
-
-## Version Control
-- [ ] Commit changes incrementally with clear messages
-- [ ] Use descriptive commit messages that explain the "why"
-- [ ] Consider creating a feature branch for complex changes
-- [ ] Review changes before committing
-
-## Updates
-- {}: Task created
-"#, title, Utc::now().format("%Y-%m-%d")),
+        content,
+        file_path: std::path::PathBuf::new(), // Will be set when saved
     };
 
     // Ensure area directory exists
@@ -134,22 +151,31 @@ Brief description of what needs to be done and why.
 }
 
 fn generate_task_id(area: &str, area_dir: &std::path::Path) -> Result<String> {
-    // Find existing tasks in the area to determine next number
+    // Find existing tasks in both active and archive directories
+    // to prevent ID reuse when tasks are archived
+    let active_max = scan_dir_for_max_id(area, area_dir)?;
+    let archive_max = get_archive_max_id(area)?;
+
+    let max_num = active_max.max(archive_max);
+    let next_num = max_num + 1;
+    Ok(format!("{}-{:03}", area, next_num))
+}
+
+/// Scan a directory for the highest task ID number
+fn scan_dir_for_max_id(area: &str, dir: &std::path::Path) -> Result<u32> {
     let mut max_num = 0;
 
-    if area_dir.exists() {
-        for entry in fs::read_dir(area_dir).context("Failed to read area directory")? {
+    if dir.exists() {
+        for entry in fs::read_dir(dir).context("Failed to read directory")? {
             let entry = entry.context("Failed to read directory entry")?;
             if let Some(file_name) = entry.file_name().to_str() {
                 if file_name.ends_with(".md") {
-                    // Extract number from filename like "backend-001.md" or "area-123.md"
-                    // Expected format: area-NNN.md
+                    // Extract number from filename like "backend-001.md"
                     let stem = file_name.trim_end_matches(".md");
                     if let Some(dash_pos) = stem.rfind('-') {
                         let area_part = &stem[..dash_pos];
                         let num_part = &stem[dash_pos + 1..];
 
-                        // Only consider files that match our area prefix
                         if area_part == area {
                             if let Ok(num) = num_part.parse::<u32>() {
                                 max_num = max_num.max(num);
@@ -161,6 +187,18 @@ fn generate_task_id(area: &str, area_dir: &std::path::Path) -> Result<String> {
         }
     }
 
-    let next_num = max_num + 1;
-    Ok(format!("{}-{:03}", area, next_num))
+    Ok(max_num)
+}
+
+/// Get the max task ID from the archive directory for an area
+fn get_archive_max_id(area: &str) -> Result<u32> {
+    use crate::config::find_taskguard_root;
+
+    let root = match find_taskguard_root() {
+        Some(r) => r,
+        None => return Ok(0),
+    };
+
+    let archive_dir = root.join(".taskguard").join("archive").join(area);
+    scan_dir_for_max_id(area, &archive_dir)
 }

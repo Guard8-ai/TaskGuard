@@ -30,3 +30,9 @@ Thumbs.db
 *.tmp
 *.temp
 .temp/
+
+# MkDocs build output
+site/
+
+# Project-specific Claude Code instructions (keep local only)
+CLAUDE.md

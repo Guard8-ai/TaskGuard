@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::path::Path;
 use walkdir::WalkDir;
 
-use crate::config::get_tasks_dir;
+use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};
 use crate::task::{Task, TaskStatus};
 use regex::Regex;
 
-pub fn run(status_filter: Option<String>, area_filter: Option<String>) -> Result<()> {
+pub fn run(status_filter: Option<String>, area_filter: Option<String>, include_archive: bool) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
 
     if !tasks_dir.exists() {
@@ -39,6 +39,19 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>) -> Result
                 warnings.push(format!("⚠️  Skipping {}: {}", file.path().display(), e));
             }
         }
+    }
+
+    // Load archived tasks if flag is set
+    let archive_dir = find_taskguard_root()
+        .ok_or_else(|| anyhow::anyhow!("Not in a TaskGuard project"))?
+        .join(".taskguard")
+        .join("archive");
+
+    let has_archive = archive_dir.exists();
+
+    if include_archive && has_archive {
+        let archived_tasks = load_tasks_from_dir(&archive_dir).unwrap_or_default();
+        tasks.extend(archived_tasks);
     }
 
     // Apply filters
@@ -92,7 +105,15 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>) -> Result
                 crate::task::Priority::Low => "🟢",
             };
 
-            println!("   {} {} {} {}",
+            // Check if task is archived
+            let archive_indicator = if task.file_path.starts_with(&archive_dir) {
+                "📦 "
+            } else {
+                ""
+            };
+
+            println!("   {}{} {} {} {}",
+                archive_indicator,
                 status_icon,
                 priority_icon,
                 task.id,
@@ -119,6 +140,18 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>) -> Result
     println!("   Total tasks: {}", total);
     for (status, count) in by_status {
         println!("   {}: {}", status, count);
+    }
+
+    // Show tip if archive exists but not included
+    if !include_archive && has_archive {
+        let archived_count = load_tasks_from_dir(&archive_dir).unwrap_or_default().len();
+        if archived_count > 0 {
+            println!();
+            println!("💡 TIP: {} archived task{} available. Use --include-archive to see them.",
+                archived_count,
+                if archived_count == 1 { "" } else { "s" }
+            );
+        }
     }
 
     Ok(())

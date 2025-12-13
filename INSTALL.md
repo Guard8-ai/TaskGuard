@@ -39,6 +39,11 @@ cd TaskGuard
 ./scripts/install-wsl.sh
 ```
 
+**Termux (Android):**
+```bash
+./scripts/install-termux.sh
+```
+
 ## Manual Installation
 
 ### Step-by-Step Process
@@ -71,6 +76,12 @@ cd TaskGuard
    source ~/.cargo/env
    ```
 
+   **Termux (Android):**
+   ```bash
+   pkg update && pkg install git rust -y
+   source ~/.cargo/env
+   ```
+
 2. **Clone and Build:**
    ```bash
    git clone https://github.com/Guard8-ai/TaskGuard.git
@@ -82,58 +93,71 @@ cd TaskGuard
 
    **Linux/WSL:**
    ```bash
-   mkdir -p ~/.local/bin
-   cp target/release/taskguard ~/.local/bin/
-   echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-   source ~/.bashrc
+   # Use cargo install for consistent installation to ~/.cargo/bin
+   cargo install --path . --locked
+   # Cargo automatically adds ~/.cargo/bin to PATH
    ```
 
    **macOS:**
    ```bash
-   sudo cp target/release/taskguard /usr/local/bin/
-   # /usr/local/bin should already be in PATH
+   # Use cargo install for consistent installation to ~/.cargo/bin
+   cargo install --path . --locked
+   # Cargo automatically adds ~/.cargo/bin to PATH
    ```
 
    **Windows:**
    ```powershell
-   mkdir $env:USERPROFILE\.local\bin -ErrorAction SilentlyContinue
-   copy target\release\taskguard.exe $env:USERPROFILE\.local\bin\
-   # Add to PATH in Windows environment variables
+   # Use cargo install for consistent installation
+   cargo install --path . --locked
+   # Cargo automatically adds %USERPROFILE%\.cargo\bin to PATH
    ```
 
 ## Installation Script Details
 
 ### Linux Installation (`install-linux.sh`)
-- **Install Location**: `~/.local/bin/`
+- **Install Location**: `~/.cargo/bin/`
 - **Features**:
   - Dependency verification (Git, Rust 1.70+)
+  - Uses `cargo install` for consistent installation
   - Shell detection (bash/zsh/fish)
   - Automatic PATH configuration
   - Clean build and installation process
 
 ### macOS Installation (`install-macos.sh`)
-- **Install Location**: `/usr/local/bin/`
+- **Install Location**: `~/.cargo/bin/`
 - **Features**:
   - macOS version compatibility check
   - Xcode Command Line Tools verification
-  - Permission handling with sudo
+  - Uses `cargo install` for consistent installation
   - Universal binary support (Intel/Apple Silicon)
 
 ### Windows Installation (`install-windows.ps1`)
-- **Install Location**: `%USERPROFILE%\.local\bin\`
+- **Install Location**: `%USERPROFILE%\.cargo\bin\`
 - **Features**:
   - Environment detection (Windows/WSL)
+  - Uses `cargo install` for consistent installation
   - Automatic binary type selection
   - User PATH environment updates
   - PowerShell execution policy handling
 
 ### WSL Installation (`install-wsl.sh`)
-- **Install Location**: `~/.local/bin/`
+- **Install Location**: `~/.cargo/bin/`
 - **Features**:
   - WSL version detection (WSL1/WSL2)
   - Distribution-specific package managers
+  - Uses `cargo install` for consistent installation
   - Automatic dependency installation
   - Cross-filesystem optimization
+
+### Termux Installation (`install-termux.sh`)
+- **Install Location**: `~/.cargo/bin/`
+- **Features**:
+  - Termux environment detection ($PREFIX)
+  - Android-specific path handling
+  - Automatic Rust installation via pkg
+  - Storage space verification
+  - Termux:Widget integration guide
+  - Optimized build for mobile devices
 
 ## Verification
 
@@ -241,18 +265,24 @@ rustup update    # Update if needed
 - Full compatibility with Linux features
 - Optimized for cross-filesystem operations
 
+### Termux (Android)
+- Full Linux environment on Android
+- Storage location: $HOME (shared with Termux)
+- Requires ~300MB during build, ~50MB installed
+- Compatible with Termux:Widget for quick access
+- Recommended: Android 7+ with 2GB+ RAM
+
 ## Uninstalling
 
 Remove TaskGuard:
 
 ```bash
-# Remove binary
-rm ~/.local/bin/taskguard        # Linux/WSL
-rm /usr/local/bin/taskguard      # macOS
-del %USERPROFILE%\.local\bin\taskguard.exe  # Windows
+# Remove binary using cargo
+cargo uninstall taskguard
 
-# Remove from PATH (edit shell config)
-# Remove TaskGuard PATH entries from ~/.bashrc, ~/.zshrc, etc.
+# Or manually remove
+rm ~/.cargo/bin/taskguard                        # Linux/macOS/WSL
+del %USERPROFILE%\.cargo\bin\taskguard.exe      # Windows
 
 # Remove project data (optional)
 # Delete .taskguard/ and tasks/ directories from projects

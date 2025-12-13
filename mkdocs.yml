@@ -1,0 +1,125 @@
+site_name: TaskGuard Documentation
+site_description: AI-ready local task management with Git integration
+site_author: Guard8.ai
+site_url: https://taskguard.readthedocs.io
+
+repo_name: Guard8-ai/TaskGuard
+repo_url: https://github.com/Guard8-ai/TaskGuard
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  language: en
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - toc.follow
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      lang: en
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Guard8-ai/TaskGuard
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Prerequisites: getting-started/prerequisites.md
+      - Installation: getting-started/installation.md
+      - First Task: getting-started/first-task.md
+  - Core Concepts:
+      - Task Structure: core-concepts/task-structure.md
+      - Execution Model: core-concepts/execution-model.md
+      - State Management: core-concepts/state-management.md
+  - Features:
+      - Task Management: features/task-management.md
+      - Dependencies: features/dependencies.md
+      - Git Sync: features/git-sync.md
+      - Quality Analysis: features/quality-analysis.md
+      - AI Integration: features/ai-integration.md
+      - Advanced Config: features/advanced-config.md
+  - Usage Examples:
+      - Common Workflows: usage-examples/common-workflows.md
+      - Integration Patterns: usage-examples/integration-patterns.md
+      - Troubleshooting: usage-examples/troubleshooting.md
+  - API Reference:
+      - Commands: api-reference/commands.md
+      - Task File Format: api-reference/task-file-format.md
+      - Configuration: api-reference/configuration.md
+      - Library API: api-reference/library-api.md
+  - Contributing:
+      - Development Setup: contributing/development-setup.md
+      - Code Standards: contributing/code-standards.md
+      - Testing: contributing/testing.md
+  - FAQ: faq.md
+  - Changelog: changelog.md
+  - Licensing: licensing.md

@@ -2,6 +2,9 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
+
+use crate::task::Task;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -140,4 +143,48 @@ pub fn get_config_path() -> Result<PathBuf> {
     let root = find_taskguard_root()
         .context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
     Ok(root.join(".taskguard").join("config.toml"))
+}
+
+pub fn get_archive_dir() -> Result<PathBuf> {
+    let root = find_taskguard_root()
+        .context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
+    Ok(root.join(".taskguard").join("archive"))
+}
+
+/// Load tasks from both active and archive directories
+pub fn load_all_tasks() -> Result<Vec<Task>> {
+    let mut tasks = Vec::new();
+
+    // Load from tasks/
+    let tasks_dir = get_tasks_dir()?;
+    if tasks_dir.exists() {
+        tasks.extend(load_tasks_from_dir(&tasks_dir)?);
+    }
+
+    // Load from .taskguard/archive/
+    let archive_dir = get_archive_dir()?;
+    if archive_dir.exists() {
+        tasks.extend(load_tasks_from_dir(&archive_dir)?);
+    }
+
+    Ok(tasks)
+}
+
+/// Load tasks from a specific directory (helper function)
+pub fn load_tasks_from_dir(dir: &Path) -> Result<Vec<Task>> {
+    let mut tasks = Vec::new();
+
+    for entry in WalkDir::new(dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "md"))
+    {
+        match Task::from_file(entry.path()) {
+            Ok(task) => tasks.push(task),
+            Err(_) => continue,
+        }
+    }
+
+    Ok(tasks)
 }

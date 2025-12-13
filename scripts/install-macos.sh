@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="$HOME/.cargo/bin"
 REPO_URL="https://github.com/Guard8-ai/TaskGuard.git"
 TEMP_DIR="/tmp/taskguard-install"
 BINARY_NAME="taskguard"
@@ -89,38 +89,15 @@ check_dependencies() {
     print_success "All dependencies satisfied"
 }
 
-check_permissions() {
-    print_step "Checking installation permissions..."
-
-    # Check if we can write to /usr/local/bin
-    if [ ! -w "/usr/local/bin" ]; then
-        # Try to create /usr/local/bin if it doesn't exist
-        if [ ! -d "/usr/local/bin" ]; then
-            print_warning "/usr/local/bin doesn't exist, creating it..."
-            sudo mkdir -p /usr/local/bin
-            sudo chown $(whoami):admin /usr/local/bin
-        else
-            print_warning "No write permission to /usr/local/bin"
-            echo "This script will use sudo for installation"
-            # Test sudo access
-            sudo -v
-        fi
-    fi
-
-    print_success "Permission check completed"
-}
-
 create_install_dir() {
     print_step "Preparing installation directory..."
 
-    if [ ! -d "$INSTALL_DIR" ]; then
-        sudo mkdir -p "$INSTALL_DIR"
-    fi
+    mkdir -p "$INSTALL_DIR"
 
     print_success "Installation directory ready: $INSTALL_DIR"
 }
 
-clone_and_build() {
+clone_and_install() {
     print_step "Cloning TaskGuard repository..."
 
     # Clean up any existing temp directory
@@ -132,34 +109,20 @@ clone_and_build() {
 
     print_success "Repository cloned"
 
-    print_step "Building TaskGuard (this may take a few minutes)..."
+    print_step "Building and installing TaskGuard (this may take a few minutes)..."
 
     # Set macOS specific build flags for better compatibility
     export MACOSX_DEPLOYMENT_TARGET="10.15"
-    cargo build --release
+    # Use cargo install for consistent installation to ~/.cargo/bin
+    cargo install --path . --locked
 
-    print_success "Build completed"
-}
-
-install_binary() {
-    print_step "Installing TaskGuard binary..."
-
-    # Check if we need sudo
-    if [ -w "$INSTALL_DIR" ]; then
-        cp "$TEMP_DIR/target/release/$BINARY_NAME" "$INSTALL_DIR/"
-        chmod +x "$INSTALL_DIR/$BINARY_NAME"
-    else
-        sudo cp "$TEMP_DIR/target/release/$BINARY_NAME" "$INSTALL_DIR/"
-        sudo chmod +x "$INSTALL_DIR/$BINARY_NAME"
-    fi
-
-    print_success "Binary installed to $INSTALL_DIR/$BINARY_NAME"
+    print_success "TaskGuard installed to $INSTALL_DIR/$BINARY_NAME"
 }
 
 setup_path() {
     print_step "Setting up PATH..."
 
-    # /usr/local/bin should already be in PATH on macOS, but let's verify
+    # Check if cargo bin directory is in PATH
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         print_warning "$INSTALL_DIR is not in your PATH"
 
@@ -184,14 +147,19 @@ setup_path() {
         esac
 
         if [ -n "$SHELL_CONFIG" ]; then
-            echo "" >> "$SHELL_CONFIG"
-            echo "# TaskGuard installation" >> "$SHELL_CONFIG"
-            echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$SHELL_CONFIG"
-            print_success "Added $INSTALL_DIR to PATH in $SHELL_CONFIG"
+            # Check if cargo env is already sourced
+            if ! grep -q "\.cargo/env" "$SHELL_CONFIG" 2>/dev/null; then
+                echo "" >> "$SHELL_CONFIG"
+                echo "# Cargo environment (includes TaskGuard)" >> "$SHELL_CONFIG"
+                echo ". \"\$HOME/.cargo/env\"" >> "$SHELL_CONFIG"
+                print_success "Added Cargo environment to PATH in $SHELL_CONFIG"
+            else
+                print_success "Cargo environment already configured in $SHELL_CONFIG"
+            fi
             print_warning "Please restart your terminal or run: source $SHELL_CONFIG"
         fi
     else
-        print_success "PATH is already configured"
+        print_success "PATH is already configured (Cargo bin in PATH)"
     fi
 }
 
@@ -251,10 +219,8 @@ main() {
 
     check_macos
     check_dependencies
-    check_permissions
     create_install_dir
-    clone_and_build
-    install_binary
+    clone_and_install
     setup_path
     cleanup
     verify_installation

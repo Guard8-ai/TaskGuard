@@ -148,8 +148,10 @@ impl GitAnalyzer {
         let mut revwalk = self.repo.revwalk()
             .context("Failed to create revision walker")?;
 
-        revwalk.push_head()
-            .context("Failed to push HEAD to revwalk")?;
+        // Handle repositories with no commits (HEAD doesn't exist yet)
+        if let Err(_) = revwalk.push_head() {
+            return Ok(Vec::new()); // Return empty list for repos with no commits
+        }
 
         // Limit the requested commits to a safe maximum
         let safe_limit = std::cmp::min(limit, MAX_COMMITS);
