@@ -175,12 +175,11 @@ fn reopen_github_issue(
                 println!("      ✅ Reopened issue #{}", issue_num);
 
                 // Update mapping to mark as not archived
-                if let Some(m) = mapper {
-                    if let Some(mut mapping) = m.get_by_task_id(task_id).cloned() {
+                if let Some(m) = mapper
+                    && let Some(mut mapping) = m.get_by_task_id(task_id).cloned() {
                         mapping.is_archived = false;
                         m.update_mapping(mapping)?;
                     }
-                }
                 Ok(())
             }
             Err(e) => Err(anyhow::anyhow!(

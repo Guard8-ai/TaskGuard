@@ -65,8 +65,8 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     // Check for GitHub integration BEFORE allowing clean
     let github_enabled = is_github_sync_enabled().unwrap_or(false);
 
-    if github_enabled {
-        if let Ok(mapper) = TaskIssueMapper::new() {
+    if github_enabled
+        && let Ok(mapper) = TaskIssueMapper::new() {
             let mut synced_tasks = Vec::new();
 
             for (path, task_id, title) in &files_to_delete {
@@ -110,7 +110,6 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
                 println!();
             }
         }
-    }
 
     // Find empty directories
     let mut empty_dirs = Vec::new();
@@ -234,11 +233,10 @@ fn format_size(bytes: u64) -> String {
 fn is_task_referenced(task_id: &str, all_tasks: &[Task]) -> bool {
     for task in all_tasks {
         // Only check active tasks (not completed ones)
-        if task.status != TaskStatus::Done {
-            if task.dependencies.contains(&task_id.to_string()) {
+        if task.status != TaskStatus::Done
+            && task.dependencies.contains(&task_id.to_string()) {
                 return true;
             }
-        }
     }
     false
 }

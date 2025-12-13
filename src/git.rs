@@ -150,7 +150,7 @@ impl GitAnalyzer {
             .context("Failed to create revision walker")?;
 
         // Handle repositories with no commits (HEAD doesn't exist yet)
-        if let Err(_) = revwalk.push_head() {
+        if revwalk.push_head().is_err() {
             return Ok(Vec::new()); // Return empty list for repos with no commits
         }
 
@@ -204,7 +204,7 @@ impl GitAnalyzer {
             if !task_ids.is_empty() {
                 let author = commit.author().name().unwrap_or("Unknown").to_string();
                 let timestamp = DateTime::from_timestamp(commit.time().seconds(), 0)
-                    .unwrap_or_else(|| Utc::now());
+                    .unwrap_or_else(Utc::now);
 
                 task_commits.push(TaskCommit {
                     oid: commit.id().to_string(),
@@ -295,12 +295,11 @@ impl GitAnalyzer {
             if let Some(num) = number {
                 let num_str = num.as_str();
                 // Validate reasonable number range
-                if let Ok(task_num) = num_str.parse::<u32>() {
-                    if task_num > 0 && task_num < 1000000 {
+                if let Ok(task_num) = num_str.parse::<u32>()
+                    && task_num > 0 && task_num < 1000000 {
                         // Reasonable task ID range
                         task_ids.push(format!("task-{}", num_str));
                     }
-                }
             }
         }
 
@@ -324,22 +323,8 @@ impl GitAnalyzer {
         // Basic Unicode normalization - remove common problematic characters
         // and normalize similar-looking characters
         let normalized = sanitized
-            .replace('\u{00A0}', " ") // Non-breaking space to regular space
-            .replace('\u{2000}', " ") // En quad to regular space
-            .replace('\u{2001}', " ") // Em quad to regular space
-            .replace('\u{2002}', " ") // En space to regular space
-            .replace('\u{2003}', " ") // Em space to regular space
-            .replace('\u{2004}', " ") // Three-per-em space to regular space
-            .replace('\u{2005}', " ") // Four-per-em space to regular space
-            .replace('\u{2006}', " ") // Six-per-em space to regular space
-            .replace('\u{2007}', " ") // Figure space to regular space
-            .replace('\u{2008}', " ") // Punctuation space to regular space
-            .replace('\u{2009}', " ") // Thin space to regular space
-            .replace('\u{200A}', " ") // Hair space to regular space
-            .replace('\u{200B}', "") // Zero-width space removal
-            .replace('\u{200C}', "") // Zero-width non-joiner removal
-            .replace('\u{200D}', "") // Zero-width joiner removal
-            .replace('\u{FEFF}', ""); // Byte order mark removal
+            .replace(['\u{00A0}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}', '\u{2005}', '\u{2006}', '\u{2007}', '\u{2008}', '\u{2009}', '\u{200A}'], " ") // Hair space to regular space
+            .replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], ""); // Byte order mark removal
 
         // Limit length after normalization to prevent processing issues
         if normalized.len() > 4096 {

@@ -223,8 +223,8 @@ pub fn run(sync_areas: bool) -> Result<()> {
     println!("   Dependency issues: {}", dependency_issues.len());
 
     // GitHub sync validation
-    if is_github_sync_enabled().unwrap_or(false) {
-        if let Ok(mapper) = TaskIssueMapper::new() {
+    if is_github_sync_enabled().unwrap_or(false)
+        && let Ok(mapper) = TaskIssueMapper::new() {
             println!();
             println!("🌐 GITHUB SYNC VALIDATION");
 
@@ -257,7 +257,6 @@ pub fn run(sync_areas: bool) -> Result<()> {
                 println!("   ✅ No GitHub sync issues found");
             }
         }
-    }
 
     Ok(())
 }
@@ -274,11 +273,10 @@ fn has_circular_dependency(
     visited.insert(task.id.clone());
 
     for dep_id in &task.dependencies {
-        if let Some(dep_task) = task_map.get(dep_id) {
-            if has_circular_dependency(dep_task, task_map, visited) {
+        if let Some(dep_task) = task_map.get(dep_id)
+            && has_circular_dependency(dep_task, task_map, visited) {
                 return true;
             }
-        }
     }
 
     visited.remove(&task.id);

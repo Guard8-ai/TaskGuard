@@ -244,6 +244,13 @@ fn parse_section_details(
 fn extract_dependencies(content: &str) -> Vec<String> {
     let mut deps = Vec::new();
 
+    // Pre-compile regex patterns outside the loop
+    let dep_pattern = Regex::new(
+        r"(?i)^\s*(?:\*\*)?(?:depends? on|requires?|blocked by|prerequisites?):?\s*(?:\*\*)?\s+(?:Fix|Issue)\s+#(\d+)"
+    ).unwrap();
+    let list_pattern =
+        Regex::new(r"^\s*(?:\*\*)?Dependencies:?\s*(?:\*\*)?\s*\[([^\]]+)\]").unwrap();
+
     // Only look in specific sections, not code blocks
     let mut in_code_block = false;
 
@@ -260,18 +267,12 @@ fn extract_dependencies(content: &str) -> Vec<String> {
         }
 
         // Pattern: "Depends on Fix #N" or "Requires Issue #N" (not in code)
-        let dep_pattern = Regex::new(
-            r"(?i)^\s*(?:\*\*)?(?:depends? on|requires?|blocked by|prerequisites?):?\s*(?:\*\*)?\s+(?:Fix|Issue)\s+#(\d+)"
-        ).unwrap();
-
         if let Some(caps) = dep_pattern.captures(line) {
             let dep_num = &caps[1];
             deps.push(format!("#{}", dep_num));
         }
 
         // Also check for explicit dependencies format: Dependencies: [fix-1, fix-2]
-        let list_pattern =
-            Regex::new(r"^\s*(?:\*\*)?Dependencies:?\s*(?:\*\*)?\s*\[([^\]]+)\]").unwrap();
         if let Some(caps) = list_pattern.captures(line) {
             let dep_list = &caps[1];
             for dep in dep_list.split(',') {
@@ -375,9 +376,9 @@ fn sections_to_tasks(
             .dependencies
             .iter()
             .filter_map(|dep| {
-                if dep.starts_with('#') {
+                if let Some(stripped) = dep.strip_prefix('#') {
                     // Extract number from #N
-                    if let Ok(num) = dep[1..].parse::<u32>() {
+                    if let Ok(num) = stripped.parse::<u32>() {
                         // Try to find matching task - could be fix-N or issue-N
                         // Default to same type as current section
                         let dep_key = format!("{}-{}", section.section_type.to_prefix(), num);

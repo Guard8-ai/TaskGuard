@@ -597,8 +597,8 @@ impl GitHubMutations {
 
         // Find a field named "Status" (case-insensitive)
         for field in fields {
-            if let Some(name) = field["name"].as_str() {
-                if name.eq_ignore_ascii_case("status") {
+            if let Some(name) = field["name"].as_str()
+                && name.eq_ignore_ascii_case("status") {
                     let field_id = field["id"]
                         .as_str()
                         .context("Missing field ID")?
@@ -617,7 +617,6 @@ impl GitHubMutations {
 
                     return Ok((field_id, options));
                 }
-            }
         }
 
         Err(anyhow::anyhow!("Status field not found in project"))

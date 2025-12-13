@@ -26,18 +26,15 @@ pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
             && entry.path().extension().and_then(|s| s.to_str()) == Some("md")
         {
             // Filter by area if specified
-            if let Some(ref filter_area) = area {
-                if let Some(area_dir) = entry
+            if let Some(ref filter_area) = area
+                && let Some(area_dir) = entry
                     .path()
                     .parent()
                     .and_then(|p| p.file_name())
                     .and_then(|n| n.to_str())
-                {
-                    if area_dir != filter_area {
+                    && area_dir != filter_area {
                         continue;
                     }
-                }
-            }
 
             match Task::from_file(entry.path()) {
                 Ok(task) => tasks.push(task),

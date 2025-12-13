@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::config::get_tasks_dir;
 use crate::task::{Priority, Task, TaskStatus};
@@ -47,7 +47,7 @@ pub fn run(field: String, task_id: String, value: String) -> Result<()> {
     Ok(())
 }
 
-fn find_task_file(tasks_dir: &PathBuf, task_id: &str) -> Result<PathBuf> {
+fn find_task_file(tasks_dir: &Path, task_id: &str) -> Result<PathBuf> {
     // Extract area from task ID (e.g., "backend-001" -> "backend")
     let area = task_id
         .split('-')
@@ -260,10 +260,7 @@ fn parse_checklist_items(content: &str) -> Result<Vec<ChecklistItem>> {
             let checkbox_state = captures.get(2).unwrap().as_str().trim();
             let text = captures.get(3).unwrap().as_str().trim();
 
-            let completed = match checkbox_state {
-                "x" | "X" => true,
-                _ => false,
-            };
+            let completed = matches!(checkbox_state, "x" | "X");
 
             items.push(ChecklistItem {
                 text: text.to_string(),

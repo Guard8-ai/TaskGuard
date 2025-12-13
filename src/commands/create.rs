@@ -26,6 +26,7 @@ fn add_area_to_config(
     Ok(true) // Was added
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     title: String,
     area: Option<String>,
@@ -77,7 +78,7 @@ pub fn run(
 
     // Determine complexity (1-10 scale)
     let complexity = match complexity {
-        Some(c) if c >= 1 && c <= 10 => Some(c),
+        Some(c) if (1..=10).contains(&c) => Some(c),
         Some(c) => {
             println!(
                 "⚠️  Invalid complexity '{}'. Using default '3'. Valid range: 1-10",
@@ -198,22 +199,20 @@ fn scan_dir_for_max_id(area: &str, dir: &std::path::Path) -> Result<u32> {
     if dir.exists() {
         for entry in fs::read_dir(dir).context("Failed to read directory")? {
             let entry = entry.context("Failed to read directory entry")?;
-            if let Some(file_name) = entry.file_name().to_str() {
-                if file_name.ends_with(".md") {
+            if let Some(file_name) = entry.file_name().to_str()
+                && file_name.ends_with(".md") {
                     // Extract number from filename like "backend-001.md"
                     let stem = file_name.trim_end_matches(".md");
                     if let Some(dash_pos) = stem.rfind('-') {
                         let area_part = &stem[..dash_pos];
                         let num_part = &stem[dash_pos + 1..];
 
-                        if area_part == area {
-                            if let Ok(num) = num_part.parse::<u32>() {
+                        if area_part == area
+                            && let Ok(num) = num_part.parse::<u32>() {
                                 max_num = max_num.max(num);
                             }
-                        }
                     }
                 }
-            }
         }
     }
 

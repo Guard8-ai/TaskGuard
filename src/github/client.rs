@@ -35,7 +35,7 @@ impl GitHubClient {
     pub fn new() -> Result<Self> {
         // Get token from `gh auth token` command
         let output = Command::new("gh")
-            .args(&["auth", "token"])
+            .args(["auth", "token"])
             .output()
             .context("Failed to run 'gh auth token'. Is gh CLI installed?")?;
 

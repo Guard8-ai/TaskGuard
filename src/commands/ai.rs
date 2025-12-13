@@ -20,10 +20,7 @@ pub struct AIAgent {
 
 impl AIAgent {
     pub fn new() -> Result<Self> {
-        let git_analyzer = match GitAnalyzer::new(Path::new(".")) {
-            Ok(analyzer) => Some(analyzer),
-            Err(_) => None, // Git analysis is optional
-        };
+        let git_analyzer = GitAnalyzer::new(Path::new(".")).ok();
 
         let task_analyzer = TaskAnalyzer::new();
 
@@ -415,8 +412,8 @@ impl AIAgent {
         }
 
         for complexity in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] {
-            if let Some(task_list) = by_complexity.get(&complexity) {
-                if !task_list.is_empty() {
+            if let Some(task_list) = by_complexity.get(&complexity)
+                && !task_list.is_empty() {
                     let emoji = match complexity {
                         1..=3 => "🟢",
                         4..=6 => "🟡",
@@ -430,7 +427,6 @@ impl AIAgent {
                     }
                     response.push('\n');
                 }
-            }
         }
 
         response.push_str("💡 **Tip:** Start with lower complexity tasks to build momentum!");
@@ -480,17 +476,15 @@ impl AIAgent {
         ];
 
         for pattern in &patterns {
-            if let Ok(re) = regex::Regex::new(pattern) {
-                if let Some(captures) = re.captures(input) {
-                    if let Some(title) = captures.get(1) {
+            if let Ok(re) = regex::Regex::new(pattern)
+                && let Some(captures) = re.captures(input)
+                    && let Some(title) = captures.get(1) {
                         let extracted = title.as_str().trim().to_string();
                         // Don't return empty or very short titles
                         if extracted.len() > 2 {
                             return extracted;
                         }
                     }
-                }
-            }
         }
 
         // Fallback: extract the most likely title from the input
@@ -606,13 +600,11 @@ impl AIAgent {
         ];
 
         for pattern in &patterns {
-            if let Ok(re) = regex::Regex::new(pattern) {
-                if let Some(captures) = re.captures(input) {
-                    if let Some(reference) = captures.get(1) {
+            if let Ok(re) = regex::Regex::new(pattern)
+                && let Some(captures) = re.captures(input)
+                    && let Some(reference) = captures.get(1) {
                         return Some(reference.as_str().trim().to_string());
                     }
-                }
-            }
         }
 
         None

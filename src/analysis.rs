@@ -35,6 +35,7 @@ pub enum IssueCategory {
 }
 
 #[derive(Debug)]
+#[derive(Default)]
 pub struct TaskAnalyzer {
     pub complexity_thresholds: ComplexityThresholds,
 }
@@ -60,13 +61,6 @@ impl Default for ComplexityThresholds {
     }
 }
 
-impl Default for TaskAnalyzer {
-    fn default() -> Self {
-        Self {
-            complexity_thresholds: ComplexityThresholds::default(),
-        }
-    }
-}
 
 impl TaskAnalyzer {
     pub fn new() -> Self {
@@ -181,41 +175,35 @@ impl TaskAnalyzer {
         let estimate_lower = estimate.to_lowercase();
 
         // Check for weeks
-        if estimate_lower.contains("week") || estimate_lower.ends_with("w") {
-            if let Some(weeks) = self.extract_number(&estimate_lower) {
+        if (estimate_lower.contains("week") || estimate_lower.ends_with("w"))
+            && let Some(weeks) = self.extract_number(&estimate_lower) {
                 return (weeks as f32 * 40.0).min(200.0);
             }
-        }
 
         // Check for months
-        if estimate_lower.contains("month") {
-            if let Some(months) = self.extract_number(&estimate_lower) {
+        if estimate_lower.contains("month")
+            && let Some(months) = self.extract_number(&estimate_lower) {
                 return (months as f32 * 160.0).min(200.0);
             }
-        }
 
         // Check for days
-        if estimate_lower.contains("day")
-            || (estimate_lower.ends_with("d") && !estimate_lower.contains("h"))
-        {
-            if let Some(days) = self.extract_number(&estimate_lower) {
+        if (estimate_lower.contains("day")
+            || (estimate_lower.ends_with("d") && !estimate_lower.contains("h")))
+            && let Some(days) = self.extract_number(&estimate_lower) {
                 return (days as f32 * 8.0).min(200.0);
             }
-        }
 
         // Check for hours
-        if estimate_lower.contains("hour") || estimate_lower.contains("h") {
-            if let Some(hours) = self.extract_number(&estimate_lower) {
+        if (estimate_lower.contains("hour") || estimate_lower.contains("h"))
+            && let Some(hours) = self.extract_number(&estimate_lower) {
                 return (hours as f32).min(200.0);
             }
-        }
 
         // Check for minutes
-        if estimate_lower.contains("minute") || estimate_lower.contains("m") {
-            if let Some(minutes) = self.extract_number(&estimate_lower) {
+        if (estimate_lower.contains("minute") || estimate_lower.contains("m"))
+            && let Some(minutes) = self.extract_number(&estimate_lower) {
                 return (minutes as f32 / 60.0).min(200.0);
             }
-        }
 
         1.0 // Default complexity for unknown estimates
     }

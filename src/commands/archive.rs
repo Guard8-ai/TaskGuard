@@ -67,15 +67,14 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
                         ));
 
                         // Check if task has GitHub issue
-                        if let Some(ref mapper) = mapper {
-                            if let Some(mapping) = mapper.get_by_task_id(&task.id) {
+                        if let Some(ref mapper) = mapper
+                            && let Some(mapping) = mapper.get_by_task_id(&task.id) {
                                 github_issues_to_close.push((
                                     task.id.clone(),
                                     mapping.issue_number,
                                     mapping.issue_id.clone(),
                                 ));
                             }
-                        }
                     }
                 }
             }
@@ -192,12 +191,11 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     }
 
     // Create Git commit for tracking
-    if !archived_task_ids.is_empty() {
-        if let Err(e) = create_archive_commit(&root, &archived_task_ids) {
+    if !archived_task_ids.is_empty()
+        && let Err(e) = create_archive_commit(&root, &archived_task_ids) {
             eprintln!("\n⚠️  Warning: Failed to create Git commit: {}", e);
             eprintln!("   Tasks were archived successfully, but Git tracking may be incomplete.");
         }
-    }
 
     Ok(())
 }
@@ -219,11 +217,10 @@ fn format_size(bytes: u64) -> String {
 fn is_task_referenced(task_id: &str, all_tasks: &[Task]) -> bool {
     for task in all_tasks {
         // Only check active tasks (not completed ones)
-        if task.status != TaskStatus::Done {
-            if task.dependencies.contains(&task_id.to_string()) {
+        if task.status != TaskStatus::Done
+            && task.dependencies.contains(&task_id.to_string()) {
                 return true; // Active task depends on this
             }
-        }
     }
     false
 }
@@ -245,12 +242,11 @@ fn close_github_issues(
                 closed_count += 1;
 
                 // Update mapping to mark as archived
-                if let Some(m) = mapper {
-                    if let Some(mut mapping) = m.get_by_task_id(task_id).cloned() {
+                if let Some(m) = mapper
+                    && let Some(mut mapping) = m.get_by_task_id(task_id).cloned() {
                         mapping.is_archived = true;
                         m.update_mapping(mapping)?;
                     }
-                }
             }
             Err(e) => {
                 eprintln!("      ⚠️  Failed to close issue #{}: {}", issue_num, e);

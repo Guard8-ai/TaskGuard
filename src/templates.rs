@@ -19,20 +19,16 @@ impl TemplateManager {
                 .join(".taskguard")
                 .join("templates")
                 .join(format!("{}.md", area));
-            if custom_path.exists() {
-                if let Ok(content) = fs::read_to_string(&custom_path) {
-                    return content;
-                }
+            if let Ok(content) = fs::read_to_string(&custom_path) {
+                return content;
             }
             // Also check for _default.md custom template
             let default_custom = root
                 .join(".taskguard")
                 .join("templates")
                 .join("_default.md");
-            if default_custom.exists() {
-                if let Ok(content) = fs::read_to_string(&default_custom) {
-                    return content;
-                }
+            if let Ok(content) = fs::read_to_string(&default_custom) {
+                return content;
             }
         }
 

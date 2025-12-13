@@ -42,6 +42,7 @@ fn hash_task_content(task: &Task) -> String {
 }
 
 /// Search GitHub issues for existing TaskGuard ID
+#[allow(clippy::type_complexity)]
 fn search_github_for_task_id(
     _client: &GitHubClient,
     config: &GitHubConfig,
@@ -214,8 +215,8 @@ pub fn run(
         }
 
         // Show suggestions
-        if let Some(suggested_status) = &activity.suggested_status {
-            if suggested_status != &current_status && activity.confidence > 0.5 {
+        if let Some(suggested_status) = &activity.suggested_status
+            && suggested_status != &current_status && activity.confidence > 0.5 {
                 suggestions_count += 1;
                 println!(
                     "   💡 SUGGESTION: Consider changing status to '{}'",
@@ -224,7 +225,6 @@ pub fn run(
                 println!("      Confidence: {:.0}%", activity.confidence * 100.0);
                 println!("      Rationale: Based on commit message patterns");
             }
-        }
 
         println!();
     }
@@ -275,11 +275,10 @@ pub fn run(
         );
         if verbose {
             for task_id in stale_tasks.iter().take(5) {
-                if let Some(task) = current_tasks.iter().find(|t| t.id == *task_id) {
-                    if task.status.to_string() != "done" {
+                if let Some(task) = current_tasks.iter().find(|t| t.id == *task_id)
+                    && task.status.to_string() != "done" {
                         println!("      {} - {} ({})", task_id, task.title, task.status);
                     }
-                }
             }
         }
     }
@@ -636,7 +635,7 @@ fn run_github_sync(tasks: &[Task], backfill_project: bool, dry_run: bool) -> Res
 
         // Get remote URL using git command
         let remote_url_output = std::process::Command::new("git")
-            .args(&["remote", "get-url", remote_name])
+            .args(["remote", "get-url", remote_name])
             .current_dir(&current_dir)
             .output()
             .context("Failed to get git remote URL")?;

@@ -418,11 +418,10 @@ impl GitHubProjectSetup {
             "number": project_number,
         });
 
-        if let Ok(response) = client.query(query, variables.clone()) {
-            if let Some(id) = response["data"]["organization"]["projectV2"]["id"].as_str() {
+        if let Ok(response) = client.query(query, variables.clone())
+            && let Some(id) = response["data"]["organization"]["projectV2"]["id"].as_str() {
                 return Ok(id.to_string());
             }
-        }
 
         // Try user account
         let query = r#"
