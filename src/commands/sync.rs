@@ -216,15 +216,17 @@ pub fn run(
 
         // Show suggestions
         if let Some(suggested_status) = &activity.suggested_status
-            && suggested_status != &current_status && activity.confidence > 0.5 {
-                suggestions_count += 1;
-                println!(
-                    "   💡 SUGGESTION: Consider changing status to '{}'",
-                    suggested_status
-                );
-                println!("      Confidence: {:.0}%", activity.confidence * 100.0);
-                println!("      Rationale: Based on commit message patterns");
-            }
+            && suggested_status != &current_status
+            && activity.confidence > 0.5
+        {
+            suggestions_count += 1;
+            println!(
+                "   💡 SUGGESTION: Consider changing status to '{}'",
+                suggested_status
+            );
+            println!("      Confidence: {:.0}%", activity.confidence * 100.0);
+            println!("      Rationale: Based on commit message patterns");
+        }
 
         println!();
     }
@@ -276,9 +278,10 @@ pub fn run(
         if verbose {
             for task_id in stale_tasks.iter().take(5) {
                 if let Some(task) = current_tasks.iter().find(|t| t.id == *task_id)
-                    && task.status.to_string() != "done" {
-                        println!("      {} - {} ({})", task_id, task.title, task.status);
-                    }
+                    && task.status.to_string() != "done"
+                {
+                    println!("      {} - {} ({})", task_id, task.title, task.status);
+                }
             }
         }
     }

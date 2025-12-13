@@ -840,11 +840,12 @@ impl GitHubQueries {
         for node in nodes {
             if let Some(content_id) = node["content"]["id"].as_str()
                 && content_id == issue_node_id
-                    && let Some(item_id) = node["id"].as_str() {
-                        // Fetch full item details
-                        let item = Self::get_project_item(client, item_id)?;
-                        matching_items.push(item);
-                    }
+                && let Some(item_id) = node["id"].as_str()
+            {
+                // Fetch full item details
+                let item = Self::get_project_item(client, item_id)?;
+                matching_items.push(item);
+            }
         }
 
         Ok(matching_items)

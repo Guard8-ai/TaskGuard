@@ -65,51 +65,49 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     // Check for GitHub integration BEFORE allowing clean
     let github_enabled = is_github_sync_enabled().unwrap_or(false);
 
-    if github_enabled
-        && let Ok(mapper) = TaskIssueMapper::new() {
-            let mut synced_tasks = Vec::new();
+    if github_enabled && let Ok(mapper) = TaskIssueMapper::new() {
+        let mut synced_tasks = Vec::new();
 
-            for (path, task_id, title) in &files_to_delete {
-                if mapper.get_by_task_id(task_id).is_some() {
-                    synced_tasks.push((task_id.clone(), title.clone(), path.clone()));
-                }
-            }
-
-            if !synced_tasks.is_empty() {
-                println!("⚠️  GITHUB SYNC PROTECTION");
-                println!();
-                println!("   The following tasks are synced with GitHub Issues:");
-                for (id, title, _) in &synced_tasks {
-                    println!("   🌐 {} - {}", id, title);
-                }
-                println!();
-                println!("   ❌ BLOCKED: Cannot delete synced tasks with 'clean'");
-                println!();
-                println!("💡 OPTIONS:");
-                println!(
-                    "   1. Use 'taskguard archive' instead (preserves history + closes GitHub issues)"
-                );
-                println!("   2. Manually close GitHub issues, then clean");
-                println!("   3. Disable GitHub sync in .taskguard/github.toml");
-                println!();
-
-                // Remove synced tasks from deletion list
-                files_to_delete.retain(|(_, id, _)| {
-                    !synced_tasks.iter().any(|(synced_id, _, _)| synced_id == id)
-                });
-
-                if files_to_delete.is_empty() {
-                    println!("   ℹ️  No non-synced tasks to clean");
-                    return Ok(());
-                }
-
-                println!(
-                    "   ℹ️  Continuing with {} non-synced tasks",
-                    files_to_delete.len()
-                );
-                println!();
+        for (path, task_id, title) in &files_to_delete {
+            if mapper.get_by_task_id(task_id).is_some() {
+                synced_tasks.push((task_id.clone(), title.clone(), path.clone()));
             }
         }
+
+        if !synced_tasks.is_empty() {
+            println!("⚠️  GITHUB SYNC PROTECTION");
+            println!();
+            println!("   The following tasks are synced with GitHub Issues:");
+            for (id, title, _) in &synced_tasks {
+                println!("   🌐 {} - {}", id, title);
+            }
+            println!();
+            println!("   ❌ BLOCKED: Cannot delete synced tasks with 'clean'");
+            println!();
+            println!("💡 OPTIONS:");
+            println!(
+                "   1. Use 'taskguard archive' instead (preserves history + closes GitHub issues)"
+            );
+            println!("   2. Manually close GitHub issues, then clean");
+            println!("   3. Disable GitHub sync in .taskguard/github.toml");
+            println!();
+
+            // Remove synced tasks from deletion list
+            files_to_delete
+                .retain(|(_, id, _)| !synced_tasks.iter().any(|(synced_id, _, _)| synced_id == id));
+
+            if files_to_delete.is_empty() {
+                println!("   ℹ️  No non-synced tasks to clean");
+                return Ok(());
+            }
+
+            println!(
+                "   ℹ️  Continuing with {} non-synced tasks",
+                files_to_delete.len()
+            );
+            println!();
+        }
+    }
 
     // Find empty directories
     let mut empty_dirs = Vec::new();
@@ -233,10 +231,9 @@ fn format_size(bytes: u64) -> String {
 fn is_task_referenced(task_id: &str, all_tasks: &[Task]) -> bool {
     for task in all_tasks {
         // Only check active tasks (not completed ones)
-        if task.status != TaskStatus::Done
-            && task.dependencies.contains(&task_id.to_string()) {
-                return true;
-            }
+        if task.status != TaskStatus::Done && task.dependencies.contains(&task_id.to_string()) {
+            return true;
+        }
     }
     false
 }

@@ -32,9 +32,10 @@ pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
                     .parent()
                     .and_then(|p| p.file_name())
                     .and_then(|n| n.to_str())
-                    && area_dir != filter_area {
-                        continue;
-                    }
+                && area_dir != filter_area
+            {
+                continue;
+            }
 
             match Task::from_file(entry.path()) {
                 Ok(task) => tasks.push(task),

@@ -200,19 +200,21 @@ fn scan_dir_for_max_id(area: &str, dir: &std::path::Path) -> Result<u32> {
         for entry in fs::read_dir(dir).context("Failed to read directory")? {
             let entry = entry.context("Failed to read directory entry")?;
             if let Some(file_name) = entry.file_name().to_str()
-                && file_name.ends_with(".md") {
-                    // Extract number from filename like "backend-001.md"
-                    let stem = file_name.trim_end_matches(".md");
-                    if let Some(dash_pos) = stem.rfind('-') {
-                        let area_part = &stem[..dash_pos];
-                        let num_part = &stem[dash_pos + 1..];
+                && file_name.ends_with(".md")
+            {
+                // Extract number from filename like "backend-001.md"
+                let stem = file_name.trim_end_matches(".md");
+                if let Some(dash_pos) = stem.rfind('-') {
+                    let area_part = &stem[..dash_pos];
+                    let num_part = &stem[dash_pos + 1..];
 
-                        if area_part == area
-                            && let Ok(num) = num_part.parse::<u32>() {
-                                max_num = max_num.max(num);
-                            }
+                    if area_part == area
+                        && let Ok(num) = num_part.parse::<u32>()
+                    {
+                        max_num = max_num.max(num);
                     }
                 }
+            }
         }
     }
 

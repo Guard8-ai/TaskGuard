@@ -413,20 +413,21 @@ impl AIAgent {
 
         for complexity in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] {
             if let Some(task_list) = by_complexity.get(&complexity)
-                && !task_list.is_empty() {
-                    let emoji = match complexity {
-                        1..=3 => "🟢",
-                        4..=6 => "🟡",
-                        7..=8 => "🟠",
-                        9..=10 => "🔴",
-                        _ => "⚪",
-                    };
-                    response.push_str(&format!("{} **Complexity {}:**\n", emoji, complexity));
-                    for task in task_list {
-                        response.push_str(&format!("   • {} - {}\n", task.id, task.title));
-                    }
-                    response.push('\n');
+                && !task_list.is_empty()
+            {
+                let emoji = match complexity {
+                    1..=3 => "🟢",
+                    4..=6 => "🟡",
+                    7..=8 => "🟠",
+                    9..=10 => "🔴",
+                    _ => "⚪",
+                };
+                response.push_str(&format!("{} **Complexity {}:**\n", emoji, complexity));
+                for task in task_list {
+                    response.push_str(&format!("   • {} - {}\n", task.id, task.title));
                 }
+                response.push('\n');
+            }
         }
 
         response.push_str("💡 **Tip:** Start with lower complexity tasks to build momentum!");
@@ -478,13 +479,14 @@ impl AIAgent {
         for pattern in &patterns {
             if let Ok(re) = regex::Regex::new(pattern)
                 && let Some(captures) = re.captures(input)
-                    && let Some(title) = captures.get(1) {
-                        let extracted = title.as_str().trim().to_string();
-                        // Don't return empty or very short titles
-                        if extracted.len() > 2 {
-                            return extracted;
-                        }
-                    }
+                && let Some(title) = captures.get(1)
+            {
+                let extracted = title.as_str().trim().to_string();
+                // Don't return empty or very short titles
+                if extracted.len() > 2 {
+                    return extracted;
+                }
+            }
         }
 
         // Fallback: extract the most likely title from the input
@@ -602,9 +604,10 @@ impl AIAgent {
         for pattern in &patterns {
             if let Ok(re) = regex::Regex::new(pattern)
                 && let Some(captures) = re.captures(input)
-                    && let Some(reference) = captures.get(1) {
-                        return Some(reference.as_str().trim().to_string());
-                    }
+                && let Some(reference) = captures.get(1)
+            {
+                return Some(reference.as_str().trim().to_string());
+            }
         }
 
         None

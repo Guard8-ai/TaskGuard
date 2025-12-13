@@ -224,39 +224,40 @@ pub fn run(sync_areas: bool) -> Result<()> {
 
     // GitHub sync validation
     if is_github_sync_enabled().unwrap_or(false)
-        && let Ok(mapper) = TaskIssueMapper::new() {
-            println!();
-            println!("🌐 GITHUB SYNC VALIDATION");
+        && let Ok(mapper) = TaskIssueMapper::new()
+    {
+        println!();
+        println!("🌐 GITHUB SYNC VALIDATION");
 
-            let mut orphaned_mappings = Vec::new();
-            let mut archived_synced_tasks = Vec::new();
+        let mut orphaned_mappings = Vec::new();
+        let mut archived_synced_tasks = Vec::new();
 
-            for mapping in mapper.get_all_mappings() {
-                if !all_ids.contains(&mapping.task_id) {
-                    orphaned_mappings.push((mapping.task_id.clone(), mapping.issue_number));
-                } else if archived_ids.contains(&mapping.task_id) {
-                    archived_synced_tasks.push((mapping.task_id.clone(), mapping.issue_number));
-                }
-            }
-
-            if !orphaned_mappings.is_empty() {
-                println!("   ⚠️  ORPHANED MAPPINGS (task deleted but mapping remains):");
-                for (task_id, issue_num) in &orphaned_mappings {
-                    println!("      {} → Issue #{} (task not found)", task_id, issue_num);
-                }
-            }
-
-            if !archived_synced_tasks.is_empty() {
-                println!("   📦 ARCHIVED SYNCED TASKS:");
-                for (task_id, issue_num) in &archived_synced_tasks {
-                    println!("      {} → Issue #{} (task archived)", task_id, issue_num);
-                }
-            }
-
-            if orphaned_mappings.is_empty() && archived_synced_tasks.is_empty() {
-                println!("   ✅ No GitHub sync issues found");
+        for mapping in mapper.get_all_mappings() {
+            if !all_ids.contains(&mapping.task_id) {
+                orphaned_mappings.push((mapping.task_id.clone(), mapping.issue_number));
+            } else if archived_ids.contains(&mapping.task_id) {
+                archived_synced_tasks.push((mapping.task_id.clone(), mapping.issue_number));
             }
         }
+
+        if !orphaned_mappings.is_empty() {
+            println!("   ⚠️  ORPHANED MAPPINGS (task deleted but mapping remains):");
+            for (task_id, issue_num) in &orphaned_mappings {
+                println!("      {} → Issue #{} (task not found)", task_id, issue_num);
+            }
+        }
+
+        if !archived_synced_tasks.is_empty() {
+            println!("   📦 ARCHIVED SYNCED TASKS:");
+            for (task_id, issue_num) in &archived_synced_tasks {
+                println!("      {} → Issue #{} (task archived)", task_id, issue_num);
+            }
+        }
+
+        if orphaned_mappings.is_empty() && archived_synced_tasks.is_empty() {
+            println!("   ✅ No GitHub sync issues found");
+        }
+    }
 
     Ok(())
 }
@@ -274,9 +275,10 @@ fn has_circular_dependency(
 
     for dep_id in &task.dependencies {
         if let Some(dep_task) = task_map.get(dep_id)
-            && has_circular_dependency(dep_task, task_map, visited) {
-                return true;
-            }
+            && has_circular_dependency(dep_task, task_map, visited)
+        {
+            return true;
+        }
     }
 
     visited.remove(&task.id);
