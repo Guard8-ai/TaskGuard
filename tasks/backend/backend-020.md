@@ -1,7 +1,7 @@
 ---
 id: backend-020
 title: Remove AI_AGENT_SETUP_NOTIFICATION.md creation and add memory file update prompt
-status: todo
+status: done
 priority: high
 tags:
 - backend

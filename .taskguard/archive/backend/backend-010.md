@@ -1,7 +1,7 @@
 ---
 id: backend-010
 title: Add lazy loading optimization
-status: todo
+status: done
 priority: high
 tags:
 - backend

@@ -2,6 +2,8 @@
 
 > AI-ready local task management with Git integration
 
+[![CI](https://github.com/Guard8-ai/TaskGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/Guard8-ai/TaskGuard/actions/workflows/ci.yml)
+[![Release](https://github.com/Guard8-ai/TaskGuard/actions/workflows/release.yml/badge.svg)](https://github.com/Guard8-ai/TaskGuard/actions/workflows/release.yml)
 [![Documentation](https://readthedocs.org/projects/taskguard/badge/?version=latest)](https://taskguard.readthedocs.io/en/latest/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -28,7 +30,27 @@ TaskGuard is a local-first, Git-native task management system built in Rust. It 
 
 TaskGuard can be installed globally to work with all your projects.
 
-**Global Installation (Recommended):**
+**Pre-built Binaries (Easiest):**
+
+Download pre-built binaries from [GitHub Releases](https://github.com/Guard8-ai/TaskGuard/releases):
+
+| Platform | Binary |
+|----------|--------|
+| Linux x86_64 | `taskguard-linux-x86_64` |
+| Linux ARM64 | `taskguard-linux-aarch64` |
+| macOS x86_64 | `taskguard-macos-x86_64` |
+| macOS ARM64 (Apple Silicon) | `taskguard-macos-aarch64` |
+| Windows x86_64 | `taskguard-windows-x86_64.exe` |
+| Windows WSL/WSL2 | `taskguard-linux-x86_64` (use Linux binary) |
+
+```bash
+# Example: Linux x86_64
+curl -L https://github.com/Guard8-ai/TaskGuard/releases/latest/download/taskguard-linux-x86_64 -o taskguard
+chmod +x taskguard
+sudo mv taskguard /usr/local/bin/
+```
+
+**Build from Source:**
 
 ```bash
 # Clone the repository
@@ -75,9 +97,8 @@ taskguard init
 
 **🤖 Zero-Setup AI Integration**: TaskGuard automatically creates AI collaboration files when initialized:
 - `AGENTIC_AI_TASKGUARD_GUIDE.md` - Complete guide for AI agents with best practices
-- `AI_AGENT_SETUP_NOTIFICATION.md` - Automatic setup instructions for tool integration
 
-**For AI agents**: TaskGuard automatically distributes integration guides and provides notification system for updating tool instruction files (CLAUDE.md, GEMINI.md, etc.) with zero manual setup required.
+**For AI agents**: TaskGuard automatically copies the integration guide and prompts you to update your memory files (CLAUDE.md, .cursorrules, etc.) with TaskGuard workflow.
 
 ### Create Your First Tasks
 

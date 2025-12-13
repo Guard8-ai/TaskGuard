@@ -1,13 +1,24 @@
 ---
 id: causality-upgrade-001
-title: "Enhanced Task Template - Add Causality-Preserving Sections"
-status: todo
+title: Enhanced Task Template - Add Causality-Preserving Sections
+status: done
 priority: high
 tags:
-  - causality
-  - upgrade
-  - template
-dependencies: [fix-1, fix-2, fix-3, fix-4, fix-5, github-fix-1, github-fix-2, github-fix-3, github-fix-4, github-fix-5, github-fix-6]
+- causality
+- upgrade
+- template
+dependencies:
+- fix-1
+- fix-2
+- fix-3
+- fix-4
+- fix-5
+- github-fix-1
+- github-fix-2
+- github-fix-3
+- github-fix-4
+- github-fix-5
+- github-fix-6
 assignee: developer
 created: 2025-10-30T15:00:00Z
 estimate: 4h

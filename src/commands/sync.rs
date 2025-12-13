@@ -11,6 +11,110 @@ use crate::github::{
     GitHubConfig,
 };
 
+/// Get the current git branch name
+fn get_current_branch() -> Option<String> {
+    std::process::Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .ok()
+        .and_then(|output| {
+            if output.status.success() {
+                String::from_utf8(output.stdout).ok()
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty() && s != "HEAD")
+            } else {
+                None
+            }
+        })
+}
+
+/// Generate a short hash of task file content for duplicate detection
+fn hash_task_content(task: &Task) -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = DefaultHasher::new();
+    task.id.hash(&mut hasher);
+    task.title.hash(&mut hasher);
+    task.content.hash(&mut hasher);
+    let hash = hasher.finish();
+    format!("{:x}", hash)[..8].to_string()
+}
+
+/// Search GitHub issues for existing TaskGuard ID
+fn search_github_for_task_id(
+    _client: &GitHubClient,
+    config: &GitHubConfig,
+    task_id: &str,
+) -> Result<Option<(u64, String, String, Option<String>)>> {
+
+    let output = std::process::Command::new("gh")
+        .args(["issue", "list", "--repo", &format!("{}/{}", config.owner, config.repo),
+               "--search", &format!("\"**TaskGuard ID:** {}\" in:body", task_id),
+               "--json", "number,title,body,state", "--limit", "1"])
+        .output()
+        .context("Failed to search GitHub issues")?;
+
+    if !output.status.success() {
+        return Ok(None);
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if stdout.trim().is_empty() || stdout.trim() == "[]" {
+        return Ok(None);
+    }
+
+    // Parse JSON response
+    let issues: Vec<serde_json::Value> = serde_json::from_str(&stdout)
+        .unwrap_or_default();
+
+    if let Some(issue) = issues.first() {
+        let number = issue["number"].as_u64().unwrap_or(0);
+        let title = issue["title"].as_str().unwrap_or("").to_string();
+        let body = issue["body"].as_str().unwrap_or("");
+
+        // Extract branch from issue body if present
+        let branch = body.lines()
+            .find(|line| line.starts_with("**Source Branch:**"))
+            .map(|line| line.trim_start_matches("**Source Branch:**").trim().to_string());
+
+        let state = issue["state"].as_str().unwrap_or("OPEN").to_string();
+
+        if number > 0 {
+            return Ok(Some((number, title, state, branch)));
+        }
+    }
+
+    Ok(None)
+}
+
+/// Extract the Context section from task markdown content.
+/// Returns the content between "## Context" and the next "##" header.
+fn extract_context_section(content: &str) -> Option<String> {
+    let lines: Vec<&str> = content.lines().collect();
+
+    // Find "## Context" header (case-insensitive match)
+    let context_start = lines.iter()
+        .position(|line| line.trim().to_lowercase() == "## context")?;
+
+    // Collect lines until next ## header or end
+    let context_content: String = lines[context_start + 1..]
+        .iter()
+        .take_while(|line| !line.starts_with("## "))
+        .skip_while(|line| line.trim().is_empty())
+        .copied()
+        .collect::<Vec<_>>()
+        .join("\n")
+        .trim()
+        .to_string();
+
+    if context_content.is_empty() {
+        None
+    } else {
+        Some(context_content)
+    }
+}
+
 pub fn run(limit: usize, verbose: bool, remote: bool, github: bool, backfill_project: bool, dry_run: bool) -> Result<()> {
     // Load all tasks first
     let current_tasks = load_all_tasks()
@@ -582,7 +686,57 @@ fn push_tasks_to_github(
                 skipped += 1;
             }
         } else {
-            // No issue exists - create one
+            // No issue exists in local mapping - check GitHub for cross-branch duplicates
+            if let Ok(Some((existing_num, existing_title, _existing_state, existing_branch))) =
+                search_github_for_task_id(client, config, &task.id)
+            {
+                // Found existing issue on GitHub - check if it's the same task
+                let branch_info = existing_branch.as_deref().unwrap_or("unknown");
+
+                if existing_title == task.title {
+                    // Same task from different branch - offer to adopt
+                    println!("   ⚠️  {} - {} (found on GitHub)", task.id, task.title);
+                    println!("      Already synced from branch '{}' (Issue #{})", branch_info, existing_num);
+                    println!("      Adopting existing issue into local mapping...");
+
+                    if !dry_run {
+                        // Get issue details via GraphQL to get the node ID
+                        let issues = GitHubQueries::search_issues_by_taskguard_id(
+                            client,
+                            &config.owner,
+                            &config.repo,
+                            &task.id
+                        ).unwrap_or_default();
+
+                        if let Some(existing_issue) = issues.first() {
+                            let mapping = IssueMapping {
+                                task_id: task.id.clone(),
+                                issue_number: existing_issue.number,
+                                issue_id: existing_issue.id.clone(),
+                                project_item_id: String::new(), // Will be populated if needed
+                                synced_at: chrono::Utc::now().to_rfc3339(),
+                                is_archived,
+                            };
+                            mapper.add_mapping(mapping)
+                                .context(format!("Failed to adopt issue mapping for task {}", task.id))?;
+                            println!("      ✅ Adopted Issue #{} into local mapping", existing_num);
+                        }
+                    }
+                    skipped += 1;
+                    continue;
+                } else {
+                    // Different task with same ID - TRUE COLLISION
+                    println!("   ❌ {} - ID CONFLICT DETECTED!", task.id);
+                    println!("      Local:  \"{}\"", task.title);
+                    println!("      GitHub: \"{}\" (Issue #{}, branch: {})", existing_title, existing_num, branch_info);
+                    println!("      ⚠️  These are DIFFERENT tasks with the same ID!");
+                    println!("      → Rename your local task ID to avoid conflict");
+                    skipped += 1;
+                    continue;
+                }
+            }
+
+            // No existing issue found - create new one
             if is_archived {
                 println!("   ➕ {} - {} (creating closed issue for archived task)", task.id, task.title);
             } else {
@@ -590,22 +744,37 @@ fn push_tasks_to_github(
             }
 
             if !dry_run {
-                // Build issue body with TaskGuard ID for tracking
-                // Extract first paragraph or first 200 chars from content as description
-                let description = task.content
-                    .lines()
-                    .skip_while(|line| line.starts_with('#') || line.trim().is_empty())
-                    .take_while(|line| !line.trim().is_empty())
-                    .collect::<Vec<_>>()
-                    .join("\n");
+                // Build issue body with TaskGuard ID, branch info, and hash for tracking
+                let branch_name = get_current_branch().unwrap_or_else(|| "unknown".to_string());
+                let task_hash = hash_task_content(task);
 
-                let description = if description.is_empty() {
-                    "No description"
-                } else if description.len() > 200 {
-                    &description[..200]
+                // Try to extract Context section, fall back to first paragraph
+                let description = if let Some(context) = extract_context_section(&task.content) {
+                    // Use Context section content
+                    if context.len() > 200 {
+                        context[..200].to_string()
+                    } else {
+                        context
+                    }
                 } else {
-                    &description
+                    // Fallback: Extract first paragraph
+                    let first_para = task.content
+                        .lines()
+                        .skip_while(|line| line.starts_with('#') || line.trim().is_empty())
+                        .take_while(|line| !line.trim().is_empty())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+
+                    if first_para.is_empty() {
+                        "No description".to_string()
+                    } else if first_para.len() > 200 {
+                        first_para[..200].to_string()
+                    } else {
+                        first_para
+                    }
                 };
+
+                let description = description.as_str();
 
                 let archived_note = if is_archived {
                     "\n\n📦 **Note:** This task was archived when the issue was created."
@@ -614,8 +783,10 @@ fn push_tasks_to_github(
                 };
 
                 let body = format!(
-                    "**TaskGuard ID:** {}\n\n## Description\n\n{}{}\n\n---\n*Synced from TaskGuard*",
+                    "**TaskGuard ID:** {}\n**Source Branch:** {}\n**Hash:** {}\n\n## Description\n\n{}{}\n\n---\n*Synced from TaskGuard*",
                     task.id,
+                    branch_name,
+                    task_hash,
                     description,
                     archived_note
                 );

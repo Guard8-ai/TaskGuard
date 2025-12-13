@@ -1,10 +1,15 @@
 ---
 id: deployment-002
 title: Advanced Release Automation and Distribution
-status: todo
+status: done
 priority: low
-tags: [deployment, automation, ci-cd, packaging]
-dependencies: [deployment-001]
+tags:
+- deployment
+- automation
+- ci-cd
+- packaging
+dependencies:
+- deployment-001
 assignee: developer
 created: 2025-09-21T11:30:00Z
 estimate: 8h

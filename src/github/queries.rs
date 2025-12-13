@@ -428,6 +428,120 @@ impl GitHubQueries {
         Ok(issue.id)
     }
 
+    /// Search for issues containing a specific TaskGuard ID in their body
+    ///
+    /// # Arguments
+    ///
+    /// * `client` - Authenticated GitHub client
+    /// * `owner` - Repository owner
+    /// * `repo` - Repository name
+    /// * `taskguard_id` - The TaskGuard task ID to search for
+    ///
+    /// # Returns
+    ///
+    /// Vector of matching issues
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use taskguard::github::{GitHubClient, GitHubQueries};
+    ///
+    /// let client = GitHubClient::new()?;
+    /// let issues = GitHubQueries::search_issues_by_taskguard_id(
+    ///     &client, "owner", "repo", "backend-001"
+    /// )?;
+    /// # Ok::<(), anyhow::Error>(())
+    /// ```
+    pub fn search_issues_by_taskguard_id(
+        client: &GitHubClient,
+        owner: &str,
+        repo: &str,
+        taskguard_id: &str,
+    ) -> Result<Vec<GitHubIssue>> {
+        // Use GitHub's search query to find issues with the TaskGuard ID in body
+        let query = r#"
+            query($searchQuery: String!) {
+                search(query: $searchQuery, type: ISSUE, first: 5) {
+                    nodes {
+                        ... on Issue {
+                            id
+                            number
+                            title
+                            state
+                            body
+                            labels(first: 10) {
+                                nodes {
+                                    name
+                                }
+                            }
+                            assignees(first: 10) {
+                                nodes {
+                                    login
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        "#;
+
+        let search_query = format!(
+            "repo:{}/{} in:body \"**TaskGuard ID:** {}\"",
+            owner, repo, taskguard_id
+        );
+
+        let variables = json!({ "searchQuery": search_query });
+
+        let response = client
+            .query(query, variables)
+            .context("Failed to search for TaskGuard issues")?;
+
+        let nodes = response["data"]["search"]["nodes"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .clone();
+
+        let issues: Vec<GitHubIssue> = nodes
+            .iter()
+            .filter_map(|node| {
+                // Skip if not a valid issue node
+                if node["id"].is_null() {
+                    return None;
+                }
+
+                let labels = node["labels"]["nodes"]
+                    .as_array()
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|label| label["name"].as_str().map(|s| s.to_string()))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                let assignees = node["assignees"]["nodes"]
+                    .as_array()
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|user| user["login"].as_str().map(|s| s.to_string()))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                Some(GitHubIssue {
+                    id: node["id"].as_str()?.to_string(),
+                    number: node["number"].as_i64()?,
+                    title: node["title"].as_str()?.to_string(),
+                    state: node["state"].as_str()?.to_string(),
+                    body: node["body"].as_str().map(|s| s.to_string()),
+                    labels,
+                    assignees,
+                })
+            })
+            .collect();
+
+        Ok(issues)
+    }
+
     // ========================================
     // PROJECTS V2 QUERIES
     // ========================================

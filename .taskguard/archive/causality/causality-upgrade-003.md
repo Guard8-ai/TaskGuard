@@ -1,13 +1,15 @@
 ---
 id: causality-upgrade-003
-title: "Enhanced Validate Command - Detect Legacy Format Tasks and Causality Issues"
-status: todo
+title: Enhanced Validate Command - Detect Legacy Format Tasks and Causality Issues
+status: done
 priority: medium
 tags:
-  - causality
-  - upgrade
-  - validation
-dependencies: [causality-upgrade-001, causality-upgrade-002]
+- causality
+- upgrade
+- validation
+dependencies:
+- causality-upgrade-001
+- causality-upgrade-002
 assignee: developer
 created: 2025-10-30T15:00:00Z
 estimate: 3h

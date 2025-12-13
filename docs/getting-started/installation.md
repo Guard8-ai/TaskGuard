@@ -4,7 +4,28 @@ Install TaskGuard globally to use with all your projects.
 
 ---
 
-## Quick Install (Recommended)
+## Pre-built Binaries (Fastest)
+
+Download pre-built binaries from [GitHub Releases](https://github.com/Guard8-ai/TaskGuard/releases):
+
+| Platform | Binary |
+|----------|--------|
+| Linux x86_64 | `taskguard-linux-amd64` |
+| macOS Intel | `taskguard-darwin-amd64` |
+| macOS Apple Silicon | `taskguard-darwin-arm64` |
+| Windows | `taskguard-windows-amd64.exe` |
+| WSL | `taskguard-linux-amd64` |
+
+```bash
+# Example: Linux
+curl -L https://github.com/Guard8-ai/TaskGuard/releases/latest/download/taskguard-linux-amd64 -o taskguard
+chmod +x taskguard
+sudo mv taskguard /usr/local/bin/
+```
+
+---
+
+## Quick Install (From Source)
 
 Use platform-specific scripts for automated installation:
 
@@ -83,7 +104,7 @@ Use platform-specific scripts for automated installation:
 
     **Output:**
     ```
-    Compiling taskguard v0.2.2
+    Compiling taskguard v0.3.0
     Finished release [optimized] target(s) in 1m 23s
     ```
 
@@ -103,7 +124,7 @@ Use platform-specific scripts for automated installation:
 
     **Expected:**
     ```
-    taskguard 0.2.2
+    taskguard 0.3.0
     ```
 
 ---

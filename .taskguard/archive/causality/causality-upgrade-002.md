@@ -1,13 +1,14 @@
 ---
 id: causality-upgrade-002
-title: "Implement taskguard upgrade Command - Migrate Legacy Tasks to Causality-Aware Format"
-status: todo
+title: Implement taskguard upgrade Command - Migrate Legacy Tasks to Causality-Aware Format
+status: done
 priority: high
 tags:
-  - causality
-  - upgrade
-  - command
-dependencies: [causality-upgrade-001]
+- causality
+- upgrade
+- command
+dependencies:
+- causality-upgrade-001
 assignee: developer
 created: 2025-10-30T15:00:00Z
 estimate: 6h

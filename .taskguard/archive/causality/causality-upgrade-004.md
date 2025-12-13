@@ -1,13 +1,16 @@
 ---
 id: causality-upgrade-004
-title: "Update Documentation - Add Causality-Aware System Guide to AGENTIC_AI_TASKGUARD_GUIDE.md"
-status: todo
+title: Update Documentation - Add Causality-Aware System Guide to AGENTIC_AI_TASKGUARD_GUIDE.md
+status: done
 priority: medium
 tags:
-  - causality
-  - upgrade
-  - documentation
-dependencies: [causality-upgrade-001, causality-upgrade-002, causality-upgrade-003]
+- causality
+- upgrade
+- documentation
+dependencies:
+- causality-upgrade-001
+- causality-upgrade-002
+- causality-upgrade-003
 assignee: developer
 created: 2025-10-30T15:00:00Z
 estimate: 2h

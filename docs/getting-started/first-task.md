@@ -30,8 +30,7 @@ taskguard init
    tasks/testing/
 
 🤖 AI Agent Integration:
-   AGENTIC_AI_TASKGUARD_GUIDE.md    # AI collaboration guide
-   AI_AGENT_SETUP_NOTIFICATION.md   # Setup instructions
+   ✅ AGENTIC_AI_TASKGUARD_GUIDE.md copied to project root
 ```
 
 **What happened:**

@@ -4,6 +4,29 @@ TaskGuard version history and release notes.
 
 ---
 
+## v0.3.0 (Unreleased)
+
+### Added
+- **Domain-specific task templates** - Each area (api, auth, backend, etc.) has tailored causation chain prompts and pre-flight checks
+- **Custom template support** - Override via `.taskguard/templates/{area}.md`
+- **GitHub integration** - Bidirectional sync with GitHub Issues and Projects v2
+- **Archive/Restore commands** - Archive completed tasks (closes GitHub issues), restore (reopens)
+- **Cross-branch sync** - Detects duplicate tasks across branches
+- **Create command flags** - `--complexity`, `--tags`, `--dependencies`, `--assignee`, `--estimate`
+- **CI/CD workflows** - GitHub Actions for testing and releases
+- **Pre-built binaries** - Available for Linux, macOS, Windows, WSL
+
+### Changed
+- **Concise templates** - Reduced from ~120 to ~25 lines
+- **Concise AI guide** - Reduced from ~450 to ~88 lines
+- **Task ID generation** - Prevents ID reuse with archived tasks
+
+### Fixed
+- Test suite 100% pass rate
+- Compiler warnings eliminated
+
+---
+
 ## v0.2.2 (2025-10-05)
 
 ### Fixed

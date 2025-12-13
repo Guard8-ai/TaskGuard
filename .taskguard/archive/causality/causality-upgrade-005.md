@@ -1,13 +1,17 @@
 ---
 id: causality-upgrade-005
-title: "Integration Testing - Verify Complete Causality-Aware System Workflow"
-status: todo
+title: Integration Testing - Verify Complete Causality-Aware System Workflow
+status: done
 priority: high
 tags:
-  - causality
-  - upgrade
-  - testing
-dependencies: [causality-upgrade-001, causality-upgrade-002, causality-upgrade-003, causality-upgrade-004]
+- causality
+- upgrade
+- testing
+dependencies:
+- causality-upgrade-001
+- causality-upgrade-002
+- causality-upgrade-003
+- causality-upgrade-004
 assignee: developer
 created: 2025-10-30T15:00:00Z
 estimate: 4h

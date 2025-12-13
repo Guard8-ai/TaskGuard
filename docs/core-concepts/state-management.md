@@ -147,7 +147,6 @@ AGENTIC_AI_TASKGUARD_GUIDE.md  ✅ AI guides
 **Gitignored:**
 ```
 .taskguard/state/          ❌ Local state
-AI_AGENT_SETUP_NOTIFICATION.md  ❌ Setup notification (deletable)
 ```
 
 ### Benefits of Git Storage

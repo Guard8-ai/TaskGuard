@@ -1,7 +1,7 @@
 ---
 id: github-005
 title: 'GitHub Hub: Cross-branch task sync via TaskGuard ID recognition'
-status: todo
+status: done
 priority: high
 tags:
 - github

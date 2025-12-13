@@ -1,7 +1,7 @@
 ---
 id: github-002
 title: Improve GitHub issue descriptions to use Context section
-status: todo
+status: done
 priority: medium
 tags:
 - github

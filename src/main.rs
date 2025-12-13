@@ -7,6 +7,7 @@ pub mod commands;
 pub mod git;
 pub mod analysis;
 pub mod github;
+pub mod templates;
 
 use commands::{init, list, create, validate, sync, lint, ai, update, import_md, clean, stats, archive, compact, restore};
 
