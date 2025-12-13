@@ -354,4 +354,4 @@ TaskGuard has undergone comprehensive security auditing with 17 security-focused
 - Git repository access validation
 - Input sanitization and validation
 
-See `security-report.md` for detailed security analysis and mitigation strategies.
+Run security tests with: `cargo test security_tests`
