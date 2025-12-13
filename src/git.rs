@@ -63,8 +63,11 @@ impl GitAnalyzer {
 
         // Validate repository path to prevent malicious path traversal
         // Allow temp directories for testing, current directory and reasonable parent access
+        let temp_dir = std::env::temp_dir();
+        let temp_dir_canonical = temp_dir.canonicalize().unwrap_or(temp_dir);
         let is_temp_dir = canonical_path.starts_with("/tmp") ||
-                         canonical_path.starts_with(std::env::temp_dir());
+                         canonical_path.starts_with("/private/var/folders") ||  // macOS temp
+                         canonical_path.starts_with(&temp_dir_canonical);
         let is_current_or_child = canonical_path.starts_with(&current_dir);
         let is_reasonable_parent = if let Some(parent) = current_dir.parent() {
             canonical_path.starts_with(parent)
