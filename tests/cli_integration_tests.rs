@@ -22,10 +22,17 @@ impl CLITestProject {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
         let manifest_path = PathBuf::from(manifest_dir);
 
-        let binary_path = if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
-            PathBuf::from(target_dir).join("debug").join("taskguard")
+        // Binary name differs on Windows
+        let binary_name = if cfg!(windows) {
+            "taskguard.exe"
         } else {
-            manifest_path.join("target").join("debug").join("taskguard")
+            "taskguard"
+        };
+
+        let binary_path = if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
+            PathBuf::from(target_dir).join("debug").join(binary_name)
+        } else {
+            manifest_path.join("target").join("debug").join(binary_name)
         };
 
         // If debug binary doesn't exist, try release
@@ -33,12 +40,12 @@ impl CLITestProject {
             binary_path
         } else {
             if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
-                PathBuf::from(target_dir).join("release").join("taskguard")
+                PathBuf::from(target_dir).join("release").join(binary_name)
             } else {
                 manifest_path
                     .join("target")
                     .join("release")
-                    .join("taskguard")
+                    .join(binary_name)
             }
         };
 
