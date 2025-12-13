@@ -1,7 +1,7 @@
 ---
 id: backend-021
 title: Add global memory file suggestion prompt with super-concise TaskGuard discovery message
-status: todo
+status: done
 priority: medium
 tags:
 - backend

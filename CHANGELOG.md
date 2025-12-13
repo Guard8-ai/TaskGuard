@@ -1,0 +1,40 @@
+# Changelog
+
+All notable changes to TaskGuard will be documented in this file.
+
+## [0.3.0-dev] - Unreleased
+
+### Added
+
+- **Domain-specific task templates** - Each area (api, auth, backend, etc.) now has tailored causation chain prompts and pre-flight verification commands
+- **Custom template support** - Override templates via `.taskguard/templates/{area}.md`
+- **GitHub cross-branch sync** - Detects duplicate tasks across branches, adds branch/hash to issue body
+- **Context section extraction** - GitHub issue descriptions now use task's Context section
+- **CI/CD workflows** - Added GitHub Actions for CI testing and release automation
+- **Create command flags** - `--complexity`, `--tags`, `--dependencies`, `--assignee`, `--estimate`
+- **Restore command** - Restore archived tasks with automatic GitHub issue reopening
+- **Archive command** - Archive completed tasks with automatic GitHub issue closing
+- **GitHub-aware validation** - `taskguard validate` shows sync status and archived tasks
+- **Auto-sync config areas** - Areas auto-added to config when creating tasks in new areas
+- **Bulk import** - `taskguard import-md` to create tasks from markdown files
+
+### Changed
+
+- **Concise templates** - Reduced from ~120 to ~25 lines for better AI agent readability
+- **Concise AI guide** - Reduced AGENTIC_AI_TASKGUARD_GUIDE.md from ~450 to ~88 lines
+- **Removed AI notification file** - Replaced with terminal prompts for memory file updates
+- **Task ID generation** - Prevents ID reuse when archived tasks exist
+
+### Fixed
+
+- Premature commit behavior in AI agents
+- Unused imports and compiler warnings
+- Test suite achieving 100% pass rate
+
+## [0.2.2] - Previous Release
+
+- Core CLI with dependency validation
+- Task creation, listing, and organization
+- YAML + Markdown task format
+- Git history analysis
+- Security audit (17 tests)

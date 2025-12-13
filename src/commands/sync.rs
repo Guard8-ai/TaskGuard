@@ -782,9 +782,16 @@ fn push_tasks_to_github(
                     ""
                 };
 
+                // Build task file link
+                let file_path = format!("tasks/{}/{}.md", task.area, task.id);
+                let file_url = format!("https://github.com/{}/{}/blob/{}/{}",
+                    config.owner, config.repo, branch_name, file_path);
+
                 let body = format!(
-                    "**TaskGuard ID:** {}\n**Source Branch:** {}\n**Hash:** {}\n\n## Description\n\n{}{}\n\n---\n*Synced from TaskGuard*",
+                    "**TaskGuard ID:** {}  \n**Task File:** [{}]({})\n**Source Branch:** {}\n**Hash:** {}\n\n## Description\n\n{}{}\n\n---\n*Synced from TaskGuard*",
                     task.id,
+                    file_path,
+                    file_url,
                     branch_name,
                     task_hash,
                     description,

@@ -1,13 +1,14 @@
 ---
 id: github-003
 title: Add task file links to GitHub issue descriptions
-status: todo
+status: done
 priority: medium
 tags:
 - github
 - sync
 - enhancement
-dependencies: [github-002]
+dependencies:
+- github-002
 assignee: developer
 created: 2025-11-03T19:49:11.283052119Z
 estimate: 30m
