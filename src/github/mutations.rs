@@ -189,7 +189,9 @@ impl GitHubMutations {
                 .as_str()
                 .context("Missing issue ID")?
                 .to_string(),
-            number: issue_data["number"].as_i64().context("Missing issue number")?,
+            number: issue_data["number"]
+                .as_i64()
+                .context("Missing issue number")?,
             title: issue_data["title"]
                 .as_str()
                 .context("Missing issue title")?
@@ -234,20 +236,24 @@ impl GitHubMutations {
         state: &str, // "OPEN" or "CLOSED"
     ) -> Result<()> {
         let mutation = match state.to_uppercase().as_str() {
-            "CLOSED" => r#"
+            "CLOSED" => {
+                r#"
                 mutation($issueId: ID!) {
                     closeIssue(input: { issueId: $issueId }) {
                         issue { id state }
                     }
                 }
-            "#,
-            "OPEN" => r#"
+            "#
+            }
+            "OPEN" => {
+                r#"
                 mutation($issueId: ID!) {
                     reopenIssue(input: { issueId: $issueId }) {
                         issue { id state }
                     }
                 }
-            "#,
+            "#
+            }
             _ => return Err(anyhow::anyhow!("Invalid state: {}", state)),
         };
 
@@ -661,10 +667,7 @@ impl GitHubMutations {
     /// println!("Created {} new status columns", created);
     /// # Ok::<(), anyhow::Error>(())
     /// ```
-    pub fn ensure_status_columns(
-        client: &GitHubClient,
-        project_id: &str,
-    ) -> Result<usize> {
+    pub fn ensure_status_columns(client: &GitHubClient, project_id: &str) -> Result<usize> {
         use super::mapper::TaskIssueMapper;
         use crate::task::TaskStatus;
 
@@ -701,7 +704,10 @@ impl GitHubMutations {
         for (status, column_name) in missing_columns {
             match Self::create_status_column(client, project_id, &field_id, column_name) {
                 Ok(_) => {
-                    println!("      ✅ Created '{}' column for {:?} status", column_name, status);
+                    println!(
+                        "      ✅ Created '{}' column for {:?} status",
+                        column_name, status
+                    );
                     created_count += 1;
                 }
                 Err(e) => {
@@ -714,7 +720,10 @@ impl GitHubMutations {
         }
 
         if created_count > 0 {
-            println!("      🎉 Successfully created {} status column(s)", created_count);
+            println!(
+                "      🎉 Successfully created {} status column(s)",
+                created_count
+            );
         }
 
         Ok(created_count)
@@ -841,10 +850,7 @@ impl GitHubMutations {
         // Find the newly created option by name
         for opt in options {
             if opt["name"].as_str() == Some(option_name) {
-                let option_id = opt["id"]
-                    .as_str()
-                    .context("Missing option ID")?
-                    .to_string();
+                let option_id = opt["id"].as_str().context("Missing option ID")?.to_string();
                 return Ok(option_id);
             }
         }

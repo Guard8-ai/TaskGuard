@@ -1,12 +1,12 @@
 use anyhow::Result;
+use chrono::Utc;
 use git2::Repository;
 use std::fs;
 use std::path::PathBuf;
-use tempfile::TempDir;
-use taskguard::commands::{init, create, validate, sync, lint, ai};
+use taskguard::commands::{ai, create, init, lint, sync, validate};
 use taskguard::config::Config;
-use taskguard::task::{Task, TaskStatus, Priority};
-use chrono::Utc;
+use taskguard::task::{Priority, Task, TaskStatus};
+use tempfile::TempDir;
 
 /// Helper to create a task with minimal arguments (title, area, priority)
 fn create_task(title: &str, area: &str, priority: &str) -> Result<()> {
@@ -61,7 +61,10 @@ impl TaskGuardTestProject {
     fn add_git_commit(&self, repo: &Repository, message: &str) -> Result<()> {
         // Create a test file
         let file_path = self.project_path.join("test.txt");
-        fs::write(&file_path, format!("content {}", chrono::Utc::now().timestamp()))?;
+        fs::write(
+            &file_path,
+            format!("content {}", chrono::Utc::now().timestamp()),
+        )?;
 
         // Stage the file
         let mut index = repo.index()?;
@@ -97,7 +100,14 @@ impl TaskGuardTestProject {
         Ok(())
     }
 
-    fn create_task_manually(&self, area: &str, id: &str, title: &str, status: TaskStatus, dependencies: Vec<String>) -> Result<()> {
+    fn create_task_manually(
+        &self,
+        area: &str,
+        id: &str,
+        title: &str,
+        status: TaskStatus,
+        dependencies: Vec<String>,
+    ) -> Result<()> {
         let area_dir = self.tasks_dir.join(area);
         if !area_dir.exists() {
             fs::create_dir_all(&area_dir)?;
@@ -136,7 +146,10 @@ fn test_complete_project_lifecycle() -> Result<()> {
 
     // 1. Initialize project
     init::run()?;
-    assert!(project.taskguard_dir.exists(), "Should create .taskguard directory");
+    assert!(
+        project.taskguard_dir.exists(),
+        "Should create .taskguard directory"
+    );
     assert!(project.tasks_dir.exists(), "Should create tasks directory");
 
     // 2. Create initial tasks
@@ -174,10 +187,34 @@ fn test_dependency_workflow() -> Result<()> {
     init::run()?;
 
     // Create tasks with dependency chain
-    project.create_task_manually("setup", "setup-001", "Environment Setup", TaskStatus::Todo, vec![])?;
-    project.create_task_manually("backend", "backend-001", "Database Schema", TaskStatus::Todo, vec!["setup-001".to_string()])?;
-    project.create_task_manually("backend", "backend-002", "User API", TaskStatus::Todo, vec!["backend-001".to_string()])?;
-    project.create_task_manually("frontend", "frontend-001", "User Interface", TaskStatus::Todo, vec!["backend-002".to_string()])?;
+    project.create_task_manually(
+        "setup",
+        "setup-001",
+        "Environment Setup",
+        TaskStatus::Todo,
+        vec![],
+    )?;
+    project.create_task_manually(
+        "backend",
+        "backend-001",
+        "Database Schema",
+        TaskStatus::Todo,
+        vec!["setup-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "backend",
+        "backend-002",
+        "User API",
+        TaskStatus::Todo,
+        vec!["backend-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "frontend",
+        "frontend-001",
+        "User Interface",
+        TaskStatus::Todo,
+        vec!["backend-002".to_string()],
+    )?;
 
     // Initial validation should show only setup-001 as available
     validate::run(false)?;
@@ -402,8 +439,16 @@ fn test_complexity_analysis_workflow() -> Result<()> {
         title: "Redesign entire system architecture".to_string(),
         status: TaskStatus::Todo,
         priority: Priority::Critical,
-        tags: vec!["architecture".to_string(), "refactor".to_string(), "complex".to_string()],
-        dependencies: vec!["simple-001".to_string(), "other-001".to_string(), "dep-003".to_string()],
+        tags: vec![
+            "architecture".to_string(),
+            "refactor".to_string(),
+            "complex".to_string(),
+        ],
+        dependencies: vec![
+            "simple-001".to_string(),
+            "other-001".to_string(),
+            "dep-003".to_string(),
+        ],
         assignee: Some("senior-dev".to_string()),
         created: Utc::now(),
         estimate: Some("3 months".to_string()),
@@ -450,7 +495,13 @@ fn test_ai_guided_development_workflow() -> Result<()> {
     create_task("Authentication Tests", "testing", "medium")?;
 
     // Set up dependencies
-    project.create_task_manually("testing", "testing-001", "Authentication Tests", TaskStatus::Todo, vec!["backend-001".to_string(), "frontend-001".to_string()])?;
+    project.create_task_manually(
+        "testing",
+        "testing-001",
+        "Authentication Tests",
+        TaskStatus::Todo,
+        vec!["backend-001".to_string(), "frontend-001".to_string()],
+    )?;
 
     // 2. AI helps with task prioritization
     ai::run("What should I work on next?".to_string())?;
@@ -501,13 +552,25 @@ fn test_large_project_workflow() -> Result<()> {
     init::run()?;
 
     // Create a large number of tasks to test performance
-    let areas = ["backend", "frontend", "api", "auth", "testing", "deployment", "docs"];
+    let areas = [
+        "backend",
+        "frontend",
+        "api",
+        "auth",
+        "testing",
+        "deployment",
+        "docs",
+    ];
 
     for area in &areas {
         for i in 1..=20 {
             let task_id = format!("{}-{:03}", area, i);
             let title = format!("Task {} in {}", i, area);
-            let deps = if i > 1 { vec![format!("{}-{:03}", area, i - 1)] } else { vec![] };
+            let deps = if i > 1 {
+                vec![format!("{}-{:03}", area, i - 1)]
+            } else {
+                vec![]
+            };
 
             project.create_task_manually(area, &task_id, &title, TaskStatus::Todo, deps)?;
         }
@@ -527,12 +590,18 @@ fn test_large_project_workflow() -> Result<()> {
     let ai_duration = start.elapsed();
 
     // Performance should be reasonable even with many tasks
-    assert!(validate_duration < std::time::Duration::from_secs(5),
-            "Validation should complete within 5 seconds for large project");
-    assert!(lint_duration < std::time::Duration::from_secs(10),
-            "Lint analysis should complete within 10 seconds for large project");
-    assert!(ai_duration < std::time::Duration::from_secs(3),
-            "AI processing should complete within 3 seconds for large project");
+    assert!(
+        validate_duration < std::time::Duration::from_secs(5),
+        "Validation should complete within 5 seconds for large project"
+    );
+    assert!(
+        lint_duration < std::time::Duration::from_secs(10),
+        "Lint analysis should complete within 10 seconds for large project"
+    );
+    assert!(
+        ai_duration < std::time::Duration::from_secs(3),
+        "AI processing should complete within 3 seconds for large project"
+    );
 
     Ok(())
 }
@@ -548,19 +617,70 @@ fn test_complex_dependency_chains() -> Result<()> {
 
     // Linear chain: A -> B -> C -> D
     project.create_task_manually("setup", "setup-001", "Foundation", TaskStatus::Done, vec![])?;
-    project.create_task_manually("backend", "backend-001", "Core API", TaskStatus::Todo, vec!["setup-001".to_string()])?;
-    project.create_task_manually("backend", "backend-002", "Advanced API", TaskStatus::Todo, vec!["backend-001".to_string()])?;
-    project.create_task_manually("frontend", "frontend-001", "UI Layer", TaskStatus::Todo, vec!["backend-002".to_string()])?;
+    project.create_task_manually(
+        "backend",
+        "backend-001",
+        "Core API",
+        TaskStatus::Todo,
+        vec!["setup-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "backend",
+        "backend-002",
+        "Advanced API",
+        TaskStatus::Todo,
+        vec!["backend-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "frontend",
+        "frontend-001",
+        "UI Layer",
+        TaskStatus::Todo,
+        vec!["backend-002".to_string()],
+    )?;
 
     // Diamond dependency: A -> B,C -> D
-    project.create_task_manually("auth", "auth-001", "Auth Base", TaskStatus::Todo, vec!["setup-001".to_string()])?;
-    project.create_task_manually("auth", "auth-002", "Login", TaskStatus::Todo, vec!["auth-001".to_string()])?;
-    project.create_task_manually("auth", "auth-003", "Registration", TaskStatus::Todo, vec!["auth-001".to_string()])?;
-    project.create_task_manually("auth", "auth-004", "Full Auth System", TaskStatus::Todo, vec!["auth-002".to_string(), "auth-003".to_string()])?;
+    project.create_task_manually(
+        "auth",
+        "auth-001",
+        "Auth Base",
+        TaskStatus::Todo,
+        vec!["setup-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "auth",
+        "auth-002",
+        "Login",
+        TaskStatus::Todo,
+        vec!["auth-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "auth",
+        "auth-003",
+        "Registration",
+        TaskStatus::Todo,
+        vec!["auth-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "auth",
+        "auth-004",
+        "Full Auth System",
+        TaskStatus::Todo,
+        vec!["auth-002".to_string(), "auth-003".to_string()],
+    )?;
 
     // Multiple dependencies
-    project.create_task_manually("integration", "integration-001", "Full Integration", TaskStatus::Todo,
-        vec!["frontend-001".to_string(), "auth-004".to_string(), "backend-002".to_string()])?;
+    project.create_task_manually(
+        "integration",
+        "integration-001",
+        "Full Integration",
+        TaskStatus::Todo,
+        vec![
+            "frontend-001".to_string(),
+            "auth-004".to_string(),
+            "backend-002".to_string(),
+        ],
+    )?;
 
     // Test dependency resolution
     validate::run(false)?;
@@ -690,10 +810,34 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     create_task("Documentation Update", "docs", "low")?;
 
     // Set up realistic dependencies
-    project.create_task_manually("backend", "backend-001", "Backend Auth API", TaskStatus::Todo, vec!["setup-001".to_string()])?;
-    project.create_task_manually("frontend", "frontend-001", "Login Components", TaskStatus::Todo, vec!["backend-001".to_string()])?;
-    project.create_task_manually("testing", "testing-001", "Auth Tests", TaskStatus::Todo, vec!["frontend-001".to_string()])?;
-    project.create_task_manually("docs", "docs-001", "Documentation", TaskStatus::Todo, vec!["testing-001".to_string()])?;
+    project.create_task_manually(
+        "backend",
+        "backend-001",
+        "Backend Auth API",
+        TaskStatus::Todo,
+        vec!["setup-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "frontend",
+        "frontend-001",
+        "Login Components",
+        TaskStatus::Todo,
+        vec!["backend-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "testing",
+        "testing-001",
+        "Auth Tests",
+        TaskStatus::Todo,
+        vec!["frontend-001".to_string()],
+    )?;
+    project.create_task_manually(
+        "docs",
+        "docs-001",
+        "Documentation",
+        TaskStatus::Todo,
+        vec!["testing-001".to_string()],
+    )?;
 
     // 2. Development phase - work through tasks with Git tracking
 
@@ -756,15 +900,30 @@ fn test_area_sync_workflow() -> Result<()> {
 
     // 1. Verify initial config areas
     let initial_config = Config::load_or_default(&config_path)?;
-    assert!(initial_config.project.areas.contains(&"backend".to_string()));
-    assert!(!initial_config.project.areas.contains(&"research".to_string()));
+    assert!(
+        initial_config
+            .project
+            .areas
+            .contains(&"backend".to_string())
+    );
+    assert!(
+        !initial_config
+            .project
+            .areas
+            .contains(&"research".to_string())
+    );
 
     // 2. Create task in new area - should auto-add area to config
     create_task("Research task", "research", "medium")?;
 
     // Verify config was updated with new area
     let updated_config = Config::load_or_default(&config_path)?;
-    assert!(updated_config.project.areas.contains(&"research".to_string()));
+    assert!(
+        updated_config
+            .project
+            .areas
+            .contains(&"research".to_string())
+    );
 
     // 3. Create another new area manually (without using create)
     let custom_area_dir = project.tasks_dir.join("custom");
@@ -787,7 +946,12 @@ Test task content.
 
     // Verify custom area is NOT in config yet
     let pre_sync_config = Config::load_or_default(&config_path)?;
-    assert!(!pre_sync_config.project.areas.contains(&"custom".to_string()));
+    assert!(
+        !pre_sync_config
+            .project
+            .areas
+            .contains(&"custom".to_string())
+    );
 
     // 4. Run validate --sync-areas to discover and add custom area
     validate::run(true)?; // sync_areas = true
@@ -801,7 +965,10 @@ Test task content.
     let areas = &final_config.project.areas;
     let mut sorted_areas = areas.clone();
     sorted_areas.sort();
-    assert_eq!(areas, &sorted_areas, "Areas should be sorted alphabetically");
+    assert_eq!(
+        areas, &sorted_areas,
+        "Areas should be sorted alphabetically"
+    );
 
     // 6. Run validate --sync-areas again - should report already in sync
     validate::run(true)?; // Should succeed and report "in sync"

@@ -149,8 +149,8 @@ impl TaskAnalyzer {
         }
 
         // Check for acceptance criteria
-        if !task.content.contains("Acceptance Criteria") &&
-           !task.content.contains("## Objectives") {
+        if !task.content.contains("Acceptance Criteria") && !task.content.contains("## Objectives")
+        {
             score -= 1.5;
         }
 
@@ -163,13 +163,14 @@ impl TaskAnalyzer {
     }
 
     pub fn count_task_items(&self, content: &str) -> usize {
-        content.lines()
+        content
+            .lines()
             .filter(|line| {
                 let trimmed = line.trim();
-                trimmed.starts_with("- [ ]") ||
-                trimmed.starts_with("- [x]") ||
-                trimmed.starts_with("* [ ]") ||
-                trimmed.starts_with("* [x]")
+                trimmed.starts_with("- [ ]")
+                    || trimmed.starts_with("- [x]")
+                    || trimmed.starts_with("* [ ]")
+                    || trimmed.starts_with("* [x]")
             })
             .count()
     }
@@ -194,7 +195,9 @@ impl TaskAnalyzer {
         }
 
         // Check for days
-        if estimate_lower.contains("day") || (estimate_lower.ends_with("d") && !estimate_lower.contains("h")) {
+        if estimate_lower.contains("day")
+            || (estimate_lower.ends_with("d") && !estimate_lower.contains("h"))
+        {
             if let Some(days) = self.extract_number(&estimate_lower) {
                 return (days as f32 * 8.0).min(200.0);
             }
@@ -225,13 +228,21 @@ impl TaskAnalyzer {
             .ok()
     }
 
-    fn check_complexity_issues(&self, task: &Task, complexity_score: f32, issues: &mut Vec<LintIssue>, suggestions: &mut Vec<String>) {
+    fn check_complexity_issues(
+        &self,
+        task: &Task,
+        complexity_score: f32,
+        issues: &mut Vec<LintIssue>,
+        suggestions: &mut Vec<String>,
+    ) {
         if complexity_score > self.complexity_thresholds.high_complexity_score {
             issues.push(LintIssue {
                 severity: Severity::Warning,
                 category: IssueCategory::Complexity,
                 message: format!("Task has high complexity score: {:.1}/10", complexity_score),
-                suggestion: Some("Consider breaking this task into smaller, more focused subtasks".to_string()),
+                suggestion: Some(
+                    "Consider breaking this task into smaller, more focused subtasks".to_string(),
+                ),
             });
             suggestions.push("Break down into smaller tasks based on natural boundaries (setup, implementation, testing)".to_string());
         }
@@ -240,8 +251,13 @@ impl TaskAnalyzer {
             issues.push(LintIssue {
                 severity: Severity::Info,
                 category: IssueCategory::Complexity,
-                message: format!("Task description is very long ({} characters)", task.content.len()),
-                suggestion: Some("Consider moving detailed specifications to separate documentation".to_string()),
+                message: format!(
+                    "Task description is very long ({} characters)",
+                    task.content.len()
+                ),
+                suggestion: Some(
+                    "Consider moving detailed specifications to separate documentation".to_string(),
+                ),
             });
         }
 
@@ -256,7 +272,12 @@ impl TaskAnalyzer {
         }
     }
 
-    fn check_structure_issues(&self, task: &Task, issues: &mut Vec<LintIssue>, suggestions: &mut Vec<String>) {
+    fn check_structure_issues(
+        &self,
+        task: &Task,
+        issues: &mut Vec<LintIssue>,
+        suggestions: &mut Vec<String>,
+    ) {
         let content = &task.content;
 
         // Check for common sections
@@ -284,7 +305,12 @@ impl TaskAnalyzer {
         }
     }
 
-    fn check_completeness_issues(&self, task: &Task, issues: &mut Vec<LintIssue>, _suggestions: &mut Vec<String>) {
+    fn check_completeness_issues(
+        &self,
+        task: &Task,
+        issues: &mut Vec<LintIssue>,
+        _suggestions: &mut Vec<String>,
+    ) {
         if task.estimate.is_none() {
             issues.push(LintIssue {
                 severity: Severity::Info,
@@ -299,7 +325,9 @@ impl TaskAnalyzer {
                 severity: Severity::Info,
                 category: IssueCategory::Completeness,
                 message: "Task has no tags for categorization".to_string(),
-                suggestion: Some("Add relevant tags (e.g., backend, frontend, bug, feature)".to_string()),
+                suggestion: Some(
+                    "Add relevant tags (e.g., backend, frontend, bug, feature)".to_string(),
+                ),
             });
         }
 
@@ -313,19 +341,33 @@ impl TaskAnalyzer {
         }
     }
 
-    fn check_dependency_issues(&self, task: &Task, issues: &mut Vec<LintIssue>, suggestions: &mut Vec<String>) {
+    fn check_dependency_issues(
+        &self,
+        task: &Task,
+        issues: &mut Vec<LintIssue>,
+        suggestions: &mut Vec<String>,
+    ) {
         if task.dependencies.len() > self.complexity_thresholds.max_dependencies {
             issues.push(LintIssue {
                 severity: Severity::Warning,
                 category: IssueCategory::Dependencies,
                 message: format!("Task has many dependencies ({})", task.dependencies.len()),
-                suggestion: Some("Consider if all dependencies are necessary or if some can be moved".to_string()),
+                suggestion: Some(
+                    "Consider if all dependencies are necessary or if some can be moved"
+                        .to_string(),
+                ),
             });
-            suggestions.push("Review dependency list and consider creating intermediate tasks".to_string());
+            suggestions.push(
+                "Review dependency list and consider creating intermediate tasks".to_string(),
+            );
         }
 
         // Check for potential circular dependency patterns
-        if task.dependencies.iter().any(|dep| dep.starts_with(&task.area)) {
+        if task
+            .dependencies
+            .iter()
+            .any(|dep| dep.starts_with(&task.area))
+        {
             issues.push(LintIssue {
                 severity: Severity::Info,
                 category: IssueCategory::Dependencies,
@@ -353,17 +395,17 @@ impl TaskAnalyzer {
             total_issues += analysis.issues.len();
 
             for issue in &analysis.issues {
-                *issues_by_category.entry(format!("{:?}", issue.category)).or_insert(0) += 1;
+                *issues_by_category
+                    .entry(format!("{:?}", issue.category))
+                    .or_insert(0) += 1;
             }
         }
 
-        let avg_complexity = analyses.iter()
-            .map(|a| a.complexity_score)
-            .sum::<f32>() / total_tasks as f32;
+        let avg_complexity =
+            analyses.iter().map(|a| a.complexity_score).sum::<f32>() / total_tasks as f32;
 
-        let avg_quality = analyses.iter()
-            .map(|a| a.quality_score)
-            .sum::<f32>() / total_tasks as f32;
+        let avg_quality =
+            analyses.iter().map(|a| a.quality_score).sum::<f32>() / total_tasks as f32;
 
         AnalysisSummary {
             total_tasks,

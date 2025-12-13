@@ -3,8 +3,8 @@ use std::fs;
 use walkdir::WalkDir;
 
 use crate::config::{get_tasks_dir, load_tasks_from_dir};
+use crate::github::{TaskIssueMapper, is_github_sync_enabled};
 use crate::task::{Task, TaskStatus};
-use crate::github::{is_github_sync_enabled, TaskIssueMapper};
 
 pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
@@ -47,7 +47,11 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
                     } else {
                         let metadata = fs::metadata(path)?;
                         total_size += metadata.len();
-                        files_to_delete.push((path.to_path_buf(), task.id.clone(), task.title.clone()));
+                        files_to_delete.push((
+                            path.to_path_buf(),
+                            task.id.clone(),
+                            task.title.clone(),
+                        ));
                     }
                 }
             }
@@ -82,7 +86,9 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
                 println!("   ❌ BLOCKED: Cannot delete synced tasks with 'clean'");
                 println!();
                 println!("💡 OPTIONS:");
-                println!("   1. Use 'taskguard archive' instead (preserves history + closes GitHub issues)");
+                println!(
+                    "   1. Use 'taskguard archive' instead (preserves history + closes GitHub issues)"
+                );
                 println!("   2. Manually close GitHub issues, then clean");
                 println!("   3. Disable GitHub sync in .taskguard/github.toml");
                 println!();
@@ -97,7 +103,10 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
                     return Ok(());
                 }
 
-                println!("   ℹ️  Continuing with {} non-synced tasks", files_to_delete.len());
+                println!(
+                    "   ℹ️  Continuing with {} non-synced tasks",
+                    files_to_delete.len()
+                );
                 println!();
             }
         }

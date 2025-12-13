@@ -66,13 +66,25 @@ pub fn run() -> Result<()> {
     println!("💾 TOTAL STORAGE");
     println!("   Tasks directory: {}", format_size(total_size));
     println!("   Total task files: {}", largest_tasks.len());
-    println!("   Average file size: {}", format_size(if largest_tasks.is_empty() { 0 } else { total_size / largest_tasks.len() as u64 }));
+    println!(
+        "   Average file size: {}",
+        format_size(if largest_tasks.is_empty() {
+            0
+        } else {
+            total_size / largest_tasks.len() as u64
+        })
+    );
     println!();
 
     println!("📁 BY AREA");
     for (area, stats) in sorted_areas {
-        let avg_size = if stats.count > 0 { stats.total_size / stats.count as u64 } else { 0 };
-        println!("   {} - {} tasks, {} total (avg: {})",
+        let avg_size = if stats.count > 0 {
+            stats.total_size / stats.count as u64
+        } else {
+            0
+        };
+        println!(
+            "   {} - {} tasks, {} total (avg: {})",
             area,
             stats.count,
             format_size(stats.total_size),

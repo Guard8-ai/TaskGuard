@@ -1,10 +1,10 @@
-use anyhow::Result;
-use std::path::Path;
-use std::collections::{HashMap, HashSet};
-use crate::task::{Task, TaskStatus, Priority};
-use crate::git::GitAnalyzer;
 use crate::analysis::TaskAnalyzer;
 use crate::config::load_all_tasks;
+use crate::git::GitAnalyzer;
+use crate::task::{Priority, Task, TaskStatus};
+use anyhow::Result;
+use std::collections::{HashMap, HashSet};
+use std::path::Path;
 
 #[derive(Debug)]
 pub struct ValidationResult {
@@ -118,7 +118,9 @@ impl AIAgent {
             "set up",
         ];
 
-        creation_patterns.iter().any(|pattern| input.contains(pattern))
+        creation_patterns
+            .iter()
+            .any(|pattern| input.contains(pattern))
     }
 
     fn is_status_inquiry(&self, input: &str) -> bool {
@@ -143,7 +145,9 @@ impl AIAgent {
             "give me an overview",
         ];
 
-        status_patterns.iter().any(|pattern| input.contains(pattern))
+        status_patterns
+            .iter()
+            .any(|pattern| input.contains(pattern))
     }
 
     fn is_next_task_request(&self, input: &str) -> bool {
@@ -175,7 +179,9 @@ impl AIAgent {
             "built",
         ];
 
-        completion_patterns.iter().any(|pattern| input.contains(pattern))
+        completion_patterns
+            .iter()
+            .any(|pattern| input.contains(pattern))
     }
 
     fn is_dependency_query(&self, input: &str) -> bool {
@@ -195,7 +201,9 @@ impl AIAgent {
             "prerequisite",
         ];
 
-        dependency_patterns.iter().any(|pattern| input.contains(pattern))
+        dependency_patterns
+            .iter()
+            .any(|pattern| input.contains(pattern))
     }
 
     fn is_complexity_query(&self, input: &str) -> bool {
@@ -211,7 +219,9 @@ impl AIAgent {
             "analyze",
         ];
 
-        complexity_patterns.iter().any(|pattern| input.contains(pattern))
+        complexity_patterns
+            .iter()
+            .any(|pattern| input.contains(pattern))
     }
 
     fn handle_task_creation(&self, input: &str) -> Result<String> {
@@ -260,7 +270,10 @@ impl AIAgent {
                 ));
             }
             if validation_result.available_tasks.len() > 3 {
-                response.push_str(&format!("   • ... and {} more\n", validation_result.available_tasks.len() - 3));
+                response.push_str(&format!(
+                    "   • ... and {} more\n",
+                    validation_result.available_tasks.len() - 3
+                ));
             }
         }
 
@@ -289,7 +302,8 @@ impl AIAgent {
             let a_priority = priority_order(&a.priority);
             let b_priority = priority_order(&b.priority);
 
-            b_priority.cmp(&a_priority)
+            b_priority
+                .cmp(&a_priority)
                 .then_with(|| a.complexity.unwrap_or(5).cmp(&b.complexity.unwrap_or(5)))
         });
 
@@ -302,8 +316,11 @@ impl AIAgent {
             • Complexity: {}/10\n\
             • Area: {}\n",
             available.len(),
-            recommended.id, recommended.title, recommended.priority,
-            recommended.complexity.unwrap_or(5), recommended.area
+            recommended.id,
+            recommended.title,
+            recommended.priority,
+            recommended.complexity.unwrap_or(5),
+            recommended.area
         );
 
         if let Some(estimate) = &recommended.estimate {
@@ -337,7 +354,8 @@ impl AIAgent {
 
         if let Some(task_ref) = potential_task {
             response.push_str(&format!(
-                "It sounds like you finished work on: **{}**\n\n", task_ref
+                "It sounds like you finished work on: **{}**\n\n",
+                task_ref
             ));
         }
 
@@ -346,7 +364,7 @@ impl AIAgent {
             1. Update the task status to `done` in the task file\n\
             2. Run `taskguard validate` to see what's now available\n\
             3. Consider running `taskguard sync` to analyze your Git commits\n\n\
-            🚀 **Ready for more?** Ask me \"what should I work on next?\" for recommendations!"
+            🚀 **Ready for more?** Ask me \"what should I work on next?\" for recommendations!",
         );
 
         Ok(response)
@@ -363,7 +381,8 @@ impl AIAgent {
             for (task, blocking_deps) in &validation_result.blocked_tasks {
                 response.push_str(&format!(
                     "   • **{}** - {}\n     Waiting for: {}\n\n",
-                    task.id, task.title,
+                    task.id,
+                    task.title,
                     blocking_deps.join(", ")
                 ));
             }
@@ -372,9 +391,7 @@ impl AIAgent {
         if !validation_result.available_tasks.is_empty() {
             response.push_str("✅ **Ready to work on (no blocking dependencies):**\n");
             for task in &validation_result.available_tasks {
-                response.push_str(&format!(
-                    "   • **{}** - {}\n", task.id, task.title
-                ));
+                response.push_str(&format!("   • **{}** - {}\n", task.id, task.title));
             }
         }
 
@@ -388,9 +405,13 @@ impl AIAgent {
         let mut response = String::from("🧠 **Complexity Analysis**\n\n");
 
         // Group tasks by complexity
-        let mut by_complexity: std::collections::HashMap<u8, Vec<_>> = std::collections::HashMap::new();
+        let mut by_complexity: std::collections::HashMap<u8, Vec<_>> =
+            std::collections::HashMap::new();
         for task in &tasks {
-            by_complexity.entry(task.complexity.unwrap_or(5)).or_default().push(task);
+            by_complexity
+                .entry(task.complexity.unwrap_or(5))
+                .or_default()
+                .push(task);
         }
 
         for complexity in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] {
@@ -405,9 +426,7 @@ impl AIAgent {
                     };
                     response.push_str(&format!("{} **Complexity {}:**\n", emoji, complexity));
                     for task in task_list {
-                        response.push_str(&format!(
-                            "   • {} - {}\n", task.id, task.title
-                        ));
+                        response.push_str(&format!("   • {} - {}\n", task.id, task.title));
                     }
                     response.push('\n');
                 }
@@ -489,11 +508,59 @@ impl AIAgent {
         // Check for more specific patterns first
         // Order matters: more specific keywords should come before generic ones
         let area_keywords = [
-            ("testing", vec!["write tests", "write test", "testing", "test for", "test the", "spec", "validation"]),
-            ("frontend", vec!["react", "vue", "angular", "frontend", "component for", "component", "ui", "view", "page"]),
-            ("auth", vec!["authentication", "auth to", "auth for", "login", "security", "permission"]),
-            ("setup", vec!["set up", "setup", "configuration", "config", "install", "deployment", "database configuration"]),
-            ("backend", vec!["api", "endpoint", "server", "database", "backend"]),
+            (
+                "testing",
+                vec![
+                    "write tests",
+                    "write test",
+                    "testing",
+                    "test for",
+                    "test the",
+                    "spec",
+                    "validation",
+                ],
+            ),
+            (
+                "frontend",
+                vec![
+                    "react",
+                    "vue",
+                    "angular",
+                    "frontend",
+                    "component for",
+                    "component",
+                    "ui",
+                    "view",
+                    "page",
+                ],
+            ),
+            (
+                "auth",
+                vec![
+                    "authentication",
+                    "auth to",
+                    "auth for",
+                    "login",
+                    "security",
+                    "permission",
+                ],
+            ),
+            (
+                "setup",
+                vec![
+                    "set up",
+                    "setup",
+                    "configuration",
+                    "config",
+                    "install",
+                    "deployment",
+                    "database configuration",
+                ],
+            ),
+            (
+                "backend",
+                vec!["api", "endpoint", "server", "database", "backend"],
+            ),
         ];
 
         for (area, keywords) in &area_keywords {
@@ -510,11 +577,20 @@ impl AIAgent {
     fn infer_priority(&self, input: &str) -> String {
         let input_lower = input.to_lowercase();
 
-        if input_lower.contains("critical") || input_lower.contains("urgent") || input_lower.contains("asap") {
+        if input_lower.contains("critical")
+            || input_lower.contains("urgent")
+            || input_lower.contains("asap")
+        {
             "critical".to_string()
-        } else if input_lower.contains("high") || input_lower.contains("important") || input_lower.contains("priority") {
+        } else if input_lower.contains("high")
+            || input_lower.contains("important")
+            || input_lower.contains("priority")
+        {
             "high".to_string()
-        } else if input_lower.contains("low") || input_lower.contains("minor") || input_lower.contains("later") {
+        } else if input_lower.contains("low")
+            || input_lower.contains("minor")
+            || input_lower.contains("later")
+        {
             "low".to_string()
         } else {
             "medium".to_string()

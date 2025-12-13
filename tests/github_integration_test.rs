@@ -6,10 +6,8 @@
 /// - Configuration file: .taskguard/github.toml
 ///
 /// Run with: cargo test --test github_integration_test -- --ignored --nocapture
-
 use taskguard::github::{
-    GitHubClient, GitHubMutations, TaskIssueMapper,
-    config::load_github_config,
+    GitHubClient, GitHubMutations, TaskIssueMapper, config::load_github_config,
 };
 use taskguard::task::TaskStatus;
 
@@ -51,14 +49,18 @@ fn test_create_issue_real() {
         &config.owner,
         &config.repo,
         "[TEST] TaskGuard Integration Test",
-        Some("This is a test issue created by TaskGuard's integration tests.\n\nYou can safely close this issue."),
+        Some(
+            "This is a test issue created by TaskGuard's integration tests.\n\nYou can safely close this issue.",
+        ),
     ) {
         Ok(issue) => {
             println!("✓ Created issue #{}: {}", issue.number, issue.title);
             println!("  ID: {}", issue.id);
             println!("  State: {}", issue.state);
-            println!("  URL: https://github.com/{}/{}/issues/{}",
-                     config.owner, config.repo, issue.number);
+            println!(
+                "  URL: https://github.com/{}/{}/issues/{}",
+                config.owner, config.repo, issue.number
+            );
             issue
         }
         Err(e) => {
@@ -68,8 +70,10 @@ fn test_create_issue_real() {
     };
 
     println!("\n✅ Test passed! Check your GitHub repository to see the issue.");
-    println!("   https://github.com/{}/{}/issues/{}",
-             config.owner, config.repo, issue.number);
+    println!(
+        "   https://github.com/{}/{}/issues/{}",
+        config.owner, config.repo, issue.number
+    );
 }
 
 #[test]
@@ -78,14 +82,15 @@ fn test_full_project_sync() {
     println!("\n🧪 Testing full Projects v2 sync workflow...\n");
 
     // Load configuration
-    let config = load_github_config()
-        .expect("Failed to load config - create .taskguard/github.toml");
-    println!("✓ Config: {}/{} - Project #{}",
-             config.owner, config.repo, config.project_number);
+    let config =
+        load_github_config().expect("Failed to load config - create .taskguard/github.toml");
+    println!(
+        "✓ Config: {}/{} - Project #{}",
+        config.owner, config.repo, config.project_number
+    );
 
     // Authenticate
-    let client = GitHubClient::new()
-        .expect("Failed to authenticate - run: gh auth login");
+    let client = GitHubClient::new().expect("Failed to authenticate - run: gh auth login");
     println!("✓ Authenticated with GitHub");
 
     // Step 1: Create issue
@@ -96,7 +101,8 @@ fn test_full_project_sync() {
         &config.repo,
         "[TEST] Full Projects v2 Sync",
         Some("Testing the complete TaskGuard → GitHub Projects workflow"),
-    ).expect("Failed to create issue");
+    )
+    .expect("Failed to create issue");
     println!("✓ Issue #{} created: {}", issue.number, issue.id);
 
     // Step 2: Get project ID
@@ -107,19 +113,14 @@ fn test_full_project_sync() {
 
     // Step 3: Add issue to project
     println!("\n➕ Step 3: Adding issue to project...");
-    let item_id = GitHubMutations::add_issue_to_project(
-        &client,
-        &project_id,
-        &issue.id,
-    ).expect("Failed to add issue to project");
+    let item_id = GitHubMutations::add_issue_to_project(&client, &project_id, &issue.id)
+        .expect("Failed to add issue to project");
     println!("✓ Added to project - Item ID: {}", item_id);
 
     // Step 4: Get status field info
     println!("\n📊 Step 4: Getting status field information...");
-    let (field_id, options) = GitHubMutations::get_status_field_info(
-        &client,
-        &project_id,
-    ).expect("Failed to get status field info");
+    let (field_id, options) = GitHubMutations::get_status_field_info(&client, &project_id)
+        .expect("Failed to get status field info");
     println!("✓ Status field ID: {}", field_id);
     println!("  Available options:");
     for (opt_id, opt_name) in &options {
@@ -128,10 +129,8 @@ fn test_full_project_sync() {
 
     // Step 5: Find best status option for "Doing"
     println!("\n🎯 Step 5: Finding best status option for 'Doing'...");
-    let option_id = TaskIssueMapper::find_best_status_option(
-        &TaskStatus::Doing,
-        &options,
-    ).expect("No matching status column found");
+    let option_id = TaskIssueMapper::find_best_status_option(&TaskStatus::Doing, &options)
+        .expect("No matching status column found");
     println!("✓ Selected option ID: {}", option_id);
 
     // Step 6: Update project item status
@@ -142,19 +141,26 @@ fn test_full_project_sync() {
         &item_id,
         &field_id,
         &option_id,
-    ).expect("Failed to update status");
+    )
+    .expect("Failed to update status");
     println!("✓ Status updated successfully");
 
     // Summary
     println!("\n✅ Full workflow completed successfully!");
     println!("\n🎉 Check your GitHub Projects dashboard:");
-    println!("   https://github.com/orgs/{}/projects/{}",
-             config.owner, config.project_number);
+    println!(
+        "   https://github.com/orgs/{}/projects/{}",
+        config.owner, config.project_number
+    );
     println!("\n   Your test issue should appear in the 'In Progress' column!");
 }
 
 /// Helper function to get project ID from organization and number
-fn get_project_id(client: &GitHubClient, owner: &str, project_number: i64) -> Result<String, anyhow::Error> {
+fn get_project_id(
+    client: &GitHubClient,
+    owner: &str,
+    project_number: i64,
+) -> Result<String, anyhow::Error> {
     let query = r#"
         query($owner: String!, $number: Int!) {
             organization(login: $owner) {

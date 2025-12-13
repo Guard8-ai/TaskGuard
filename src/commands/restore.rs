@@ -1,20 +1,16 @@
 use anyhow::{Context, Result};
+use git2::Repository;
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-use git2::Repository;
 
-use crate::config::{get_tasks_dir, find_taskguard_root};
+use crate::config::{find_taskguard_root, get_tasks_dir};
+use crate::github::{GitHubClient, GitHubMutations, TaskIssueMapper, is_github_sync_enabled};
 use crate::task::Task;
-use crate::github::{
-    GitHubClient, GitHubMutations,
-    TaskIssueMapper, is_github_sync_enabled,
-};
 
 /// Restore archived task back to active tasks
 pub fn run(task_id: &str, dry_run: bool) -> Result<()> {
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project")?;
+    let root = find_taskguard_root().context("Not in a TaskGuard project")?;
     let archive_dir = root.join(".taskguard").join("archive");
     let tasks_dir = get_tasks_dir()?;
 
@@ -69,7 +65,10 @@ pub fn run(task_id: &str, dry_run: bool) -> Result<()> {
             println!("   Task is synced with GitHub Issue #{}", issue_num);
             println!("   Issue will be reopened on restore");
         } else {
-            println!("   ⚠️  Task is synced with Issue #{} but not marked as archived", issue_num);
+            println!(
+                "   ⚠️  Task is synced with Issue #{} but not marked as archived",
+                issue_num
+            );
             println!("   Issue state will be synchronized");
         }
         println!();
@@ -82,8 +81,7 @@ pub fn run(task_id: &str, dry_run: bool) -> Result<()> {
     }
 
     // Create area directory if it doesn't exist
-    fs::create_dir_all(&restore_dir)
-        .context("Failed to create area directory")?;
+    fs::create_dir_all(&restore_dir).context("Failed to create area directory")?;
 
     // Check if target already exists
     if restore_path.exists() {
@@ -94,11 +92,15 @@ pub fn run(task_id: &str, dry_run: bool) -> Result<()> {
     }
 
     // Move file back to tasks/
-    fs::rename(&archived_path, &restore_path)
-        .context("Failed to restore task file")?;
+    fs::rename(&archived_path, &restore_path).context("Failed to restore task file")?;
 
     println!("✅ RESTORE COMPLETE");
-    println!("   Task restored: {} → {}/{}", task_id, area, archived_path.file_name().unwrap().to_string_lossy());
+    println!(
+        "   Task restored: {} → {}/{}",
+        task_id,
+        area,
+        archived_path.file_name().unwrap().to_string_lossy()
+    );
     println!("   Location: {}", restore_path.display());
 
     // Reopen GitHub issue if enabled
@@ -163,7 +165,10 @@ fn reopen_github_issue(
     if let Some((issue_num, issue_id, _)) = issue_info {
         let client = GitHubClient::new()?;
 
-        println!("   🌐 Reopening GitHub issue #{} for {}", issue_num, task_id);
+        println!(
+            "   🌐 Reopening GitHub issue #{} for {}",
+            issue_num, task_id
+        );
 
         match GitHubMutations::update_issue_state(&client, issue_id, "OPEN") {
             Ok(_) => {
@@ -178,9 +183,11 @@ fn reopen_github_issue(
                 }
                 Ok(())
             }
-            Err(e) => {
-                Err(anyhow::anyhow!("Failed to reopen issue #{}: {}", issue_num, e))
-            }
+            Err(e) => Err(anyhow::anyhow!(
+                "Failed to reopen issue #{}: {}",
+                issue_num,
+                e
+            )),
         }
     } else {
         Ok(())
@@ -189,40 +196,36 @@ fn reopen_github_issue(
 
 /// Create a Git commit to track restored task
 fn create_restore_commit(repo_path: &Path, task_id: &str) -> Result<()> {
-    let repo = Repository::open(repo_path)
-        .context("Failed to open Git repository")?;
+    let repo = Repository::open(repo_path).context("Failed to open Git repository")?;
 
     if repo.is_bare() {
         return Err(anyhow::anyhow!("Cannot commit in a bare repository"));
     }
 
-    let mut index = repo.index()
-        .context("Failed to get repository index")?;
+    let mut index = repo.index().context("Failed to get repository index")?;
 
     // Stage all changes (restored file in tasks/ and removed from archive/)
-    index.add_all(["."].iter(), git2::IndexAddOption::DEFAULT, None)
+    index
+        .add_all(["."].iter(), git2::IndexAddOption::DEFAULT, None)
         .context("Failed to stage changes")?;
 
-    index.update_all(["."].iter(), None)
+    index
+        .update_all(["."].iter(), None)
         .context("Failed to update index")?;
 
-    index.write()
-        .context("Failed to write index")?;
+    index.write().context("Failed to write index")?;
 
-    let tree_id = index.write_tree()
-        .context("Failed to write tree")?;
-    let tree = repo.find_tree(tree_id)
-        .context("Failed to find tree")?;
+    let tree_id = index.write_tree().context("Failed to write tree")?;
+    let tree = repo.find_tree(tree_id).context("Failed to find tree")?;
 
     // Get HEAD commit as parent
-    let head = repo.head()
-        .context("Failed to get HEAD")?;
-    let parent_commit = head.peel_to_commit()
+    let head = repo.head().context("Failed to get HEAD")?;
+    let parent_commit = head
+        .peel_to_commit()
         .context("Failed to get parent commit")?;
 
     // Get signature for commit
-    let signature = repo.signature()
-        .context("Failed to get Git signature")?;
+    let signature = repo.signature().context("Failed to get Git signature")?;
 
     // Create commit message
     let commit_message = format!("Restore archived task: {}", task_id);
@@ -235,7 +238,8 @@ fn create_restore_commit(repo_path: &Path, task_id: &str) -> Result<()> {
         &commit_message,
         &tree,
         &[&parent_commit],
-    ).context("Failed to create commit")?;
+    )
+    .context("Failed to create commit")?;
 
     println!("\n📝 Git commit created:");
     println!("   Message: {}", commit_message);

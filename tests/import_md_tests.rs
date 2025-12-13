@@ -1,9 +1,9 @@
 use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
-use tempfile::TempDir;
 use taskguard::commands::import_md::{self, ImportOptions};
-use taskguard::task::{Task, Priority};
+use taskguard::task::{Priority, Task};
+use tempfile::TempDir;
 
 fn setup_test_env() -> Result<(TempDir, PathBuf)> {
     let temp_dir = TempDir::new()?;
@@ -282,7 +282,10 @@ Content here.
 
     // Verify no task file was created
     let task_file = project_dir.join("tasks/testing/dry-001.md");
-    assert!(!task_file.exists(), "Task file should not be created in dry-run mode");
+    assert!(
+        !task_file.exists(),
+        "Task file should not be created in dry-run mode"
+    );
 
     fs::remove_file(file_path)?;
     Ok(())
@@ -421,8 +424,11 @@ This should not create a dependency.
     import_md::run(file_path.clone(), options)?;
 
     let task = Task::from_file(&project_dir.join("tasks/testing/code-001.md"))?;
-    assert_eq!(task.dependencies, Vec::<String>::new(),
-        "Should not extract dependencies from code blocks");
+    assert_eq!(
+        task.dependencies,
+        Vec::<String>::new(),
+        "Should not extract dependencies from code blocks"
+    );
 
     fs::remove_file(file_path)?;
     Ok(())
@@ -438,13 +444,16 @@ fn test_complexity_estimation() -> Result<()> {
 Brief content.
 "#;
 
-    let mut long_content = String::from(r#"
+    let mut long_content = String::from(
+        r#"
 ### Fix #2: Long Task
 
 This is a much longer task with lots of content.
-"#);
+"#,
+    );
     long_content.push_str(&"Line of content\n".repeat(60));
-    long_content.push_str(r#"
+    long_content.push_str(
+        r#"
 
 ```rust
 // Code block
@@ -454,7 +463,8 @@ fn example() {
 ```
 
 More content after code block.
-"#);
+"#,
+    );
 
     let file1 = create_test_markdown(short_markdown, &project_dir)?;
     let file2 = project_dir.join("test_long.md");

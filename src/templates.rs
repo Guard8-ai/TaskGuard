@@ -15,14 +15,20 @@ impl TemplateManager {
     pub fn get_template(area: &str, taskguard_root: Option<&Path>) -> String {
         // 1. Check for custom template
         if let Some(root) = taskguard_root {
-            let custom_path = root.join(".taskguard").join("templates").join(format!("{}.md", area));
+            let custom_path = root
+                .join(".taskguard")
+                .join("templates")
+                .join(format!("{}.md", area));
             if custom_path.exists() {
                 if let Ok(content) = fs::read_to_string(&custom_path) {
                     return content;
                 }
             }
             // Also check for _default.md custom template
-            let default_custom = root.join(".taskguard").join("templates").join("_default.md");
+            let default_custom = root
+                .join(".taskguard")
+                .join("templates")
+                .join("_default.md");
             if default_custom.exists() {
                 if let Ok(content) = fs::read_to_string(&default_custom) {
                     return content;
@@ -37,121 +43,177 @@ impl TemplateManager {
     /// Get the causation chain prompt for a specific area
     pub fn get_causation_prompt(area: &str) -> &'static str {
         match area {
-            "api" => r#"Trace the request lifecycle: HTTP verb → middleware chain → handler →
+            "api" => {
+                r#"Trace the request lifecycle: HTTP verb → middleware chain → handler →
 service → data layer → response serialization. Verify actual route
-registration and middleware order in code."#,
+registration and middleware order in code."#
+            }
 
-            "auth" => r#"Trace the authentication flow: credential input → validation → token
+            "auth" => {
+                r#"Trace the authentication flow: credential input → validation → token
 generation → storage → verification → session state. Check actual
-token expiry logic and refresh mechanism in implementation."#,
+token expiry logic and refresh mechanism in implementation."#
+            }
 
-            "backend" => r#"Trace the service orchestration: entry point → dependency injection →
+            "backend" => {
+                r#"Trace the service orchestration: entry point → dependency injection →
 business logic → side effects → return. Verify actual error propagation
-paths in the codebase."#,
+paths in the codebase."#
+            }
 
-            "data" => r#"Trace the data lifecycle: schema → migration → connection pool →
+            "data" => {
+                r#"Trace the data lifecycle: schema → migration → connection pool →
 query execution → result mapping → cache invalidation. Check actual
-transaction boundaries and rollback behavior in code."#,
+transaction boundaries and rollback behavior in code."#
+            }
 
-            "deployment" => r#"Trace the deployment pipeline: source → build → artifact →
+            "deployment" => {
+                r#"Trace the deployment pipeline: source → build → artifact →
 environment config → runtime injection → health check. Verify actual
-env var usage and fallback defaults in config files."#,
+env var usage and fallback defaults in config files."#
+            }
 
-            "docs" => r#"Trace the documentation chain: code signature → docstring → generated
+            "docs" => {
+                r#"Trace the documentation chain: code signature → docstring → generated
 docs → published output. Check actual code-to-docs sync status - are
-examples runnable?"#,
+examples runnable?"#
+            }
 
-            "integration" => r#"Trace the integration boundary: our code → serialization → transport →
+            "integration" => {
+                r#"Trace the integration boundary: our code → serialization → transport →
 external API → response parsing → error mapping. Verify actual retry
-logic and timeout handling in implementation."#,
+logic and timeout handling in implementation."#
+            }
 
-            "security" => r#"Trace the attack surface: user input → validation → sanitization →
+            "security" => {
+                r#"Trace the attack surface: user input → validation → sanitization →
 storage → retrieval → output encoding. Check actual input validation
-at each boundary in code."#,
+at each boundary in code."#
+            }
 
-            "setup" => r#"Trace the initialization chain: env detection → dependency check →
+            "setup" => {
+                r#"Trace the initialization chain: env detection → dependency check →
 config load → service bootstrap → ready state. Verify actual failure
-modes and error messages in bootstrap code."#,
+modes and error messages in bootstrap code."#
+            }
 
-            "testing" => r#"Trace the test execution flow: fixture setup → precondition → action →
+            "testing" => {
+                r#"Trace the test execution flow: fixture setup → precondition → action →
 assertion → teardown. Check actual test isolation - are tests
-independent or order-dependent?"#,
+independent or order-dependent?"#
+            }
 
-            "frontend" => r#"Trace the component lifecycle: props → state init → render →
+            "frontend" => {
+                r#"Trace the component lifecycle: props → state init → render →
 effects → event handlers → state updates → re-render. Verify actual
-data flow and side effect cleanup in components."#,
+data flow and side effect cleanup in components."#
+            }
 
-            "github" => r#"Trace the GitHub integration flow: local state → API call →
+            "github" => {
+                r#"Trace the GitHub integration flow: local state → API call →
 response parsing → state update → sync verification. Check actual
-rate limiting and error handling in implementation."#,
+rate limiting and error handling in implementation."#
+            }
 
-            "causality" => r#"Trace the causality chain: trigger event → state mutation →
+            "causality" => {
+                r#"Trace the causality chain: trigger event → state mutation →
 dependent updates → side effects → completion. Verify actual
-event ordering and failure propagation in code."#,
+event ordering and failure propagation in code."#
+            }
 
-            _ => r#"Trace the execution flow: input → processing → side effects →
-output. Verify actual implementation matches expected behavior."#,
+            _ => {
+                r#"Trace the execution flow: input → processing → side effects →
+output. Verify actual implementation matches expected behavior."#
+            }
         }
     }
 
     /// Get verification commands for a specific area
     pub fn get_verification_commands(area: &str) -> &'static str {
         match area {
-            "api" => r#"- [ ] `grep -r "route\|path\|endpoint" src/` - Verify route registration
+            "api" => {
+                r#"- [ ] `grep -r "route\|path\|endpoint" src/` - Verify route registration
 - [ ] Check actual middleware order in router setup
-- [ ] Verify response serialization matches API contract"#,
+- [ ] Verify response serialization matches API contract"#
+            }
 
-            "auth" => r#"- [ ] `grep -r "verify\|validate\|decode" src/` - Find token validation
+            "auth" => {
+                r#"- [ ] `grep -r "verify\|validate\|decode" src/` - Find token validation
 - [ ] Check actual token expiry configuration
-- [ ] Verify session state management implementation"#,
+- [ ] Verify session state management implementation"#
+            }
 
-            "backend" => r#"- [ ] `grep -r "impl.*Service\|fn.*service" src/` - Find service definitions
+            "backend" => {
+                r#"- [ ] `grep -r "impl.*Service\|fn.*service" src/` - Find service definitions
 - [ ] Check actual dependency injection patterns
-- [ ] Verify error propagation through service layers"#,
+- [ ] Verify error propagation through service layers"#
+            }
 
-            "data" => r#"- [ ] `grep -r "SELECT\|INSERT\|query\|execute" src/` - Find queries
+            "data" => {
+                r#"- [ ] `grep -r "SELECT\|INSERT\|query\|execute" src/` - Find queries
 - [ ] Check actual transaction boundaries
-- [ ] Verify migration files match schema expectations"#,
+- [ ] Verify migration files match schema expectations"#
+            }
 
-            "deployment" => r#"- [ ] `grep -r "env\|getenv\|std::env" src/` - Find env var usage
+            "deployment" => {
+                r#"- [ ] `grep -r "env\|getenv\|std::env" src/` - Find env var usage
 - [ ] Check actual config file loading order
-- [ ] Verify health check endpoints exist"#,
+- [ ] Verify health check endpoints exist"#
+            }
 
-            "docs" => r#"- [ ] Compare doc examples with actual API signatures
+            "docs" => {
+                r#"- [ ] Compare doc examples with actual API signatures
 - [ ] Check that code snippets are runnable
-- [ ] Verify cross-references are valid"#,
+- [ ] Verify cross-references are valid"#
+            }
 
-            "integration" => r#"- [ ] `grep -r "fetch\|request\|Client::new" src/` - Find HTTP calls
+            "integration" => {
+                r#"- [ ] `grep -r "fetch\|request\|Client::new" src/` - Find HTTP calls
 - [ ] Check actual retry and timeout configuration
-- [ ] Verify error mapping for external API responses"#,
+- [ ] Verify error mapping for external API responses"#
+            }
 
-            "security" => r#"- [ ] `grep -r "escape\|sanitize\|validate" src/` - Find input handling
+            "security" => {
+                r#"- [ ] `grep -r "escape\|sanitize\|validate" src/` - Find input handling
 - [ ] Check actual input validation at boundaries
-- [ ] Verify output encoding prevents injection"#,
+- [ ] Verify output encoding prevents injection"#
+            }
 
-            "setup" => r#"- [ ] `grep -r "init\|bootstrap\|main" src/` - Find initialization
+            "setup" => {
+                r#"- [ ] `grep -r "init\|bootstrap\|main" src/` - Find initialization
 - [ ] Check actual failure modes and error messages
-- [ ] Verify dependency checks are comprehensive"#,
+- [ ] Verify dependency checks are comprehensive"#
+            }
 
-            "testing" => r#"- [ ] Read test files to verify actual assertions
+            "testing" => {
+                r#"- [ ] Read test files to verify actual assertions
 - [ ] Check test isolation (no shared mutable state)
-- [ ] Verify fixture setup and teardown completeness"#,
+- [ ] Verify fixture setup and teardown completeness"#
+            }
 
-            "frontend" => r#"- [ ] Check component prop types and defaults
+            "frontend" => {
+                r#"- [ ] Check component prop types and defaults
 - [ ] Verify effect cleanup functions exist
-- [ ] Trace state update propagation through components"#,
+- [ ] Trace state update propagation through components"#
+            }
 
-            "github" => r#"- [ ] `grep -r "GitHubClient\|gh " src/` - Find GitHub API calls
+            "github" => {
+                r#"- [ ] `grep -r "GitHubClient\|gh " src/` - Find GitHub API calls
 - [ ] Check actual rate limit handling
-- [ ] Verify sync state persistence"#,
+- [ ] Verify sync state persistence"#
+            }
 
-            "causality" => r#"- [ ] Trace event chain from trigger to completion
+            "causality" => {
+                r#"- [ ] Trace event chain from trigger to completion
 - [ ] Verify failure modes are handled at each step
-- [ ] Check async flow ordering and race conditions"#,
+- [ ] Check async flow ordering and race conditions"#
+            }
 
-            _ => r#"- [ ] Search codebase for relevant implementations
+            _ => {
+                r#"- [ ] Search codebase for relevant implementations
 - [ ] Verify actual behavior matches expected
-- [ ] Check error handling paths"#,
+- [ ] Check error handling paths"#
+            }
         }
     }
 
@@ -160,7 +222,8 @@ output. Verify actual implementation matches expected behavior."#,
         let causation_prompt = Self::get_causation_prompt(area);
         let verification_commands = Self::get_verification_commands(area);
 
-        format!(r#"# {{{{title}}}}
+        format!(
+            r#"# {{{{title}}}}
 
 ## Causation Chain
 > {causation_prompt}
@@ -190,7 +253,8 @@ output. Verify actual implementation matches expected behavior."#,
 - Causality: [what triggers what]
 - Verify: [how to test this works]
 - Next: [context for dependent tasks]
-"#)
+"#
+        )
     }
 
     /// Render a template with the given variables

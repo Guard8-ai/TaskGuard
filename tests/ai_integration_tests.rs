@@ -1,10 +1,10 @@
 use anyhow::Result;
+use chrono::Utc;
 use std::fs;
 use std::path::PathBuf;
+use taskguard::commands::ai::AIAgent;
+use taskguard::task::{Priority, Task, TaskStatus};
 use tempfile::TempDir;
-use taskguard::commands::ai::{AIAgent};
-use taskguard::task::{Task, TaskStatus, Priority};
-use chrono::Utc;
 
 /// Test fixture for creating a temporary TaskGuard project
 struct TestProject {
@@ -47,7 +47,15 @@ priorities = ["low", "medium", "high", "critical"]
         })
     }
 
-    fn create_task_file(&self, area: &str, id: &str, title: &str, status: TaskStatus, priority: Priority, dependencies: Vec<String>) -> Result<()> {
+    fn create_task_file(
+        &self,
+        area: &str,
+        id: &str,
+        title: &str,
+        status: TaskStatus,
+        priority: Priority,
+        dependencies: Vec<String>,
+    ) -> Result<()> {
         let file_path = self.tasks_dir.join(area).join(format!("{}.md", id));
         let task = Task {
             id: id.to_string(),
@@ -120,8 +128,15 @@ fn test_task_creation_pattern_recognition() -> Result<()> {
 
     for input in test_inputs {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains("create"), "Should recognize task creation pattern in: {}", input);
-        assert!(response.contains("taskguard create"), "Should provide CLI command suggestion");
+        assert!(
+            response.contains("create"),
+            "Should recognize task creation pattern in: {}",
+            input
+        );
+        assert!(
+            response.contains("taskguard create"),
+            "Should provide CLI command suggestion"
+        );
     }
 
     Ok(())
@@ -133,9 +148,30 @@ fn test_status_inquiry_pattern_recognition() -> Result<()> {
     test_project.set_current_dir()?;
 
     // Create some test tasks
-    test_project.create_task_file("backend", "backend-001", "User Auth", TaskStatus::Todo, Priority::High, vec![])?;
-    test_project.create_task_file("frontend", "frontend-001", "Login UI", TaskStatus::Doing, Priority::Medium, vec![])?;
-    test_project.create_task_file("testing", "testing-001", "Auth Tests", TaskStatus::Done, Priority::Low, vec![])?;
+    test_project.create_task_file(
+        "backend",
+        "backend-001",
+        "User Auth",
+        TaskStatus::Todo,
+        Priority::High,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "frontend",
+        "frontend-001",
+        "Login UI",
+        TaskStatus::Doing,
+        Priority::Medium,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "testing",
+        "testing-001",
+        "Auth Tests",
+        TaskStatus::Done,
+        Priority::Low,
+        vec![],
+    )?;
 
     let ai_agent = AIAgent::new()?;
 
@@ -149,8 +185,11 @@ fn test_status_inquiry_pattern_recognition() -> Result<()> {
 
     for input in test_inputs {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains("Status Overview") || response.contains("Total tasks"),
-                "Should recognize status inquiry in: {}", input);
+        assert!(
+            response.contains("Status Overview") || response.contains("Total tasks"),
+            "Should recognize status inquiry in: {}",
+            input
+        );
         assert!(response.contains("3"), "Should show total task count");
     }
 
@@ -163,9 +202,30 @@ fn test_next_task_recommendation_pattern() -> Result<()> {
     test_project.set_current_dir()?;
 
     // Create tasks with different priorities
-    test_project.create_task_file("backend", "backend-001", "High Priority Task", TaskStatus::Todo, Priority::High, vec![])?;
-    test_project.create_task_file("frontend", "frontend-001", "Medium Priority Task", TaskStatus::Todo, Priority::Medium, vec![])?;
-    test_project.create_task_file("testing", "testing-001", "Low Priority Task", TaskStatus::Todo, Priority::Low, vec![])?;
+    test_project.create_task_file(
+        "backend",
+        "backend-001",
+        "High Priority Task",
+        TaskStatus::Todo,
+        Priority::High,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "frontend",
+        "frontend-001",
+        "Medium Priority Task",
+        TaskStatus::Todo,
+        Priority::Medium,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "testing",
+        "testing-001",
+        "Low Priority Task",
+        TaskStatus::Todo,
+        Priority::Low,
+        vec![],
+    )?;
 
     let ai_agent = AIAgent::new()?;
 
@@ -179,9 +239,15 @@ fn test_next_task_recommendation_pattern() -> Result<()> {
 
     for input in test_inputs {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains("Recommended Next Task") || response.contains("backend-001"),
-                "Should recommend high priority task for: {}", input);
-        assert!(response.contains("High"), "Should show priority information");
+        assert!(
+            response.contains("Recommended Next Task") || response.contains("backend-001"),
+            "Should recommend high priority task for: {}",
+            input
+        );
+        assert!(
+            response.contains("High"),
+            "Should show priority information"
+        );
     }
 
     Ok(())
@@ -204,10 +270,17 @@ fn test_completion_announcement_pattern() -> Result<()> {
 
     for input in test_inputs {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains("Great job") || response.contains("completed") || response.contains("Next steps"),
-                "Should recognize completion in: {}", input);
-        assert!(response.contains("validate") || response.contains("sync"),
-                "Should suggest next steps");
+        assert!(
+            response.contains("Great job")
+                || response.contains("completed")
+                || response.contains("Next steps"),
+            "Should recognize completion in: {}",
+            input
+        );
+        assert!(
+            response.contains("validate") || response.contains("sync"),
+            "Should suggest next steps"
+        );
     }
 
     Ok(())
@@ -219,9 +292,30 @@ fn test_dependency_query_pattern() -> Result<()> {
     test_project.set_current_dir()?;
 
     // Create tasks with dependencies
-    test_project.create_task_file("backend", "backend-001", "Setup Database", TaskStatus::Done, Priority::High, vec![])?;
-    test_project.create_task_file("backend", "backend-002", "User API", TaskStatus::Todo, Priority::High, vec!["backend-001".to_string()])?;
-    test_project.create_task_file("frontend", "frontend-001", "Login Form", TaskStatus::Todo, Priority::Medium, vec!["backend-002".to_string()])?;
+    test_project.create_task_file(
+        "backend",
+        "backend-001",
+        "Setup Database",
+        TaskStatus::Done,
+        Priority::High,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "backend",
+        "backend-002",
+        "User API",
+        TaskStatus::Todo,
+        Priority::High,
+        vec!["backend-001".to_string()],
+    )?;
+    test_project.create_task_file(
+        "frontend",
+        "frontend-001",
+        "Login Form",
+        TaskStatus::Todo,
+        Priority::Medium,
+        vec!["backend-002".to_string()],
+    )?;
 
     let ai_agent = AIAgent::new()?;
 
@@ -235,9 +329,15 @@ fn test_dependency_query_pattern() -> Result<()> {
 
     for input in test_inputs {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains("Dependency Analysis") || response.contains("blocked"),
-                "Should show dependency analysis for: {}", input);
-        assert!(response.contains("frontend-001"), "Should show blocked tasks");
+        assert!(
+            response.contains("Dependency Analysis") || response.contains("blocked"),
+            "Should show dependency analysis for: {}",
+            input
+        );
+        assert!(
+            response.contains("frontend-001"),
+            "Should show blocked tasks"
+        );
     }
 
     Ok(())
@@ -253,17 +353,47 @@ fn test_task_prioritization_logic() -> Result<()> {
     test_project.set_current_dir()?;
 
     // Create tasks with different priorities and complexities
-    test_project.create_task_file("backend", "backend-001", "Critical Bug Fix", TaskStatus::Todo, Priority::Critical, vec![])?;
-    test_project.create_task_file("backend", "backend-002", "High Priority Feature", TaskStatus::Todo, Priority::High, vec![])?;
-    test_project.create_task_file("backend", "backend-003", "Medium Priority Task", TaskStatus::Todo, Priority::Medium, vec![])?;
-    test_project.create_task_file("backend", "backend-004", "Low Priority Enhancement", TaskStatus::Todo, Priority::Low, vec![])?;
+    test_project.create_task_file(
+        "backend",
+        "backend-001",
+        "Critical Bug Fix",
+        TaskStatus::Todo,
+        Priority::Critical,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "backend",
+        "backend-002",
+        "High Priority Feature",
+        TaskStatus::Todo,
+        Priority::High,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "backend",
+        "backend-003",
+        "Medium Priority Task",
+        TaskStatus::Todo,
+        Priority::Medium,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "backend",
+        "backend-004",
+        "Low Priority Enhancement",
+        TaskStatus::Todo,
+        Priority::Low,
+        vec![],
+    )?;
 
     let ai_agent = AIAgent::new()?;
     let response = ai_agent.process_natural_language("What should I work on next?")?;
 
     // Should recommend the critical priority task first
-    assert!(response.contains("backend-001") || response.contains("Critical"),
-            "Should prioritize critical tasks first");
+    assert!(
+        response.contains("backend-001") || response.contains("Critical"),
+        "Should prioritize critical tasks first"
+    );
 
     Ok(())
 }
@@ -285,8 +415,11 @@ fn test_complexity_analysis_integration() -> Result<()> {
 
     for input in test_inputs {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains("Complexity Analysis") || response.contains("complexity"),
-                "Should provide complexity analysis for: {}", input);
+        assert!(
+            response.contains("Complexity Analysis") || response.contains("complexity"),
+            "Should provide complexity analysis for: {}",
+            input
+        );
     }
 
     Ok(())
@@ -304,16 +437,34 @@ fn test_task_title_extraction() -> Result<()> {
     let ai_agent = AIAgent::new()?;
 
     let test_cases = vec![
-        ("Create a task for implementing user authentication", "implementing user authentication"),
-        ("Add a new feature for real-time notifications", "real-time notifications"),
-        ("I need to build a dashboard component", "dashboard component"),
-        ("Can you create a task to fix the login bug?", "fix the login bug"),
+        (
+            "Create a task for implementing user authentication",
+            "implementing user authentication",
+        ),
+        (
+            "Add a new feature for real-time notifications",
+            "real-time notifications",
+        ),
+        (
+            "I need to build a dashboard component",
+            "dashboard component",
+        ),
+        (
+            "Can you create a task to fix the login bug?",
+            "fix the login bug",
+        ),
     ];
 
     for (input, expected_content) in test_cases {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.to_lowercase().contains(&expected_content.to_lowercase()),
-                "Should extract '{}' from: {}", expected_content, input);
+        assert!(
+            response
+                .to_lowercase()
+                .contains(&expected_content.to_lowercase()),
+            "Should extract '{}' from: {}",
+            expected_content,
+            input
+        );
     }
 
     Ok(())
@@ -336,8 +487,12 @@ fn test_area_inference() -> Result<()> {
 
     for (input, expected_area) in test_cases {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains(expected_area),
-                "Should infer area '{}' from: {}", expected_area, input);
+        assert!(
+            response.contains(expected_area),
+            "Should infer area '{}' from: {}",
+            expected_area,
+            input
+        );
     }
 
     Ok(())
@@ -361,8 +516,12 @@ fn test_priority_inference() -> Result<()> {
 
     for (input, expected_priority) in test_cases {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(response.contains(expected_priority),
-                "Should infer priority '{}' from: {}", expected_priority, input);
+        assert!(
+            response.contains(expected_priority),
+            "Should infer priority '{}' from: {}",
+            expected_priority,
+            input
+        );
     }
 
     Ok(())
@@ -380,8 +539,10 @@ fn test_empty_project_handling() -> Result<()> {
     let ai_agent = AIAgent::new()?;
 
     let response = ai_agent.process_natural_language("What should I work on next?")?;
-    assert!(response.contains("No tasks") || response.contains("available"),
-            "Should handle empty project gracefully");
+    assert!(
+        response.contains("No tasks") || response.contains("available"),
+        "Should handle empty project gracefully"
+    );
 
     Ok(())
 }
@@ -392,14 +553,30 @@ fn test_all_tasks_blocked_scenario() -> Result<()> {
     test_project.set_current_dir()?;
 
     // Create tasks where all depend on a non-existent task
-    test_project.create_task_file("backend", "backend-001", "Task 1", TaskStatus::Todo, Priority::High, vec!["missing-task".to_string()])?;
-    test_project.create_task_file("backend", "backend-002", "Task 2", TaskStatus::Todo, Priority::Medium, vec!["missing-task".to_string()])?;
+    test_project.create_task_file(
+        "backend",
+        "backend-001",
+        "Task 1",
+        TaskStatus::Todo,
+        Priority::High,
+        vec!["missing-task".to_string()],
+    )?;
+    test_project.create_task_file(
+        "backend",
+        "backend-002",
+        "Task 2",
+        TaskStatus::Todo,
+        Priority::Medium,
+        vec!["missing-task".to_string()],
+    )?;
 
     let ai_agent = AIAgent::new()?;
     let response = ai_agent.process_natural_language("What should I work on next?")?;
 
-    assert!(response.contains("No tasks") || response.contains("blocked"),
-            "Should handle all-blocked scenario");
+    assert!(
+        response.contains("No tasks") || response.contains("blocked"),
+        "Should handle all-blocked scenario"
+    );
 
     Ok(())
 }
@@ -422,9 +599,15 @@ fn test_malformed_input_handling() -> Result<()> {
 
     for input in malformed_inputs {
         let response = ai_agent.process_natural_language(input)?;
-        assert!(!response.is_empty(), "Should provide some response for malformed input: '{}'", input);
-        assert!(response.contains("help") || response.contains("guidance"),
-                "Should provide helpful guidance for unclear input");
+        assert!(
+            !response.is_empty(),
+            "Should provide some response for malformed input: '{}'",
+            input
+        );
+        assert!(
+            response.contains("help") || response.contains("guidance"),
+            "Should provide helpful guidance for unclear input"
+        );
     }
 
     Ok(())
@@ -444,9 +627,14 @@ fn test_very_long_input_handling() -> Result<()> {
     let response = ai_agent.process_natural_language(&long_input)?;
     let duration = start.elapsed();
 
-    assert!(duration < std::time::Duration::from_secs(5),
-            "Should handle long input within reasonable time");
-    assert!(!response.is_empty(), "Should provide response for long input");
+    assert!(
+        duration < std::time::Duration::from_secs(5),
+        "Should handle long input within reasonable time"
+    );
+    assert!(
+        !response.is_empty(),
+        "Should provide response for long input"
+    );
 
     Ok(())
 }
@@ -470,7 +658,10 @@ fn test_ai_with_git_integration() -> Result<()> {
 
     // Should work with Git integration available
     let response = ai_agent.process_natural_language("What's the project status?")?;
-    assert!(!response.is_empty(), "Should work with Git repository present");
+    assert!(
+        !response.is_empty(),
+        "Should work with Git repository present"
+    );
 
     Ok(())
 }
@@ -481,19 +672,45 @@ fn test_ai_task_validation_integration() -> Result<()> {
     test_project.set_current_dir()?;
 
     // Create tasks with various dependency states
-    test_project.create_task_file("backend", "backend-001", "Foundation", TaskStatus::Done, Priority::High, vec![])?;
-    test_project.create_task_file("backend", "backend-002", "Dependent Task", TaskStatus::Todo, Priority::High, vec!["backend-001".to_string()])?;
-    test_project.create_task_file("backend", "backend-003", "Blocked Task", TaskStatus::Todo, Priority::Medium, vec!["nonexistent-task".to_string()])?;
+    test_project.create_task_file(
+        "backend",
+        "backend-001",
+        "Foundation",
+        TaskStatus::Done,
+        Priority::High,
+        vec![],
+    )?;
+    test_project.create_task_file(
+        "backend",
+        "backend-002",
+        "Dependent Task",
+        TaskStatus::Todo,
+        Priority::High,
+        vec!["backend-001".to_string()],
+    )?;
+    test_project.create_task_file(
+        "backend",
+        "backend-003",
+        "Blocked Task",
+        TaskStatus::Todo,
+        Priority::Medium,
+        vec!["nonexistent-task".to_string()],
+    )?;
 
     let ai_agent = AIAgent::new()?;
 
     // Test dependency analysis
     let response = ai_agent.process_natural_language("What tasks are available?")?;
-    assert!(response.contains("backend-002"), "Should show available task");
+    assert!(
+        response.contains("backend-002"),
+        "Should show available task"
+    );
 
     let blocked_response = ai_agent.process_natural_language("What's blocked?")?;
-    assert!(response.contains("backend-003") || blocked_response.contains("backend-003"),
-            "Should identify blocked task");
+    assert!(
+        response.contains("backend-003") || blocked_response.contains("backend-003"),
+        "Should identify blocked task"
+    );
 
     Ok(())
 }
@@ -507,19 +724,34 @@ fn test_response_formatting_quality() -> Result<()> {
     let test_project = TestProject::new()?;
     test_project.set_current_dir()?;
 
-    test_project.create_task_file("backend", "backend-001", "Test Task", TaskStatus::Todo, Priority::High, vec![])?;
+    test_project.create_task_file(
+        "backend",
+        "backend-001",
+        "Test Task",
+        TaskStatus::Todo,
+        Priority::High,
+        vec![],
+    )?;
 
     let ai_agent = AIAgent::new()?;
     let response = ai_agent.process_natural_language("What should I work on next?")?;
 
     // Check for proper formatting
-    assert!(response.contains("**"), "Should use markdown bold formatting");
-    assert!(response.contains("•") || response.contains("-"), "Should use bullet points");
+    assert!(
+        response.contains("**"),
+        "Should use markdown bold formatting"
+    );
+    assert!(
+        response.contains("•") || response.contains("-"),
+        "Should use bullet points"
+    );
     assert!(response.contains("\n"), "Should have proper line breaks");
 
     // Check for helpful elements
-    assert!(response.contains("taskguard") || response.contains("💡") || response.contains("🎯"),
-            "Should include helpful guidance or emojis");
+    assert!(
+        response.contains("taskguard") || response.contains("💡") || response.contains("🎯"),
+        "Should include helpful guidance or emojis"
+    );
 
     Ok(())
 }
@@ -541,8 +773,14 @@ fn test_response_actionability() -> Result<()> {
         let response = ai_agent.process_natural_language(input)?;
 
         // Should provide actionable guidance
-        assert!(response.contains("taskguard") || response.contains("run") || response.contains("command") || response.contains("steps"),
-                "Should provide actionable guidance for: {}", input);
+        assert!(
+            response.contains("taskguard")
+                || response.contains("run")
+                || response.contains("command")
+                || response.contains("steps"),
+            "Should provide actionable guidance for: {}",
+            input
+        );
     }
 
     Ok(())

@@ -2,13 +2,13 @@ use anyhow::{Context, Result};
 use std::path::Path;
 use walkdir::WalkDir;
 
-use crate::analysis::{TaskAnalyzer, Severity};
+use crate::analysis::{Severity, TaskAnalyzer};
 use crate::config::find_taskguard_root;
 use crate::task::Task;
 
 pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
-    let taskguard_root = find_taskguard_root()
-        .context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
+    let taskguard_root =
+        find_taskguard_root().context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
 
     let tasks_dir = taskguard_root.join("tasks");
 
@@ -22,10 +22,17 @@ pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
     let mut parse_errors = 0;
 
     for entry in WalkDir::new(&tasks_dir).into_iter().filter_map(|e| e.ok()) {
-        if entry.file_type().is_file() && entry.path().extension().and_then(|s| s.to_str()) == Some("md") {
+        if entry.file_type().is_file()
+            && entry.path().extension().and_then(|s| s.to_str()) == Some("md")
+        {
             // Filter by area if specified
             if let Some(ref filter_area) = area {
-                if let Some(area_dir) = entry.path().parent().and_then(|p| p.file_name()).and_then(|n| n.to_str()) {
+                if let Some(area_dir) = entry
+                    .path()
+                    .parent()
+                    .and_then(|p| p.file_name())
+                    .and_then(|n| n.to_str())
+                {
                     if area_dir != filter_area {
                         continue;
                     }
@@ -62,9 +69,15 @@ pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
     println!();
     println!("📊 SUMMARY");
     println!("   Total tasks analyzed: {}", summary.total_tasks);
-    println!("   Average complexity: {:.1}/10", summary.avg_complexity_score);
+    println!(
+        "   Average complexity: {:.1}/10",
+        summary.avg_complexity_score
+    );
     println!("   Average quality: {:.1}/10", summary.avg_quality_score);
-    println!("   High complexity tasks: {}", summary.high_complexity_count);
+    println!(
+        "   High complexity tasks: {}",
+        summary.high_complexity_count
+    );
     println!("   Total issues found: {}", summary.total_issues);
 
     if parse_errors > 0 {
@@ -91,10 +104,10 @@ pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
         }
 
         println!();
-        println!("📁 {} (Complexity: {:.1}, Quality: {:.1})",
-                 analysis.task_id,
-                 analysis.complexity_score,
-                 analysis.quality_score);
+        println!(
+            "📁 {} (Complexity: {:.1}, Quality: {:.1})",
+            analysis.task_id, analysis.complexity_score, analysis.quality_score
+        );
 
         if analysis.issues.is_empty() {
             if verbose {
@@ -106,9 +119,18 @@ pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
         // Group issues by severity
         for issue in &analysis.issues {
             let icon = match issue.severity {
-                Severity::Error => { error_count += 1; "❌" },
-                Severity::Warning => { warning_count += 1; "⚠️ " },
-                Severity::Info => { info_count += 1; "ℹ️ " },
+                Severity::Error => {
+                    error_count += 1;
+                    "❌"
+                }
+                Severity::Warning => {
+                    warning_count += 1;
+                    "⚠️ "
+                }
+                Severity::Info => {
+                    info_count += 1;
+                    "ℹ️ "
+                }
             };
 
             println!("   {} [{}] {}", icon, issue.severity, issue.message);
@@ -148,7 +170,10 @@ pub fn run(verbose: bool, area: Option<String>) -> Result<()> {
     if summary.high_complexity_count > 0 {
         println!();
         println!("💡 RECOMMENDATIONS");
-        println!("   Consider breaking down {} high-complexity tasks", summary.high_complexity_count);
+        println!(
+            "   Consider breaking down {} high-complexity tasks",
+            summary.high_complexity_count
+        );
         if summary.avg_complexity_score > 6.0 {
             println!("   Overall task complexity is high - focus on smaller, more focused tasks");
         }
@@ -187,11 +212,13 @@ pub fn run_single_task<P: AsRef<Path>>(task_path: P, _verbose: bool) -> Result<(
             Severity::Info => "ℹ️ ",
         };
 
-        println!("   {} [{}] [{}] {}",
-                 icon,
-                 issue.severity,
-                 format!("{:?}", issue.category).to_uppercase(),
-                 issue.message);
+        println!(
+            "   {} [{}] [{}] {}",
+            icon,
+            issue.severity,
+            format!("{:?}", issue.category).to_uppercase(),
+            issue.message
+        );
 
         if let Some(ref suggestion) = issue.suggestion {
             println!("      💡 {}", suggestion);

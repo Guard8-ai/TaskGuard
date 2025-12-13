@@ -46,7 +46,7 @@ use anyhow::{Context, Result};
 use serde_json::json;
 
 use super::client::GitHubClient;
-use super::types::{GitHubIssue, ProjectItem, FieldValue};
+use super::types::{FieldValue, GitHubIssue, ProjectItem};
 
 /// Project field definition
 #[derive(Debug, Clone)]
@@ -375,13 +375,8 @@ impl GitHubQueries {
             .unwrap_or_default();
 
         Ok(GitHubIssue {
-            id: node["id"]
-                .as_str()
-                .context("Missing issue ID")?
-                .to_string(),
-            number: node["number"]
-                .as_i64()
-                .context("Missing issue number")?,
+            id: node["id"].as_str().context("Missing issue ID")?.to_string(),
+            number: node["number"].as_i64().context("Missing issue number")?,
             title: node["title"]
                 .as_str()
                 .context("Missing issue title")?
@@ -675,10 +670,7 @@ impl GitHubQueries {
     /// println!("Status: {}", item.status);
     /// # Ok::<(), anyhow::Error>(())
     /// ```
-    pub fn get_project_item(
-        client: &GitHubClient,
-        project_item_id: &str,
-    ) -> Result<ProjectItem> {
+    pub fn get_project_item(client: &GitHubClient, project_item_id: &str) -> Result<ProjectItem> {
         let query = r#"
             query($itemId: ID!) {
                 node(id: $itemId) {

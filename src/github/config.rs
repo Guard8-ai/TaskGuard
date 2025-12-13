@@ -1,8 +1,8 @@
+use super::types::GitHubConfig;
+use crate::config::find_taskguard_root;
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::PathBuf;
-use crate::config::find_taskguard_root;
-use super::types::GitHubConfig;
 
 /// Check if GitHub sync is enabled for the current project
 ///
@@ -23,8 +23,7 @@ use super::types::GitHubConfig;
 /// # Ok::<(), anyhow::Error>(())
 /// ```
 pub fn is_github_sync_enabled() -> Result<bool> {
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project")?;
+    let root = find_taskguard_root().context("Not in a TaskGuard project")?;
     let config_path = root.join(".taskguard/github.toml");
     Ok(config_path.exists())
 }
@@ -63,8 +62,7 @@ pub fn is_github_sync_enabled() -> Result<bool> {
 /// # Ok::<(), anyhow::Error>(())
 /// ```
 pub fn load_github_config() -> Result<GitHubConfig> {
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project")?;
+    let root = find_taskguard_root().context("Not in a TaskGuard project")?;
     let config_path = root.join(".taskguard/github.toml");
 
     if !config_path.exists() {
@@ -77,11 +75,9 @@ pub fn load_github_config() -> Result<GitHubConfig> {
         );
     }
 
-    let content = fs::read_to_string(&config_path)
-        .context("Failed to read GitHub config")?;
+    let content = fs::read_to_string(&config_path).context("Failed to read GitHub config")?;
 
-    let config: GitHubConfig = toml::from_str(&content)
-        .context("Failed to parse GitHub config")?;
+    let config: GitHubConfig = toml::from_str(&content).context("Failed to parse GitHub config")?;
 
     Ok(config)
 }
@@ -92,8 +88,7 @@ pub fn load_github_config() -> Result<GitHubConfig> {
 ///
 /// Returns an error if not in a TaskGuard project directory.
 pub fn get_github_config_path() -> Result<PathBuf> {
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project")?;
+    let root = find_taskguard_root().context("Not in a TaskGuard project")?;
     Ok(root.join(".taskguard/github.toml"))
 }
 

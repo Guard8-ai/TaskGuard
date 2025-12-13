@@ -72,7 +72,12 @@ pub fn run(dry_run: bool) -> Result<()> {
     println!();
     for (id, title, before, after, reduction) in &compacted_files {
         println!("   {} - {}", id, title);
-        println!("      {} → {} ({:.1}% reduction)", format_size(*before), format_size(*after), reduction);
+        println!(
+            "      {} → {} ({:.1}% reduction)",
+            format_size(*before),
+            format_size(*after),
+            reduction
+        );
     }
     println!();
 
@@ -88,7 +93,11 @@ pub fn run(dry_run: bool) -> Result<()> {
     println!("   Files compacted: {}", compacted_files.len());
     println!("   Before: {}", format_size(total_before));
     println!("   After: {}", format_size(total_after));
-    println!("   Saved: {} ({:.1}% reduction)", format_size(total_saved), total_reduction);
+    println!(
+        "   Saved: {} ({:.1}% reduction)",
+        format_size(total_saved),
+        total_reduction
+    );
     println!();
 
     if dry_run {

@@ -3,9 +3,11 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use walkdir::WalkDir;
 
-use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir, get_config_path, Config};
+use crate::config::{
+    Config, find_taskguard_root, get_config_path, get_tasks_dir, load_tasks_from_dir,
+};
+use crate::github::{TaskIssueMapper, is_github_sync_enabled};
 use crate::task::{Task, TaskStatus};
-use crate::github::{is_github_sync_enabled, TaskIssueMapper};
 
 pub fn run(sync_areas: bool) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
@@ -98,10 +100,8 @@ pub fn run(sync_areas: bool) -> Result<()> {
 
         for dep in &task.dependencies {
             if !all_ids.contains(dep) {
-                dependency_issues.push(format!(
-                    "❌ {}: Depends on missing task '{}'",
-                    task.id, dep
-                ));
+                dependency_issues
+                    .push(format!("❌ {}: Depends on missing task '{}'", task.id, dep));
             }
         }
 
@@ -146,7 +146,8 @@ pub fn run(sync_areas: bool) -> Result<()> {
         if task.is_available(&completed_tasks.iter().cloned().collect::<Vec<_>>()) {
             available_tasks.push(task);
         } else {
-            let missing_deps: Vec<&String> = task.dependencies
+            let missing_deps: Vec<&String> = task
+                .dependencies
                 .iter()
                 .filter(|dep| !completed_tasks.contains(*dep))
                 .collect();
@@ -175,15 +176,22 @@ pub fn run(sync_areas: bool) -> Result<()> {
     if !blocked_tasks.is_empty() {
         println!("   🚫 Blocked tasks:");
         for (task, missing_deps) in &blocked_tasks {
-            let deps_str: Vec<String> = missing_deps.iter().map(|dep_id| {
-                if archived_ids.contains(*dep_id) {
-                    format!("{} 📦", dep_id)
-                } else {
-                    dep_id.to_string()
-                }
-            }).collect();
-            println!("      ❌ {} - {} (waiting for: {})",
-                task.id, task.title, deps_str.join(", "));
+            let deps_str: Vec<String> = missing_deps
+                .iter()
+                .map(|dep_id| {
+                    if archived_ids.contains(*dep_id) {
+                        format!("{} 📦", dep_id)
+                    } else {
+                        dep_id.to_string()
+                    }
+                })
+                .collect();
+            println!(
+                "      ❌ {} - {} (waiting for: {})",
+                task.id,
+                task.title,
+                deps_str.join(", ")
+            );
         }
         println!();
     }
@@ -196,7 +204,11 @@ pub fn run(sync_areas: bool) -> Result<()> {
         println!("   No issues found in {} tasks", tasks.len());
     } else {
         println!("❌ VALIDATION FAILED");
-        println!("   Found {} issues across {} tasks", total_issues, tasks.len());
+        println!(
+            "   Found {} issues across {} tasks",
+            total_issues,
+            tasks.len()
+        );
     }
 
     println!();

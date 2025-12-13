@@ -1,7 +1,7 @@
-use taskguard::github::mapper::{IssueMapping, TaskIssueMapper};
-use taskguard::task::TaskStatus;
 use chrono::Utc;
 use std::fs;
+use taskguard::github::mapper::{IssueMapping, TaskIssueMapper};
+use taskguard::task::TaskStatus;
 use tempfile::TempDir;
 
 fn create_test_mapping(task_id: &str, issue_number: i64, archived: bool) -> IssueMapping {
@@ -59,9 +59,15 @@ fn test_lookup_operations() {
     let mut mapper = TaskIssueMapper::with_path(file_path);
 
     // Add multiple mappings
-    mapper.add_mapping(create_test_mapping("task-001", 1, false)).unwrap();
-    mapper.add_mapping(create_test_mapping("task-002", 2, false)).unwrap();
-    mapper.add_mapping(create_test_mapping("task-003", 3, true)).unwrap();
+    mapper
+        .add_mapping(create_test_mapping("task-001", 1, false))
+        .unwrap();
+    mapper
+        .add_mapping(create_test_mapping("task-002", 2, false))
+        .unwrap();
+    mapper
+        .add_mapping(create_test_mapping("task-003", 3, true))
+        .unwrap();
 
     // Test get by issue number
     let found = mapper.get_by_issue_number(2).unwrap();
@@ -85,9 +91,15 @@ fn test_archive_operations() {
     let mut mapper = TaskIssueMapper::with_path(file_path);
 
     // Add mappings
-    mapper.add_mapping(create_test_mapping("task-001", 1, false)).unwrap();
-    mapper.add_mapping(create_test_mapping("task-002", 2, false)).unwrap();
-    mapper.add_mapping(create_test_mapping("task-003", 3, true)).unwrap();
+    mapper
+        .add_mapping(create_test_mapping("task-001", 1, false))
+        .unwrap();
+    mapper
+        .add_mapping(create_test_mapping("task-002", 2, false))
+        .unwrap();
+    mapper
+        .add_mapping(create_test_mapping("task-003", 3, true))
+        .unwrap();
 
     // Test get active mappings
     let active = mapper.get_active_mappings();
@@ -122,8 +134,12 @@ fn test_persistence() {
     // Create mapper and add mappings
     {
         let mut mapper = TaskIssueMapper::with_path(file_path.clone());
-        mapper.add_mapping(create_test_mapping("task-001", 1, false)).unwrap();
-        mapper.add_mapping(create_test_mapping("task-002", 2, true)).unwrap();
+        mapper
+            .add_mapping(create_test_mapping("task-001", 1, false))
+            .unwrap();
+        mapper
+            .add_mapping(create_test_mapping("task-002", 2, true))
+            .unwrap();
     }
 
     // Verify file was created
@@ -231,21 +247,21 @@ fn test_status_conversion_case_insensitive() {
 fn test_status_conversion_priority() {
     // Test that higher priority names are matched first
     let options_todo = vec![
-        ("opt1".to_string(), "Ready".to_string()),    // Lower priority
-        ("opt2".to_string(), "Backlog".to_string()),  // Higher priority
+        ("opt1".to_string(), "Ready".to_string()), // Lower priority
+        ("opt2".to_string(), "Backlog".to_string()), // Higher priority
     ];
     assert_eq!(
         TaskIssueMapper::find_best_status_option(&TaskStatus::Todo, &options_todo),
-        Some("opt2".to_string())  // Should pick Backlog over Ready
+        Some("opt2".to_string()) // Should pick Backlog over Ready
     );
 
     let options_doing = vec![
-        ("opt1".to_string(), "Working".to_string()),      // Lower priority
-        ("opt2".to_string(), "In progress".to_string()),  // Higher priority
+        ("opt1".to_string(), "Working".to_string()), // Lower priority
+        ("opt2".to_string(), "In progress".to_string()), // Higher priority
     ];
     assert_eq!(
         TaskIssueMapper::find_best_status_option(&TaskStatus::Doing, &options_doing),
-        Some("opt2".to_string())  // Should pick "In progress" over "Working"
+        Some("opt2".to_string()) // Should pick "In progress" over "Working"
     );
 }
 
@@ -267,7 +283,7 @@ fn test_status_conversion_no_match() {
 fn test_status_conversion_alternative_names() {
     // Test fallback names
     let todo_options = vec![
-        ("opt1".to_string(), "To Do".to_string()),  // Alternative name
+        ("opt1".to_string(), "To Do".to_string()), // Alternative name
     ];
     assert_eq!(
         TaskIssueMapper::find_best_status_option(&TaskStatus::Todo, &todo_options),
@@ -275,7 +291,7 @@ fn test_status_conversion_alternative_names() {
     );
 
     let doing_options = vec![
-        ("opt1".to_string(), "Doing".to_string()),  // Alternative name
+        ("opt1".to_string(), "Doing".to_string()), // Alternative name
     ];
     assert_eq!(
         TaskIssueMapper::find_best_status_option(&TaskStatus::Doing, &doing_options),
@@ -283,7 +299,7 @@ fn test_status_conversion_alternative_names() {
     );
 
     let done_options = vec![
-        ("opt1".to_string(), "Completed".to_string()),  // Alternative name
+        ("opt1".to_string(), "Completed".to_string()), // Alternative name
     ];
     assert_eq!(
         TaskIssueMapper::find_best_status_option(&TaskStatus::Done, &done_options),
@@ -377,14 +393,26 @@ fn test_bidirectional_status_conversion() {
     ];
 
     // TaskGuard -> GitHub -> TaskGuard
-    let doing_option = TaskIssueMapper::find_best_status_option(&TaskStatus::Doing, &options).unwrap();
-    let github_column = options.iter().find(|(id, _)| id == &doing_option).unwrap().1.clone();
+    let doing_option =
+        TaskIssueMapper::find_best_status_option(&TaskStatus::Doing, &options).unwrap();
+    let github_column = options
+        .iter()
+        .find(|(id, _)| id == &doing_option)
+        .unwrap()
+        .1
+        .clone();
     let back_to_taskguard = TaskIssueMapper::github_column_to_status(&github_column);
     assert_eq!(back_to_taskguard, TaskStatus::Doing);
 
     // Test another round trip
-    let review_option = TaskIssueMapper::find_best_status_option(&TaskStatus::Review, &options).unwrap();
-    let github_column = options.iter().find(|(id, _)| id == &review_option).unwrap().1.clone();
+    let review_option =
+        TaskIssueMapper::find_best_status_option(&TaskStatus::Review, &options).unwrap();
+    let github_column = options
+        .iter()
+        .find(|(id, _)| id == &review_option)
+        .unwrap()
+        .1
+        .clone();
     let back_to_taskguard = TaskIssueMapper::github_column_to_status(&github_column);
     assert_eq!(back_to_taskguard, TaskStatus::Review);
 }
@@ -407,7 +435,9 @@ fn test_real_world_github_columns() {
     assert!(TaskIssueMapper::find_best_status_option(&TaskStatus::Done, &real_options).is_some());
 
     // Blocked should fall back to Backlog if no Blocked column exists
-    assert!(TaskIssueMapper::find_best_status_option(&TaskStatus::Blocked, &real_options).is_some());
+    assert!(
+        TaskIssueMapper::find_best_status_option(&TaskStatus::Blocked, &real_options).is_some()
+    );
 }
 
 #[test]
@@ -422,7 +452,7 @@ fn test_multiple_mappings_persistence() {
             let mapping = create_test_mapping(
                 &format!("task-{:03}", i),
                 i,
-                i % 3 == 0  // Archive every 3rd task
+                i % 3 == 0, // Archive every 3rd task
             );
             mapper.add_mapping(mapping).unwrap();
         }

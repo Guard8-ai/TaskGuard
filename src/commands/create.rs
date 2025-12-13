@@ -2,12 +2,16 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 use std::fs;
 
-use crate::config::{get_tasks_dir, get_config_path, Config, find_taskguard_root};
-use crate::task::{Task, TaskStatus, Priority};
+use crate::config::{Config, find_taskguard_root, get_config_path, get_tasks_dir};
+use crate::task::{Priority, Task, TaskStatus};
 use crate::templates::TemplateManager;
 
 /// Add a new area to config if it doesn't exist
-fn add_area_to_config(config: &mut Config, config_path: &std::path::Path, area: &str) -> Result<bool> {
+fn add_area_to_config(
+    config: &mut Config,
+    config_path: &std::path::Path,
+    area: &str,
+) -> Result<bool> {
     if config.project.areas.contains(&area.to_string()) {
         return Ok(false); // Already exists
     }
@@ -41,7 +45,12 @@ pub fn run(
         if config.project.areas.contains(&"setup".to_string()) {
             "setup".to_string()
         } else {
-            config.project.areas.first().cloned().unwrap_or_else(|| "general".to_string())
+            config
+                .project
+                .areas
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "general".to_string())
         }
     });
 
@@ -57,8 +66,10 @@ pub fn run(
         Some("high") => Priority::High,
         Some("critical") => Priority::Critical,
         Some(p) => {
-            println!("⚠️  Invalid priority '{}'. Using 'medium'. Valid priorities: {:?}",
-                p, config.settings.priorities);
+            println!(
+                "⚠️  Invalid priority '{}'. Using 'medium'. Valid priorities: {:?}",
+                p, config.settings.priorities
+            );
             Priority::Medium
         }
         None => Priority::Medium,
@@ -68,7 +79,10 @@ pub fn run(
     let complexity = match complexity {
         Some(c) if c >= 1 && c <= 10 => Some(c),
         Some(c) => {
-            println!("⚠️  Invalid complexity '{}'. Using default '3'. Valid range: 1-10", c);
+            println!(
+                "⚠️  Invalid complexity '{}'. Using default '3'. Valid range: 1-10",
+                c
+            );
             Some(3)
         }
         None => Some(3), // Default complexity
@@ -76,7 +90,12 @@ pub fn run(
 
     // Parse tags (comma-separated, always include area)
     let mut tag_list: Vec<String> = tags
-        .map(|t| t.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+        .map(|t| {
+            t.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        })
         .unwrap_or_default();
     if !tag_list.contains(&area) {
         tag_list.insert(0, area.clone());
@@ -84,7 +103,12 @@ pub fn run(
 
     // Parse dependencies (comma-separated task IDs)
     let dependency_list: Vec<String> = dependencies
-        .map(|d| d.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+        .map(|d| {
+            d.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        })
         .unwrap_or_default();
 
     // Determine assignee (default: "developer")
@@ -137,7 +161,13 @@ pub fn run(
     fs::write(&file_path, content)
         .with_context(|| format!("Failed to write task file: {}", file_path.display()))?;
 
-    println!("✅ Created task: {}", file_path.strip_prefix(&tasks_dir).unwrap_or(&file_path).display());
+    println!(
+        "✅ Created task: {}",
+        file_path
+            .strip_prefix(&tasks_dir)
+            .unwrap_or(&file_path)
+            .display()
+    );
     println!("   ID: {}", task.id);
     println!("   Title: {}", task.title);
     println!("   Area: {}", task.area);

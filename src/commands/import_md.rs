@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::config::{get_tasks_dir, get_config_path, Config};
-use crate::task::{Task, TaskStatus, Priority};
+use crate::config::{Config, get_config_path, get_tasks_dir};
+use crate::task::{Priority, Task, TaskStatus};
 
 #[derive(Debug, Clone)]
 pub struct ImportOptions {
@@ -59,7 +59,10 @@ pub fn run(file_path: PathBuf, options: ImportOptions) -> Result<()> {
     let sections = parse_markdown_sections(&content)?;
 
     if sections.is_empty() {
-        println!("⚠️  No importable sections found in {}", file_path.display());
+        println!(
+            "⚠️  No importable sections found in {}",
+            file_path.display()
+        );
         println!("   Looking for: ## Fix #N, ### Issue #N, ## Breaking Scenarios, etc.");
         return Ok(());
     }
@@ -142,12 +145,7 @@ fn parse_markdown_sections(content: &str) -> Result<Vec<MarkdownSection>> {
 
             // Extract section content until next heading
             let (section_content, next_index) = extract_section_content(&lines, i + 1);
-            let section = parse_section_details(
-                SectionType::Fix,
-                number,
-                title,
-                section_content,
-            );
+            let section = parse_section_details(SectionType::Fix, number, title, section_content);
 
             sections.push(section);
             i = next_index;
@@ -160,12 +158,7 @@ fn parse_markdown_sections(content: &str) -> Result<Vec<MarkdownSection>> {
             let title = caps[2].trim().to_string();
 
             let (section_content, next_index) = extract_section_content(&lines, i + 1);
-            let section = parse_section_details(
-                SectionType::Issue,
-                number,
-                title,
-                section_content,
-            );
+            let section = parse_section_details(SectionType::Issue, number, title, section_content);
 
             sections.push(section);
             i = next_index;
@@ -277,7 +270,8 @@ fn extract_dependencies(content: &str) -> Vec<String> {
         }
 
         // Also check for explicit dependencies format: Dependencies: [fix-1, fix-2]
-        let list_pattern = Regex::new(r"^\s*(?:\*\*)?Dependencies:?\s*(?:\*\*)?\s*\[([^\]]+)\]").unwrap();
+        let list_pattern =
+            Regex::new(r"^\s*(?:\*\*)?Dependencies:?\s*(?:\*\*)?\s*\[([^\]]+)\]").unwrap();
         if let Some(caps) = list_pattern.captures(line) {
             let dep_list = &caps[1];
             for dep in dep_list.split(',') {
@@ -292,11 +286,7 @@ fn extract_dependencies(content: &str) -> Vec<String> {
     deps
 }
 
-fn determine_area(
-    options: &ImportOptions,
-    config: &Config,
-    file_path: &Path,
-) -> Result<String> {
+fn determine_area(options: &ImportOptions, config: &Config, file_path: &Path) -> Result<String> {
     if let Some(ref area) = options.area {
         return Ok(area.clone());
     }
@@ -313,7 +303,10 @@ fn determine_area(
     }
 
     // Default to first available area or "import"
-    Ok(config.project.areas.first()
+    Ok(config
+        .project
+        .areas
+        .first()
         .cloned()
         .unwrap_or_else(|| "import".to_string()))
 }
@@ -326,7 +319,9 @@ fn determine_prefix(options: &ImportOptions, sections: &[MarkdownSection]) -> St
     // Check if we have mixed section types (Issues + Fixes)
     if !sections.is_empty() {
         let has_fix = sections.iter().any(|s| s.section_type == SectionType::Fix);
-        let has_issue = sections.iter().any(|s| s.section_type == SectionType::Issue);
+        let has_issue = sections
+            .iter()
+            .any(|s| s.section_type == SectionType::Issue);
 
         // If mixed, we'll use type-specific prefixes in task IDs
         // Return empty string to signal this
@@ -376,7 +371,9 @@ fn sections_to_tasks(
         let task_id = task_id_map.get(&section_key).unwrap().clone();
 
         // Resolve dependencies from #N format to task-N format
-        let dependencies: Vec<String> = section.dependencies.iter()
+        let dependencies: Vec<String> = section
+            .dependencies
+            .iter()
             .filter_map(|dep| {
                 if dep.starts_with('#') {
                     // Extract number from #N
@@ -396,7 +393,8 @@ fn sections_to_tasks(
             .collect();
 
         // Determine priority
-        let priority = options.priority_override
+        let priority = options
+            .priority_override
             .clone()
             .or(section.priority.clone())
             .unwrap_or(Priority::Medium);
@@ -449,7 +447,10 @@ fn convert_to_checkboxes(content: &str) -> String {
         let trimmed = line.trim_start();
 
         // Convert bullet points to checkboxes if they look like tasks
-        if trimmed.starts_with("- ") && !trimmed.starts_with("- [ ]") && !trimmed.starts_with("- [x]") {
+        if trimmed.starts_with("- ")
+            && !trimmed.starts_with("- [ ]")
+            && !trimmed.starts_with("- [x]")
+        {
             // Check if it looks like an actionable item
             let item_text = &trimmed[2..];
             if is_actionable(item_text) {
@@ -469,9 +470,24 @@ fn convert_to_checkboxes(content: &str) -> String {
 fn is_actionable(text: &str) -> bool {
     // Simple heuristic: starts with a verb or contains certain keywords
     let action_words = [
-        "add", "create", "update", "fix", "implement", "write", "test",
-        "check", "ensure", "verify", "remove", "delete", "modify",
-        "install", "configure", "setup", "build", "deploy",
+        "add",
+        "create",
+        "update",
+        "fix",
+        "implement",
+        "write",
+        "test",
+        "check",
+        "ensure",
+        "verify",
+        "remove",
+        "delete",
+        "modify",
+        "install",
+        "configure",
+        "setup",
+        "build",
+        "deploy",
     ];
 
     let lower = text.to_lowercase();

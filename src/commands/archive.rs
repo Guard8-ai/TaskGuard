@@ -1,20 +1,16 @@
 use anyhow::{Context, Result};
+use git2::Repository;
 use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
-use git2::Repository;
 
-use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};
+use crate::config::{find_taskguard_root, get_tasks_dir, load_tasks_from_dir};
+use crate::github::{GitHubClient, GitHubMutations, TaskIssueMapper, is_github_sync_enabled};
 use crate::task::{Task, TaskStatus};
-use crate::github::{
-    GitHubClient, GitHubMutations,
-    TaskIssueMapper, is_github_sync_enabled,
-};
 
 pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project")?;
+    let root = find_taskguard_root().context("Not in a TaskGuard project")?;
     let archive_dir = root.join(".taskguard").join("archive");
 
     if !tasks_dir.exists() {
@@ -109,7 +105,10 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
 
     println!("📋 ARCHIVE SUMMARY");
     println!();
-    println!("   Completed tasks to archive ({}):", files_to_archive.len());
+    println!(
+        "   Completed tasks to archive ({}):",
+        files_to_archive.len()
+    );
     for (_, _, id, title) in &files_to_archive {
         println!("   📦 {} - {}", id, title);
     }
@@ -140,8 +139,7 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
     }
 
     // Create archive directory structure
-    fs::create_dir_all(&archive_dir)
-        .context("Failed to create archive directory")?;
+    fs::create_dir_all(&archive_dir).context("Failed to create archive directory")?;
 
     // Move files to archive
     let mut archived_count = 0;
@@ -157,7 +155,12 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
             Ok(_) => {
                 archived_count += 1;
                 archived_task_ids.push(id.clone());
-                println!("   ✅ Archived: {} → archive/{}/{}", id, area, path.file_name().unwrap().to_string_lossy());
+                println!(
+                    "   ✅ Archived: {} → archive/{}/{}",
+                    id,
+                    area,
+                    path.file_name().unwrap().to_string_lossy()
+                );
             }
             Err(e) => {
                 println!("   ❌ Failed to archive {}: {}", id, e);
@@ -181,7 +184,9 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
             }
             Err(e) => {
                 eprintln!("\n⚠️  Warning: Failed to close some GitHub issues: {}", e);
-                eprintln!("   Tasks were archived successfully, but GitHub sync may be incomplete.");
+                eprintln!(
+                    "   Tasks were archived successfully, but GitHub sync may be incomplete."
+                );
             }
         }
     }
@@ -216,7 +221,7 @@ fn is_task_referenced(task_id: &str, all_tasks: &[Task]) -> bool {
         // Only check active tasks (not completed ones)
         if task.status != TaskStatus::Done {
             if task.dependencies.contains(&task_id.to_string()) {
-                return true;  // Active task depends on this
+                return true; // Active task depends on this
             }
         }
     }
@@ -258,8 +263,7 @@ fn close_github_issues(
 
 /// Create a Git commit to track archived tasks
 fn create_archive_commit(repo_path: &Path, task_ids: &[String]) -> Result<()> {
-    let repo = Repository::open(repo_path)
-        .context("Failed to open Git repository")?;
+    let repo = Repository::open(repo_path).context("Failed to open Git repository")?;
 
     // Check if we're in a Git repository and not in a detached HEAD state
     if repo.is_bare() {
@@ -267,34 +271,35 @@ fn create_archive_commit(repo_path: &Path, task_ids: &[String]) -> Result<()> {
     }
 
     // Stage all changes in the .taskguard/archive directory
-    let mut index = repo.index()
-        .context("Failed to get repository index")?;
+    let mut index = repo.index().context("Failed to get repository index")?;
 
     // Add archive directory changes
-    index.add_all([".taskguard/archive/"].iter(), git2::IndexAddOption::DEFAULT, None)
+    index
+        .add_all(
+            [".taskguard/archive/"].iter(),
+            git2::IndexAddOption::DEFAULT,
+            None,
+        )
         .context("Failed to stage archive directory")?;
 
     // Also stage removed task files from tasks/ directory
-    index.update_all(["."].iter(), None)
+    index
+        .update_all(["."].iter(), None)
         .context("Failed to update index")?;
 
-    index.write()
-        .context("Failed to write index")?;
+    index.write().context("Failed to write index")?;
 
-    let tree_id = index.write_tree()
-        .context("Failed to write tree")?;
-    let tree = repo.find_tree(tree_id)
-        .context("Failed to find tree")?;
+    let tree_id = index.write_tree().context("Failed to write tree")?;
+    let tree = repo.find_tree(tree_id).context("Failed to find tree")?;
 
     // Get HEAD commit as parent
-    let head = repo.head()
-        .context("Failed to get HEAD")?;
-    let parent_commit = head.peel_to_commit()
+    let head = repo.head().context("Failed to get HEAD")?;
+    let parent_commit = head
+        .peel_to_commit()
         .context("Failed to get parent commit")?;
 
     // Get signature for commit
-    let signature = repo.signature()
-        .context("Failed to get Git signature")?;
+    let signature = repo.signature().context("Failed to get Git signature")?;
 
     // Create commit message with task IDs
     let task_list = task_ids.join(", ");
@@ -308,7 +313,8 @@ fn create_archive_commit(repo_path: &Path, task_ids: &[String]) -> Result<()> {
         &commit_message,
         &tree,
         &[&parent_commit],
-    ).context("Failed to create commit")?;
+    )
+    .context("Failed to create commit")?;
 
     println!("\n📝 Git commit created:");
     println!("   Message: {}", commit_message);

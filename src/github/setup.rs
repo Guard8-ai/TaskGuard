@@ -176,8 +176,11 @@ impl GitHubProjectSetup {
         match GitHubMutations::ensure_status_columns(client, &project_id) {
             Ok(created) => {
                 // Get updated column list
-                if let Ok((_, options)) = GitHubMutations::get_status_field_info(client, &project_id) {
-                    let column_names: Vec<_> = options.iter().map(|(_, name)| name.as_str()).collect();
+                if let Ok((_, options)) =
+                    GitHubMutations::get_status_field_info(client, &project_id)
+                {
+                    let column_names: Vec<_> =
+                        options.iter().map(|(_, name)| name.as_str()).collect();
                     if verbose {
                         println!("✓ Status columns ready: {}", column_names.join(", "));
                         if created > 0 {
@@ -394,7 +397,11 @@ impl GitHubProjectSetup {
     }
 
     /// Get project GraphQL node ID from owner and number
-    pub fn get_project_id(client: &GitHubClient, owner: &str, project_number: i64) -> Result<String> {
+    pub fn get_project_id(
+        client: &GitHubClient,
+        owner: &str,
+        project_number: i64,
+    ) -> Result<String> {
         // Try organization first
         let query = r#"
             query($owner: String!, $number: Int!) {
@@ -444,8 +451,7 @@ impl GitHubProjectSetup {
 
         // Ensure .taskguard directory exists
         if let Some(parent) = config_path.parent() {
-            std::fs::create_dir_all(parent)
-                .context("Failed to create .taskguard directory")?;
+            std::fs::create_dir_all(parent).context("Failed to create .taskguard directory")?;
         }
 
         let config_content = format!(

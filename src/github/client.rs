@@ -44,7 +44,8 @@ impl GitHubClient {
             anyhow::bail!(
                 "GitHub authentication failed.\n\n\
                 Please run: gh auth login\n\n\
-                Error: {}", stderr
+                Error: {}",
+                stderr
             );
         }
 
@@ -105,14 +106,16 @@ impl GitHubClient {
             "variables": variables,
         });
 
-        let response = self.client
+        let response = self
+            .client
             .post(&self.api_url)
             .header("Authorization", format!("Bearer {}", self.token))
             .json(&body)
             .send()
             .context("Failed to send GraphQL request")?;
 
-        let json: Value = response.json()
+        let json: Value = response
+            .json()
             .context("Failed to parse GraphQL response")?;
 
         // Check for GraphQL errors
@@ -142,8 +145,7 @@ mod tests {
                 // Check that error message is helpful
                 let error_msg = e.to_string();
                 assert!(
-                    error_msg.contains("gh auth login") ||
-                    error_msg.contains("gh CLI"),
+                    error_msg.contains("gh auth login") || error_msg.contains("gh CLI"),
                     "Error message should guide user to authenticate: {}",
                     error_msg
                 );

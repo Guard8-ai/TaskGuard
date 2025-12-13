@@ -119,7 +119,9 @@ impl Task {
         let parts: Vec<&str> = content.splitn(3, "---").collect();
 
         if parts.len() < 3 {
-            return Err(anyhow::anyhow!("Invalid task file format: missing YAML front-matter"));
+            return Err(anyhow::anyhow!(
+                "Invalid task file format: missing YAML front-matter"
+            ));
         }
 
         let yaml_content = parts[1].trim();
@@ -154,8 +156,8 @@ impl Task {
             area: self.area.clone(),
         };
 
-        let mut yaml = serde_yaml::to_string(&yaml_task)
-            .context("Failed to serialize task to YAML")?;
+        let mut yaml =
+            serde_yaml::to_string(&yaml_task).context("Failed to serialize task to YAML")?;
 
         // Clean up null values in YAML
         yaml = yaml.replace("estimate: null\n", "estimate: ~\n");
@@ -169,7 +171,9 @@ impl Task {
 
     pub fn is_available(&self, completed_tasks: &[String]) -> bool {
         // Task is available if all dependencies are completed
-        self.dependencies.iter().all(|dep| completed_tasks.contains(dep))
+        self.dependencies
+            .iter()
+            .all(|dep| completed_tasks.contains(dep))
     }
 
     pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {

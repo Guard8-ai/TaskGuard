@@ -3,11 +3,15 @@ use std::collections::HashMap;
 use std::path::Path;
 use walkdir::WalkDir;
 
-use crate::config::{get_tasks_dir, find_taskguard_root, load_tasks_from_dir};
+use crate::config::{find_taskguard_root, get_tasks_dir, load_tasks_from_dir};
 use crate::task::{Task, TaskStatus};
 use regex::Regex;
 
-pub fn run(status_filter: Option<String>, area_filter: Option<String>, include_archive: bool) -> Result<()> {
+pub fn run(
+    status_filter: Option<String>,
+    area_filter: Option<String>,
+    include_archive: bool,
+) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
 
     if !tasks_dir.exists() {
@@ -112,12 +116,9 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>, include_a
                 ""
             };
 
-            println!("   {}{} {} {} {}",
-                archive_indicator,
-                status_icon,
-                priority_icon,
-                task.id,
-                task.title
+            println!(
+                "   {}{} {} {} {}",
+                archive_indicator, status_icon, priority_icon, task.id, task.title
             );
 
             // Show dependencies if any
@@ -129,12 +130,10 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>, include_a
 
     // Show summary
     let total = tasks.len();
-    let by_status: HashMap<String, usize> = tasks
-        .iter()
-        .fold(HashMap::new(), |mut acc, task| {
-            *acc.entry(task.status.to_string()).or_insert(0) += 1;
-            acc
-        });
+    let by_status: HashMap<String, usize> = tasks.iter().fold(HashMap::new(), |mut acc, task| {
+        *acc.entry(task.status.to_string()).or_insert(0) += 1;
+        acc
+    });
 
     println!("\n📊 SUMMARY");
     println!("   Total tasks: {}", total);
@@ -147,7 +146,8 @@ pub fn run(status_filter: Option<String>, area_filter: Option<String>, include_a
         let archived_count = load_tasks_from_dir(&archive_dir).unwrap_or_default().len();
         if archived_count > 0 {
             println!();
-            println!("💡 TIP: {} archived task{} available. Use --include-archive to see them.",
+            println!(
+                "💡 TIP: {} archived task{} available. Use --include-archive to see them.",
                 archived_count,
                 if archived_count == 1 { "" } else { "s" }
             );
@@ -182,7 +182,8 @@ pub fn run_items(task_id: String) -> Result<()> {
         let status_icon = if item.completed { "✅" } else { "⭕" };
         let status_text = if item.completed { "done" } else { "todo" };
 
-        println!("   {}. {} [{}] {}",
+        println!(
+            "   {}. {} [{}] {}",
             index + 1,
             status_icon,
             status_text,
@@ -194,7 +195,11 @@ pub fn run_items(task_id: String) -> Result<()> {
     println!("📊 SUMMARY");
     println!("   Total items: {}", items.len());
     let completed = items.iter().filter(|i| i.completed).count();
-    println!("   Completed: {} ({:.1}%)", completed, completed as f32 / items.len() as f32 * 100.0);
+    println!(
+        "   Completed: {} ({:.1}%)",
+        completed,
+        completed as f32 / items.len() as f32 * 100.0
+    );
     println!("   Remaining: {}", items.len() - completed);
 
     Ok(())
@@ -235,7 +240,9 @@ fn parse_checklist_items(content: &str) -> Result<Vec<ChecklistItem>> {
 // Helper function to find task file (similar to update.rs)
 fn find_task_file(tasks_dir: &Path, task_id: &str) -> Result<std::path::PathBuf> {
     // Extract area from task ID (e.g., "backend-001" -> "backend")
-    let area = task_id.split('-').next()
+    let area = task_id
+        .split('-')
+        .next()
         .ok_or_else(|| anyhow::anyhow!("Invalid task ID format. Expected format: area-number"))?;
 
     let area_dir = tasks_dir.join(area);

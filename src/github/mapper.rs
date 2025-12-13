@@ -26,13 +26,12 @@ pub struct TaskIssueMapper {
 impl TaskIssueMapper {
     /// Create a new mapper with the default storage path
     pub fn new() -> Result<Self, std::io::Error> {
-        let root = crate::config::find_taskguard_root()
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    "Not in a TaskGuard project. Run 'taskguard init' first.",
-                )
-            })?;
+        let root = crate::config::find_taskguard_root().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Not in a TaskGuard project. Run 'taskguard init' first.",
+            )
+        })?;
 
         let file_path = root.join(".taskguard").join("github-mapping.json");
 
@@ -59,18 +58,18 @@ impl TaskIssueMapper {
 
     /// Load mappings from the JSON file
     pub fn load(&mut self) -> Result<(), std::io::Error> {
-        let path = self.file_path.as_ref().ok_or_else(|| {
-            std::io::Error::new(std::io::ErrorKind::NotFound, "No file path set")
-        })?;
+        let path = self
+            .file_path
+            .as_ref()
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No file path set"))?;
 
         if !path.exists() {
             return Ok(()); // No file yet, that's fine
         }
 
         let content = fs::read_to_string(path)?;
-        let loaded: Self = serde_json::from_str(&content).map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
-        })?;
+        let loaded: Self = serde_json::from_str(&content)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
 
         self.mappings = loaded.mappings;
         Ok(())
@@ -78,9 +77,10 @@ impl TaskIssueMapper {
 
     /// Save mappings to the JSON file
     pub fn save(&self) -> Result<(), std::io::Error> {
-        let path = self.file_path.as_ref().ok_or_else(|| {
-            std::io::Error::new(std::io::ErrorKind::NotFound, "No file path set")
-        })?;
+        let path = self
+            .file_path
+            .as_ref()
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No file path set"))?;
 
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
@@ -145,7 +145,9 @@ impl TaskIssueMapper {
 
     /// Get a mapping by issue number
     pub fn get_by_issue_number(&self, issue_number: i64) -> Option<&IssueMapping> {
-        self.mappings.iter().find(|m| m.issue_number == issue_number)
+        self.mappings
+            .iter()
+            .find(|m| m.issue_number == issue_number)
     }
 
     /// Get a mapping by project item ID
@@ -255,7 +257,10 @@ impl TaskIssueMapper {
             TaskStatus::Done
         } else if normalized.contains("review") {
             TaskStatus::Review
-        } else if normalized.contains("progress") || normalized.contains("doing") || normalized.contains("working") {
+        } else if normalized.contains("progress")
+            || normalized.contains("doing")
+            || normalized.contains("working")
+        {
             TaskStatus::Doing
         } else if normalized.contains("blocked") {
             TaskStatus::Blocked
@@ -420,7 +425,8 @@ mod tests {
             ("opt1".to_string(), "BACKLOG".to_string()),
             ("opt2".to_string(), "IN PROGRESS".to_string()),
         ];
-        let result = TaskIssueMapper::find_best_status_option(&TaskStatus::Doing, &options_mixed_case);
+        let result =
+            TaskIssueMapper::find_best_status_option(&TaskStatus::Doing, &options_mixed_case);
         assert_eq!(result, Some("opt2".to_string()));
     }
 

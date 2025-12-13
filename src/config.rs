@@ -95,22 +95,28 @@ impl Default for Config {
 impl Config {
     pub fn load_or_default<P: AsRef<Path>>(config_path: P) -> Result<Self> {
         if config_path.as_ref().exists() {
-            let content = fs::read_to_string(&config_path)
-                .with_context(|| format!("Failed to read config file: {}", config_path.as_ref().display()))?;
+            let content = fs::read_to_string(&config_path).with_context(|| {
+                format!(
+                    "Failed to read config file: {}",
+                    config_path.as_ref().display()
+                )
+            })?;
 
-            toml::from_str(&content)
-                .context("Failed to parse config file")
+            toml::from_str(&content).context("Failed to parse config file")
         } else {
             Ok(Self::default())
         }
     }
 
     pub fn save<P: AsRef<Path>>(&self, config_path: P) -> Result<()> {
-        let content = toml::to_string_pretty(self)
-            .context("Failed to serialize config")?;
+        let content = toml::to_string_pretty(self).context("Failed to serialize config")?;
 
-        fs::write(&config_path, content)
-            .with_context(|| format!("Failed to write config file: {}", config_path.as_ref().display()))?;
+        fs::write(&config_path, content).with_context(|| {
+            format!(
+                "Failed to write config file: {}",
+                config_path.as_ref().display()
+            )
+        })?;
 
         Ok(())
     }
@@ -134,20 +140,20 @@ pub fn find_taskguard_root() -> Option<PathBuf> {
 }
 
 pub fn get_tasks_dir() -> Result<PathBuf> {
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
+    let root =
+        find_taskguard_root().context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
     Ok(root.join("tasks"))
 }
 
 pub fn get_config_path() -> Result<PathBuf> {
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
+    let root =
+        find_taskguard_root().context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
     Ok(root.join(".taskguard").join("config.toml"))
 }
 
 pub fn get_archive_dir() -> Result<PathBuf> {
-    let root = find_taskguard_root()
-        .context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
+    let root =
+        find_taskguard_root().context("Not in a TaskGuard project. Run 'taskguard init' first.")?;
     Ok(root.join(".taskguard").join("archive"))
 }
 

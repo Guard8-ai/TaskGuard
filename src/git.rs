@@ -1,8 +1,8 @@
-use anyhow::{Result, Context};
-use git2::{Repository, Commit, FetchOptions, RemoteCallbacks, CertificateCheckStatus};
-use std::path::Path;
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
+use git2::{CertificateCheckStatus, Commit, FetchOptions, RemoteCallbacks, Repository};
 use std::collections::HashMap;
+use std::path::Path;
 
 /// Git repository analysis for TaskGuard intelligence features
 pub struct GitAnalyzer {
@@ -53,13 +53,13 @@ impl GitAnalyzer {
     /// Create a new GitAnalyzer for the given repository path
     pub fn new<P: AsRef<Path>>(repo_path: P) -> Result<Self> {
         // Validate and canonicalize the repository path to prevent path traversal
-        let canonical_path = repo_path.as_ref()
+        let canonical_path = repo_path
+            .as_ref()
             .canonicalize()
             .context("Invalid repository path")?;
 
         // Get current working directory for validation
-        let current_dir = std::env::current_dir()
-            .context("Failed to get current directory")?;
+        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
 
         // Validate repository path to prevent malicious path traversal
         // Allow temp directories for testing, current directory and reasonable parent access
@@ -76,11 +76,11 @@ impl GitAnalyzer {
         };
 
         // Reject paths that could be malicious traversals (like /etc, /root, etc.)
-        let is_suspicious_system_path = canonical_path.starts_with("/etc") ||
-                                       canonical_path.starts_with("/root") ||
-                                       canonical_path.starts_with("/sys") ||
-                                       canonical_path.starts_with("/proc") ||
-                                       canonical_path.ancestors().count() > 10; // Prevent deep traversal
+        let is_suspicious_system_path = canonical_path.starts_with("/etc")
+            || canonical_path.starts_with("/root")
+            || canonical_path.starts_with("/sys")
+            || canonical_path.starts_with("/proc")
+            || canonical_path.ancestors().count() > 10; // Prevent deep traversal
 
         if is_suspicious_system_path {
             return Err(anyhow::anyhow!(
@@ -96,8 +96,7 @@ impl GitAnalyzer {
             ));
         }
 
-        let repo = Repository::open(&canonical_path)
-            .context("Failed to open Git repository")?;
+        let repo = Repository::open(&canonical_path).context("Failed to open Git repository")?;
 
         Ok(GitAnalyzer { repo })
     }
@@ -111,7 +110,8 @@ impl GitAnalyzer {
         let mut task_groups: HashMap<String, Vec<TaskCommit>> = HashMap::new();
         for commit in task_commits {
             for task_id in &commit.task_ids {
-                task_groups.entry(task_id.clone())
+                task_groups
+                    .entry(task_id.clone())
                     .or_default()
                     .push(commit.clone());
             }
@@ -120,9 +120,7 @@ impl GitAnalyzer {
         // Convert to TaskActivity structs with analysis
         let mut activities = Vec::new();
         for (task_id, commits) in task_groups {
-            let last_activity = commits.iter()
-                .map(|c| c.timestamp)
-                .max();
+            let last_activity = commits.iter().map(|c| c.timestamp).max();
 
             let (suggested_status, confidence) = self.suggest_status(&commits);
 
@@ -136,9 +134,7 @@ impl GitAnalyzer {
         }
 
         // Sort by most recent activity
-        activities.sort_by(|a, b| {
-            b.last_activity.cmp(&a.last_activity)
-        });
+        activities.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
 
         Ok(activities)
     }
@@ -148,7 +144,9 @@ impl GitAnalyzer {
         const MAX_COMMITS: usize = 1000; // Maximum commits to process for security
         const MAX_COMMIT_MESSAGE_SIZE: usize = 64 * 1024; // 64KB max message size
 
-        let mut revwalk = self.repo.revwalk()
+        let mut revwalk = self
+            .repo
+            .revwalk()
             .context("Failed to create revision walker")?;
 
         // Handle repositories with no commits (HEAD doesn't exist yet)
@@ -169,7 +167,9 @@ impl GitAnalyzer {
             }
 
             let oid = oid.context("Failed to get commit OID")?;
-            let commit = self.repo.find_commit(oid)
+            let commit = self
+                .repo
+                .find_commit(oid)
                 .with_context(|| format!("Failed to find commit {}", oid))?;
 
             // Check commit message size for security
@@ -267,7 +267,9 @@ impl GitAnalyzer {
 
                     if let Some(preceding_context) = context_result {
                         // Skip if this looks like part of a version number (contains digits and dots before the match)
-                        if preceding_context.contains('.') && preceding_context.chars().any(|c| c.is_ascii_digit()) {
+                        if preceding_context.contains('.')
+                            && preceding_context.chars().any(|c| c.is_ascii_digit())
+                        {
                             continue; // Skip version-like patterns like "1.2.3-backend-001"
                         }
                     }
@@ -294,7 +296,8 @@ impl GitAnalyzer {
                 let num_str = num.as_str();
                 // Validate reasonable number range
                 if let Ok(task_num) = num_str.parse::<u32>() {
-                    if task_num > 0 && task_num < 1000000 { // Reasonable task ID range
+                    if task_num > 0 && task_num < 1000000 {
+                        // Reasonable task ID range
                         task_ids.push(format!("task-{}", num_str));
                     }
                 }
@@ -307,7 +310,8 @@ impl GitAnalyzer {
     /// Normalize Unicode text and sanitize control characters for safe processing
     fn normalize_unicode_message(&self, message: &str) -> String {
         // Replace control characters with spaces (except common whitespace) to preserve word boundaries
-        let sanitized: String = message.chars()
+        let sanitized: String = message
+            .chars()
             .map(|c| {
                 if c.is_control() && !matches!(c, '\n' | '\t' | '\r' | ' ') {
                     ' ' // Replace control characters with spaces to maintain word boundaries
@@ -332,9 +336,9 @@ impl GitAnalyzer {
             .replace('\u{2008}', " ") // Punctuation space to regular space
             .replace('\u{2009}', " ") // Thin space to regular space
             .replace('\u{200A}', " ") // Hair space to regular space
-            .replace('\u{200B}', "")  // Zero-width space removal
-            .replace('\u{200C}', "")  // Zero-width non-joiner removal
-            .replace('\u{200D}', "")  // Zero-width joiner removal
+            .replace('\u{200B}', "") // Zero-width space removal
+            .replace('\u{200C}', "") // Zero-width non-joiner removal
+            .replace('\u{200D}', "") // Zero-width joiner removal
             .replace('\u{FEFF}', ""); // Byte order mark removal
 
         // Limit length after normalization to prevent processing issues
@@ -351,7 +355,8 @@ impl GitAnalyzer {
             return (None, 0.0);
         }
 
-        let recent_messages: Vec<&str> = commits.iter()
+        let recent_messages: Vec<&str> = commits
+            .iter()
             .take(5) // Look at 5 most recent commits
             .map(|c| c.message.as_str())
             .collect();
@@ -365,7 +370,8 @@ impl GitAnalyzer {
             let lower = normalized_message.to_lowercase();
 
             // Check for completion indicators first (highest priority)
-            let has_completion = lower.contains("complete") || lower.contains("finish") || lower.contains("done");
+            let has_completion =
+                lower.contains("complete") || lower.contains("finish") || lower.contains("done");
             let has_resolution = lower.contains("resolve") || lower.contains("closed");
 
             if has_completion || has_resolution {
@@ -373,8 +379,12 @@ impl GitAnalyzer {
             }
 
             // Review indicators
-            if lower.contains("review") || lower.contains("refactor") ||
-               lower.contains("document") || lower.contains("docs") || lower.contains("documentation") {
+            if lower.contains("review")
+                || lower.contains("refactor")
+                || lower.contains("document")
+                || lower.contains("docs")
+                || lower.contains("documentation")
+            {
                 *indicators.entry("review").or_insert(0.0) += 0.7;
             }
 
@@ -409,7 +419,8 @@ impl GitAnalyzer {
         }
 
         // Find the highest confidence suggestion
-        let (status, confidence): (&str, f32) = indicators.into_iter()
+        let (status, confidence): (&str, f32) = indicators
+            .into_iter()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap_or(("doing", 0.3));
 
@@ -451,7 +462,9 @@ impl GitAnalyzer {
 
     /// Fetch updates from remote repository with comprehensive error handling
     pub fn fetch_remote(&self, remote_name: &str) -> Result<()> {
-        let mut remote = self.repo.find_remote(remote_name)
+        let mut remote = self
+            .repo
+            .find_remote(remote_name)
             .context("Failed to find remote repository")?;
 
         let mut callbacks = RemoteCallbacks::new();
@@ -464,7 +477,10 @@ impl GitAnalyzer {
             } else {
                 // Fallback to default user
                 git2::Cred::ssh_key_from_agent("git")
-            }.map_err(|_| git2::Error::from_str("Authentication required but no credentials available"))
+            }
+            .map_err(|_| {
+                git2::Error::from_str("Authentication required but no credentials available")
+            })
         });
 
         // Progress callback for long operations
@@ -498,14 +514,22 @@ impl GitAnalyzer {
             Ok(()) => {
                 println!("   ✅ Fetch completed successfully");
                 Ok(())
-            },
+            }
             Err(e) => {
                 let error_msg = match e.class() {
-                    git2::ErrorClass::Net => "Network error: Check your internet connection and repository URL",
-                    git2::ErrorClass::Ssh => "SSH authentication error: Check your SSH keys and permissions",
-                    git2::ErrorClass::Http => "HTTP error: Check repository URL and access permissions",
+                    git2::ErrorClass::Net => {
+                        "Network error: Check your internet connection and repository URL"
+                    }
+                    git2::ErrorClass::Ssh => {
+                        "SSH authentication error: Check your SSH keys and permissions"
+                    }
+                    git2::ErrorClass::Http => {
+                        "HTTP error: Check repository URL and access permissions"
+                    }
                     git2::ErrorClass::Ssl => "SSL/TLS error: Check certificate configuration",
-                    git2::ErrorClass::Repository => "Repository error: Check if remote repository exists",
+                    git2::ErrorClass::Repository => {
+                        "Repository error: Check if remote repository exists"
+                    }
                     _ => "Unknown Git error occurred",
                 };
 
@@ -515,7 +539,11 @@ impl GitAnalyzer {
     }
 
     /// Analyze remote task activity by comparing with local commits
-    pub fn analyze_remote_task_activity(&self, remote_name: &str, limit: Option<usize>) -> Result<Vec<TaskActivity>> {
+    pub fn analyze_remote_task_activity(
+        &self,
+        remote_name: &str,
+        limit: Option<usize>,
+    ) -> Result<Vec<TaskActivity>> {
         // First, ensure we have the latest remote data
         if let Err(e) = self.fetch_remote(remote_name) {
             eprintln!("⚠️  Warning: Failed to fetch from remote: {}", e);
@@ -530,7 +558,8 @@ impl GitAnalyzer {
         let mut remote_task_groups: HashMap<String, Vec<TaskCommit>> = HashMap::new();
         for commit in remote_task_commits {
             for task_id in &commit.task_ids {
-                remote_task_groups.entry(task_id.clone())
+                remote_task_groups
+                    .entry(task_id.clone())
                     .or_default()
                     .push(commit.clone());
             }
@@ -539,9 +568,7 @@ impl GitAnalyzer {
         // Convert to TaskActivity structs with analysis
         let mut remote_activities = Vec::new();
         for (task_id, commits) in remote_task_groups {
-            let last_activity = commits.iter()
-                .map(|c| c.timestamp)
-                .max();
+            let last_activity = commits.iter().map(|c| c.timestamp).max();
 
             let (suggested_status, confidence) = self.suggest_status(&commits);
 
@@ -555,9 +582,7 @@ impl GitAnalyzer {
         }
 
         // Sort by most recent activity
-        remote_activities.sort_by(|a, b| {
-            b.last_activity.cmp(&a.last_activity)
-        });
+        remote_activities.sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
 
         Ok(remote_activities)
     }
@@ -568,17 +593,26 @@ impl GitAnalyzer {
         const MAX_COMMIT_MESSAGE_SIZE: usize = 64 * 1024; // 64KB max message size
 
         let remote_branch_name = format!("{}/master", remote_name); // Assuming master branch
-        let remote_ref = self.repo.find_reference(&format!("refs/remotes/{}", remote_branch_name))
-            .or_else(|_| self.repo.find_reference(&format!("refs/remotes/{}/main", remote_name)))
+        let remote_ref = self
+            .repo
+            .find_reference(&format!("refs/remotes/{}", remote_branch_name))
+            .or_else(|_| {
+                self.repo
+                    .find_reference(&format!("refs/remotes/{}/main", remote_name))
+            })
             .context("Failed to find remote tracking branch")?;
 
-        let remote_oid = remote_ref.target()
+        let remote_oid = remote_ref
+            .target()
             .context("Failed to get remote branch target")?;
 
-        let mut revwalk = self.repo.revwalk()
+        let mut revwalk = self
+            .repo
+            .revwalk()
             .context("Failed to create revision walker for remote")?;
 
-        revwalk.push(remote_oid)
+        revwalk
+            .push(remote_oid)
             .context("Failed to push remote OID to revwalk")?;
 
         // Limit the requested commits to a safe maximum
@@ -594,7 +628,9 @@ impl GitAnalyzer {
             }
 
             let oid = oid.context("Failed to get remote commit OID")?;
-            let commit = self.repo.find_commit(oid)
+            let commit = self
+                .repo
+                .find_commit(oid)
                 .with_context(|| format!("Failed to find remote commit {}", oid))?;
 
             // Check commit message size for security
@@ -619,15 +655,21 @@ impl GitAnalyzer {
     }
 
     /// Compare local and remote task activities to detect conflicts
-    pub fn detect_sync_conflicts(&self, local_activities: &[TaskActivity], remote_activities: &[TaskActivity]) -> Vec<SyncConflict> {
+    pub fn detect_sync_conflicts(
+        &self,
+        local_activities: &[TaskActivity],
+        remote_activities: &[TaskActivity],
+    ) -> Vec<SyncConflict> {
         let mut conflicts = Vec::new();
 
         // Create lookup maps for efficient comparison
-        let local_map: HashMap<String, &TaskActivity> = local_activities.iter()
+        let local_map: HashMap<String, &TaskActivity> = local_activities
+            .iter()
             .map(|a| (a.task_id.clone(), a))
             .collect();
 
-        let remote_map: HashMap<String, &TaskActivity> = remote_activities.iter()
+        let remote_map: HashMap<String, &TaskActivity> = remote_activities
+            .iter()
             .map(|a| (a.task_id.clone(), a))
             .collect();
 
@@ -647,7 +689,9 @@ impl GitAnalyzer {
             let resolution = match (local_activity, remote_activity) {
                 (Some(local), Some(remote)) => {
                     // Both have suggestions - check for conflict
-                    if let (Some(local_status), Some(remote_status)) = (&local.suggested_status, &remote.suggested_status) {
+                    if let (Some(local_status), Some(remote_status)) =
+                        (&local.suggested_status, &remote.suggested_status)
+                    {
                         if local_status != remote_status {
                             // Conflict detected - use confidence to suggest resolution
                             if remote.confidence > local.confidence * 1.2 {
@@ -663,10 +707,10 @@ impl GitAnalyzer {
                     } else {
                         ConflictResolution::NoConflict
                     }
-                },
+                }
                 (Some(_), None) => ConflictResolution::KeepLocal, // Only local has activity
                 (None, Some(_)) => ConflictResolution::AcceptRemote, // Only remote has activity
-                (None, None) => continue, // No activity for this task
+                (None, None) => continue,                         // No activity for this task
             };
 
             if resolution != ConflictResolution::NoConflict {
@@ -690,7 +734,9 @@ impl GitAnalyzer {
 
     /// Get list of available remotes
     pub fn get_remotes(&self) -> Result<Vec<String>> {
-        Ok(self.repo.remotes()?
+        Ok(self
+            .repo
+            .remotes()?
             .iter()
             .filter_map(|name| name.map(|s| s.to_string()))
             .collect())

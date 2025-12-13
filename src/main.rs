@@ -1,15 +1,18 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-pub mod task;
-pub mod config;
-pub mod commands;
-pub mod git;
 pub mod analysis;
+pub mod commands;
+pub mod config;
+pub mod git;
 pub mod github;
+pub mod task;
 pub mod templates;
 
-use commands::{init, list, create, validate, sync, lint, ai, update, import_md, clean, stats, archive, compact, restore};
+use commands::{
+    ai, archive, clean, compact, create, import_md, init, lint, list, restore, stats, sync, update,
+    validate,
+};
 
 #[derive(Parser)]
 #[command(name = "taskguard")]
@@ -213,35 +216,84 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Init => init::run(),
-        Commands::List { command, status, area, include_archive } => match command {
+        Commands::List {
+            command,
+            status,
+            area,
+            include_archive,
+        } => match command {
             Some(ListCommands::Items { task_id }) => list::run_items(task_id),
             None => list::run(status, area, include_archive),
         },
-        Commands::Create { title, area, priority, complexity, tags, dependencies, assignee, estimate } => create::run(title, area, priority, complexity, tags, dependencies, assignee, estimate),
+        Commands::Create {
+            title,
+            area,
+            priority,
+            complexity,
+            tags,
+            dependencies,
+            assignee,
+            estimate,
+        } => create::run(
+            title,
+            area,
+            priority,
+            complexity,
+            tags,
+            dependencies,
+            assignee,
+            estimate,
+        ),
         Commands::Show { task_id } => {
             println!("Show task: {}", task_id);
             Ok(())
         }
         Commands::Validate { sync_areas } => validate::run(sync_areas),
-        Commands::Sync { limit, verbose, remote, github, backfill_project, dry_run } => sync::run(limit, verbose, remote, github, backfill_project, dry_run),
+        Commands::Sync {
+            limit,
+            verbose,
+            remote,
+            github,
+            backfill_project,
+            dry_run,
+        } => sync::run(limit, verbose, remote, github, backfill_project, dry_run),
         Commands::Lint { verbose, area } => lint::run(verbose, area),
         Commands::Ai { input } => ai::run(input),
-        Commands::Update { field, task_id, value } => update::run(field, task_id, value),
+        Commands::Update {
+            field,
+            task_id,
+            value,
+        } => update::run(field, task_id, value),
         Commands::Task { command } => match command {
-            TaskCommands::Update { task_id, item_index, status } => update::run_task_item(task_id, item_index, status),
+            TaskCommands::Update {
+                task_id,
+                item_index,
+                status,
+            } => update::run_task_item(task_id, item_index, status),
         },
         Commands::Status => {
             println!("Project status overview");
             Ok(())
         }
-        Commands::ImportMd { file, area, prefix, dry_run, start_number, tags, priority } => {
+        Commands::ImportMd {
+            file,
+            area,
+            prefix,
+            dry_run,
+            start_number,
+            tags,
+            priority,
+        } => {
             let priority_override = match priority.as_deref() {
                 Some("low") => Some(crate::task::Priority::Low),
                 Some("medium") => Some(crate::task::Priority::Medium),
                 Some("high") => Some(crate::task::Priority::High),
                 Some("critical") => Some(crate::task::Priority::Critical),
                 Some(p) => {
-                    println!("⚠️  Invalid priority '{}'. Will use inferred or default.", p);
+                    println!(
+                        "⚠️  Invalid priority '{}'. Will use inferred or default.",
+                        p
+                    );
                     None
                 }
                 None => None,

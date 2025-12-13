@@ -17,19 +17,16 @@ pub fn run() -> Result<()> {
     println!("🚀 Initializing TaskGuard...");
 
     // Create .taskguard directory structure
-    fs::create_dir_all(&taskguard_dir)
-        .context("Failed to create .taskguard directory")?;
+    fs::create_dir_all(&taskguard_dir).context("Failed to create .taskguard directory")?;
 
     fs::create_dir_all(taskguard_dir.join("templates"))
         .context("Failed to create templates directory")?;
 
-    fs::create_dir_all(taskguard_dir.join("state"))
-        .context("Failed to create state directory")?;
+    fs::create_dir_all(taskguard_dir.join("state")).context("Failed to create state directory")?;
 
     // Create tasks directory
     let tasks_dir = current_dir.join("tasks");
-    fs::create_dir_all(&tasks_dir)
-        .context("Failed to create tasks directory")?;
+    fs::create_dir_all(&tasks_dir).context("Failed to create tasks directory")?;
 
     // Create initial area directories
     let default_areas = ["setup", "backend", "frontend", "api", "auth", "testing"];
@@ -41,14 +38,15 @@ pub fn run() -> Result<()> {
     // Create default config
     let config = Config::default();
     let config_path = taskguard_dir.join("config.toml");
-    config.save(&config_path)
+    config
+        .save(&config_path)
         .context("Failed to save default config")?;
 
     // Create .gitignore if it doesn't exist
     let gitignore_path = current_dir.join(".gitignore");
     let gitignore_content = if gitignore_path.exists() {
-        let existing = fs::read_to_string(&gitignore_path)
-            .context("Failed to read existing .gitignore")?;
+        let existing =
+            fs::read_to_string(&gitignore_path).context("Failed to read existing .gitignore")?;
 
         if !existing.contains(".taskguard/state/") {
             format!("{}\n\n# TaskGuard\n.taskguard/state/\n", existing.trim())
@@ -59,8 +57,7 @@ pub fn run() -> Result<()> {
         "# TaskGuard\n.taskguard/state/\n".to_string()
     };
 
-    fs::write(&gitignore_path, gitignore_content)
-        .context("Failed to update .gitignore")?;
+    fs::write(&gitignore_path, gitignore_content).context("Failed to update .gitignore")?;
 
     // Create example task
     create_example_task(&tasks_dir)?;
@@ -160,8 +157,7 @@ Initial project setup to establish the foundation for development.
 "#;
 
     let example_path = tasks_dir.join("setup").join("001-project-setup.md");
-    fs::write(&example_path, example_content)
-        .context("Failed to create example task")?;
+    fs::write(&example_path, example_content).context("Failed to create example task")?;
 
     println!("📝 Created example task: tasks/setup/001-project-setup.md");
 
@@ -174,9 +170,7 @@ fn copy_ai_guide(project_dir: &Path) -> Result<()> {
     let guide_content = include_str!("../../AGENTIC_AI_TASKGUARD_GUIDE.md");
 
     let guide_path = project_dir.join("AGENTIC_AI_TASKGUARD_GUIDE.md");
-    fs::write(&guide_path, guide_content)
-        .context("Failed to copy AI integration guide")?;
+    fs::write(&guide_path, guide_content).context("Failed to copy AI integration guide")?;
 
     Ok(())
 }
-

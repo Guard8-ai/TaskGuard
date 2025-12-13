@@ -4,8 +4,8 @@ use git2::Repository;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
-use tempfile::TempDir;
 use taskguard::git::{GitAnalyzer, TaskCommit};
+use tempfile::TempDir;
 
 /// Test fixture for creating temporary git repositories
 struct TestRepo {
@@ -37,7 +37,10 @@ impl TestRepo {
     fn add_commit(&self, message: &str) -> Result<()> {
         // Create a test file with unique content to avoid conflicts
         let file_path = self.repo_path.join("test.txt");
-        let content = format!("test content {}", chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default());
+        let content = format!(
+            "test content {}",
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        );
         fs::write(&file_path, content)?;
 
         // Stage the file
@@ -128,7 +131,11 @@ fn test_regex_redos_protection_issue_pattern() {
         );
 
         println!("Issue pattern ReDoS test completed in {:?}", duration);
-        println!("Message length: {}, Found task IDs: {:?}", message.len(), result);
+        println!(
+            "Message length: {}, Found task IDs: {:?}",
+            message.len(),
+            result
+        );
     }
 }
 
@@ -232,7 +239,11 @@ fn test_large_commit_message_handling() {
             duration
         );
 
-        println!("Large message processed in {:?}, found {} IDs", duration, ids.len());
+        println!(
+            "Large message processed in {:?}, found {} IDs",
+            duration,
+            ids.len()
+        );
     }
 }
 
@@ -258,7 +269,11 @@ fn test_memory_usage_with_many_commits() -> Result<()> {
         duration
     );
 
-    println!("Processed {} activities in {:?}", activities.len(), duration);
+    println!(
+        "Processed {} activities in {:?}",
+        activities.len(),
+        duration
+    );
 
     Ok(())
 }
@@ -286,11 +301,19 @@ fn test_malicious_commit_message_injection() {
 
     for input in malicious_inputs {
         let result = analyzer.extract_task_ids(input);
-        println!("Injection test for '{}': {:?}", input.replace('\0', "\\0"), result);
+        println!(
+            "Injection test for '{}': {:?}",
+            input.replace('\0', "\\0"),
+            result
+        );
 
         // Should extract legitimate task IDs but not execute malicious parts
         if input.contains("task-001") || input.contains("backend-001") {
-            assert!(!result.is_empty(), "Should extract legitimate task ID from: {}", input);
+            assert!(
+                !result.is_empty(),
+                "Should extract legitimate task ID from: {}",
+                input
+            );
         }
     }
 }
@@ -338,7 +361,8 @@ fn test_commit_message_size_limits() {
         assert!(
             duration < Duration::from_millis(100),
             "Processing {} char message took too long: {:?}",
-            size, duration
+            size,
+            duration
         );
 
         assert!(result.contains(&"task-001".to_string()));
@@ -383,9 +407,16 @@ fn test_status_suggestion_with_malicious_commits() {
     );
 
     // Should extract status without executing malicious content
-    println!("Status suggestion: {:?} (confidence: {})", status, confidence);
+    println!(
+        "Status suggestion: {:?} (confidence: {})",
+        status, confidence
+    );
     // Note: This test reveals that confidence can exceed 1.0 - potential vulnerability!
-    assert!(confidence >= 0.0, "Confidence should not be negative: {}", confidence);
+    assert!(
+        confidence >= 0.0,
+        "Confidence should not be negative: {}",
+        confidence
+    );
 }
 
 // =============================================================================
@@ -450,15 +481,17 @@ fn test_concurrent_git_operations() -> Result<()> {
     let repo_path = test_repo.repo_path.clone();
 
     // Test concurrent access to the same repository
-    let handles: Vec<_> = (0..5).map(|i| {
-        let path = repo_path.clone();
-        std::thread::spawn(move || {
-            let analyzer = GitAnalyzer::new(&path).unwrap();
-            let activities = analyzer.analyze_task_activity(Some(10)).unwrap();
-            println!("Thread {} found {} activities", i, activities.len());
-            activities.len()
+    let handles: Vec<_> = (0..5)
+        .map(|i| {
+            let path = repo_path.clone();
+            std::thread::spawn(move || {
+                let analyzer = GitAnalyzer::new(&path).unwrap();
+                let activities = analyzer.analyze_task_activity(Some(10)).unwrap();
+                println!("Thread {} found {} activities", i, activities.len());
+                activities.len()
+            })
         })
-    }).collect();
+        .collect();
 
     // Wait for all threads and collect results
     let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
@@ -466,7 +499,10 @@ fn test_concurrent_git_operations() -> Result<()> {
     // All threads should get consistent results
     let first_result = results[0];
     for result in &results {
-        assert_eq!(*result, first_result, "Concurrent access gave inconsistent results");
+        assert_eq!(
+            *result, first_result,
+            "Concurrent access gave inconsistent results"
+        );
     }
 
     Ok(())
@@ -481,7 +517,10 @@ fn test_algorithmic_complexity_attacks() -> Result<()> {
     let test_repo = TestRepo::new()?;
 
     // Test with commits containing many potential task ID matches
-    let complex_message = (0..1000).map(|i| format!("task-{:03}", i)).collect::<Vec<_>>().join(" ");
+    let complex_message = (0..1000)
+        .map(|i| format!("task-{:03}", i))
+        .collect::<Vec<_>>()
+        .join(" ");
     test_repo.add_commit(&complex_message)?;
 
     let analyzer = GitAnalyzer::new(&test_repo.repo_path)?;
@@ -496,7 +535,11 @@ fn test_algorithmic_complexity_attacks() -> Result<()> {
         duration
     );
 
-    println!("Complex analysis completed in {:?}, found {} activities", duration, activities.len());
+    println!(
+        "Complex analysis completed in {:?}, found {} activities",
+        duration,
+        activities.len()
+    );
 
     Ok(())
 }
@@ -507,14 +550,20 @@ fn test_memory_allocation_bounds() {
     let analyzer = GitAnalyzer::new(&temp_repo.repo_path).unwrap();
 
     // Test that we don't allocate unbounded memory for results
-    let huge_message = (0..100000).map(|i| format!("task-{:03}", i % 1000)).collect::<Vec<_>>().join(" ");
+    let huge_message = (0..100000)
+        .map(|i| format!("task-{:03}", i % 1000))
+        .collect::<Vec<_>>()
+        .join(" ");
 
     let start = Instant::now();
     let result = analyzer.extract_task_ids(&huge_message);
     let duration = start.elapsed();
 
     // Note: This test reveals actual memory exhaustion vulnerability - 100k+ results extracted!
-    println!("Memory allocation test: {} task IDs extracted from huge message", result.len());
+    println!(
+        "Memory allocation test: {} task IDs extracted from huge message",
+        result.len()
+    );
 
     // For now, just verify it completes within time bounds
     // TODO: Implement proper memory/result limits in the actual code
@@ -525,5 +574,9 @@ fn test_memory_allocation_bounds() {
         duration
     );
 
-    println!("Huge message processed: {} IDs in {:?}", result.len(), duration);
+    println!(
+        "Huge message processed: {} IDs in {:?}",
+        result.len(),
+        duration
+    );
 }

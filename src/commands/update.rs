@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::path::PathBuf;
 
 use crate::config::get_tasks_dir;
-use crate::task::{Task, TaskStatus, Priority};
+use crate::task::{Priority, Task, TaskStatus};
 use regex::Regex;
 
 pub fn run(field: String, task_id: String, value: String) -> Result<()> {
@@ -31,7 +31,10 @@ pub fn run(field: String, task_id: String, value: String) -> Result<()> {
     // Save the updated task
     task.save_to_file(&task_file_path)?;
 
-    println!("✅ Updated task {}: {} = {}", task_id, field,
+    println!(
+        "✅ Updated task {}: {} = {}",
+        task_id,
+        field,
         match field.as_str() {
             "status" => task.status.to_string(),
             "priority" => task.priority.to_string(),
@@ -46,7 +49,9 @@ pub fn run(field: String, task_id: String, value: String) -> Result<()> {
 
 fn find_task_file(tasks_dir: &PathBuf, task_id: &str) -> Result<PathBuf> {
     // Extract area from task ID (e.g., "backend-001" -> "backend")
-    let area = task_id.split('-').next()
+    let area = task_id
+        .split('-')
+        .next()
         .ok_or_else(|| anyhow::anyhow!("Invalid task ID format. Expected format: area-number"))?;
 
     let area_dir = tasks_dir.join(area);
@@ -144,11 +149,16 @@ fn validate_status_transition(current: &TaskStatus, new: &TaskStatus) -> Result<
     match (current, new) {
         // Direct todo -> done might indicate missing work
         (Todo, Done) => {
-            println!("⚠️  Warning: Transitioning directly from 'todo' to 'done'. Consider using 'doing' for active work.");
+            println!(
+                "⚠️  Warning: Transitioning directly from 'todo' to 'done'. Consider using 'doing' for active work."
+            );
         }
         // Done -> anything else might indicate rework
         (Done, new_status) if new_status != &Done => {
-            println!("⚠️  Warning: Reopening completed task. Status: {} -> {}", current, new_status);
+            println!(
+                "⚠️  Warning: Reopening completed task. Status: {} -> {}",
+                current, new_status
+            );
         }
         _ => {} // All other transitions are fine
     }
@@ -200,11 +210,14 @@ pub fn run_task_item(task_id: String, item_index: usize, status: String) -> Resu
 
     // Check if already in target state
     if target_item.completed == target_completed {
-        let current_status = if target_item.completed { "done" } else { "todo" };
-        println!("✨ Item {} is already {}: {}",
-            item_index,
-            current_status,
-            target_item.text
+        let current_status = if target_item.completed {
+            "done"
+        } else {
+            "todo"
+        };
+        println!(
+            "✨ Item {} is already {}: {}",
+            item_index, current_status, target_item.text
         );
         return Ok(());
     }
@@ -220,12 +233,9 @@ pub fn run_task_item(task_id: String, item_index: usize, status: String) -> Resu
     let new_status = if target_completed { "done" } else { "todo" };
     let status_icon = if target_completed { "✅" } else { "⭕" };
 
-    println!("✅ Updated task {} item {}: {} [{}] {}",
-        task_id,
-        item_index,
-        status_icon,
-        new_status,
-        target_item.text
+    println!(
+        "✅ Updated task {} item {}: {} [{}] {}",
+        task_id, item_index, status_icon, new_status, target_item.text
     );
 
     Ok(())

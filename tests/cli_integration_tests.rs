@@ -1,10 +1,10 @@
 use anyhow::Result;
+use chrono::Utc;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use taskguard::task::{Priority, Task, TaskStatus};
 use tempfile::TempDir;
-use taskguard::task::{Task, TaskStatus, Priority};
-use chrono::Utc;
 
 /// Test fixture for CLI integration testing
 struct CLITestProject {
@@ -19,8 +19,7 @@ impl CLITestProject {
         let project_path = temp_dir.path().to_path_buf();
 
         // Find the TaskGuard binary using absolute path from CARGO_MANIFEST_DIR
-        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
-            .unwrap_or_else(|_| ".".to_string());
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
         let manifest_path = PathBuf::from(manifest_dir);
 
         let binary_path = if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
@@ -36,7 +35,10 @@ impl CLITestProject {
             if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
                 PathBuf::from(target_dir).join("release").join("taskguard")
             } else {
-                manifest_path.join("target").join("release").join("taskguard")
+                manifest_path
+                    .join("target")
+                    .join("release")
+                    .join("taskguard")
             }
         };
 
@@ -60,7 +62,14 @@ impl CLITestProject {
         Ok((stdout, stderr, exit_code))
     }
 
-    fn create_task_file(&self, area: &str, id: &str, title: &str, status: TaskStatus, dependencies: Vec<String>) -> Result<()> {
+    fn create_task_file(
+        &self,
+        area: &str,
+        id: &str,
+        title: &str,
+        status: TaskStatus,
+        dependencies: Vec<String>,
+    ) -> Result<()> {
         let tasks_dir = self.project_path.join("tasks");
         let area_dir = tasks_dir.join(area);
         if !area_dir.exists() {
@@ -110,7 +119,10 @@ impl CLITestProject {
     fn add_git_commit(&self, message: &str) -> Result<()> {
         // Create a test file
         let file_path = self.project_path.join("test.txt");
-        fs::write(&file_path, format!("content {}", chrono::Utc::now().timestamp()))?;
+        fs::write(
+            &file_path,
+            format!("content {}", chrono::Utc::now().timestamp()),
+        )?;
 
         Command::new("git")
             .args(&["add", "test.txt"])
@@ -133,7 +145,11 @@ impl CLITestProject {
 #[test]
 fn test_cli_binary_exists() {
     let project = CLITestProject::new().unwrap();
-    assert!(project.binary_path.exists(), "TaskGuard binary should exist at {:?}", project.binary_path);
+    assert!(
+        project.binary_path.exists(),
+        "TaskGuard binary should exist at {:?}",
+        project.binary_path
+    );
 }
 
 #[test]
@@ -142,8 +158,14 @@ fn test_help_command() -> Result<()> {
     let (stdout, _stderr, exit_code) = project.run_command(&["--help"])?;
 
     assert_eq!(exit_code, 0, "Help command should succeed");
-    assert!(stdout.contains("taskguard"), "Help should mention taskguard");
-    assert!(stdout.contains("USAGE") || stdout.contains("Usage"), "Help should show usage");
+    assert!(
+        stdout.contains("taskguard"),
+        "Help should mention taskguard"
+    );
+    assert!(
+        stdout.contains("USAGE") || stdout.contains("Usage"),
+        "Help should show usage"
+    );
 
     Ok(())
 }
@@ -154,7 +176,10 @@ fn test_version_command() -> Result<()> {
     let (stdout, _stderr, exit_code) = project.run_command(&["--version"])?;
 
     assert_eq!(exit_code, 0, "Version command should succeed");
-    assert!(stdout.contains("taskguard") || stdout.contains("0.1.0"), "Version should show app info");
+    assert!(
+        stdout.contains("taskguard") || stdout.contains("0.1.0"),
+        "Version should show app info"
+    );
 
     Ok(())
 }
@@ -168,13 +193,29 @@ fn test_init_command() -> Result<()> {
     let project = CLITestProject::new()?;
     let (stdout, stderr, exit_code) = project.run_command(&["init"])?;
 
-    assert_eq!(exit_code, 0, "Init should succeed. stdout: {}, stderr: {}", stdout, stderr);
-    assert!(stdout.contains("initialized") || stdout.contains("Created"), "Should show initialization message");
+    assert_eq!(
+        exit_code, 0,
+        "Init should succeed. stdout: {}, stderr: {}",
+        stdout, stderr
+    );
+    assert!(
+        stdout.contains("initialized") || stdout.contains("Created"),
+        "Should show initialization message"
+    );
 
     // Check that directories were created
-    assert!(project.project_path.join(".taskguard").exists(), "Should create .taskguard directory");
-    assert!(project.project_path.join("tasks").exists(), "Should create tasks directory");
-    assert!(project.project_path.join(".taskguard/config.toml").exists(), "Should create config file");
+    assert!(
+        project.project_path.join(".taskguard").exists(),
+        "Should create .taskguard directory"
+    );
+    assert!(
+        project.project_path.join("tasks").exists(),
+        "Should create tasks directory"
+    );
+    assert!(
+        project.project_path.join(".taskguard/config.toml").exists(),
+        "Should create config file"
+    );
 
     Ok(())
 }
@@ -190,10 +231,16 @@ fn test_init_already_initialized() -> Result<()> {
     // Second init
     let (stdout, _stderr, exit_code) = project.run_command(&["init"])?;
     // Should either succeed (idempotent) or fail gracefully
-    assert!(exit_code == 0 || exit_code == 1, "Second init should handle already initialized state");
+    assert!(
+        exit_code == 0 || exit_code == 1,
+        "Second init should handle already initialized state"
+    );
 
     if exit_code == 1 {
-        assert!(stdout.contains("already") || stdout.contains("exists"), "Should indicate already initialized");
+        assert!(
+            stdout.contains("already") || stdout.contains("exists"),
+            "Should indicate already initialized"
+        );
     }
 
     Ok(())
@@ -211,8 +258,10 @@ fn test_list_empty_project() -> Result<()> {
     let (stdout, _stderr, exit_code) = project.run_command(&["list"])?;
 
     assert_eq!(exit_code, 0, "List should succeed even with no tasks");
-    assert!(stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("empty"),
-            "Should indicate no tasks found");
+    assert!(
+        stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("empty"),
+        "Should indicate no tasks found"
+    );
 
     Ok(())
 }
@@ -223,15 +272,30 @@ fn test_list_with_tasks() -> Result<()> {
     project.run_command(&["init"])?;
 
     // Create test tasks
-    project.create_task_file("backend", "backend-001", "Test Backend Task", TaskStatus::Todo, vec![])?;
-    project.create_task_file("frontend", "frontend-001", "Test Frontend Task", TaskStatus::Doing, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Test Backend Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
+    project.create_task_file(
+        "frontend",
+        "frontend-001",
+        "Test Frontend Task",
+        TaskStatus::Doing,
+        vec![],
+    )?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["list"])?;
 
     assert_eq!(exit_code, 0, "List should succeed");
     assert!(stdout.contains("backend-001"), "Should show backend task");
     assert!(stdout.contains("frontend-001"), "Should show frontend task");
-    assert!(stdout.contains("Test Backend Task"), "Should show task titles");
+    assert!(
+        stdout.contains("Test Backend Task"),
+        "Should show task titles"
+    );
 
     Ok(())
 }
@@ -241,14 +305,29 @@ fn test_list_filter_by_area() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    project.create_task_file("backend", "backend-001", "Backend Task", TaskStatus::Todo, vec![])?;
-    project.create_task_file("frontend", "frontend-001", "Frontend Task", TaskStatus::Todo, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Backend Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
+    project.create_task_file(
+        "frontend",
+        "frontend-001",
+        "Frontend Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["list", "--area", "backend"])?;
 
     assert_eq!(exit_code, 0, "List with area filter should succeed");
     assert!(stdout.contains("backend-001"), "Should show backend task");
-    assert!(!stdout.contains("frontend-001"), "Should not show frontend task");
+    assert!(
+        !stdout.contains("frontend-001"),
+        "Should not show frontend task"
+    );
 
     Ok(())
 }
@@ -258,8 +337,20 @@ fn test_list_filter_by_status() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    project.create_task_file("backend", "backend-001", "Todo Task", TaskStatus::Todo, vec![])?;
-    project.create_task_file("backend", "backend-002", "Done Task", TaskStatus::Done, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Todo Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
+    project.create_task_file(
+        "backend",
+        "backend-002",
+        "Done Task",
+        TaskStatus::Done,
+        vec![],
+    )?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["list", "--status", "todo"])?;
 
@@ -281,13 +372,19 @@ fn test_create_basic_task() -> Result<()> {
 
     let (stdout, _stderr, exit_code) = project.run_command(&[
         "create",
-        "--title", "Test Task Creation",
-        "--area", "backend",
-        "--priority", "high"
+        "--title",
+        "Test Task Creation",
+        "--area",
+        "backend",
+        "--priority",
+        "high",
     ])?;
 
     assert_eq!(exit_code, 0, "Create should succeed");
-    assert!(stdout.contains("Created") || stdout.contains("backend"), "Should confirm task creation");
+    assert!(
+        stdout.contains("Created") || stdout.contains("backend"),
+        "Should confirm task creation"
+    );
 
     // Verify task file was created
     let backend_dir = project.project_path.join("tasks/backend");
@@ -307,16 +404,17 @@ fn test_create_basic_task() -> Result<()> {
 fn test_create_without_init() -> Result<()> {
     let project = CLITestProject::new()?;
 
-    let (stdout, stderr, exit_code) = project.run_command(&[
-        "create",
-        "--title", "Test Task",
-        "--area", "backend"
-    ])?;
+    let (stdout, stderr, exit_code) =
+        project.run_command(&["create", "--title", "Test Task", "--area", "backend"])?;
 
     assert_ne!(exit_code, 0, "Create should fail without init");
-    assert!(stdout.contains("init") || stderr.contains("init") ||
-            stdout.contains("not in") || stderr.contains("not in"),
-            "Should indicate need to run init first");
+    assert!(
+        stdout.contains("init")
+            || stderr.contains("init")
+            || stdout.contains("not in")
+            || stderr.contains("not in"),
+        "Should indicate need to run init first"
+    );
 
     Ok(())
 }
@@ -326,13 +424,14 @@ fn test_create_minimum_required_args() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    let (stdout, _stderr, exit_code) = project.run_command(&[
-        "create",
-        "--title", "Minimum Task"
-    ])?;
+    let (stdout, _stderr, exit_code) =
+        project.run_command(&["create", "--title", "Minimum Task"])?;
 
     assert_eq!(exit_code, 0, "Create with just title should succeed");
-    assert!(stdout.contains("Created") || stdout.contains("setup"), "Should use default area");
+    assert!(
+        stdout.contains("Created") || stdout.contains("setup"),
+        "Should use default area"
+    );
 
     Ok(())
 }
@@ -349,8 +448,10 @@ fn test_validate_empty_project() -> Result<()> {
     let (stdout, _stderr, exit_code) = project.run_command(&["validate"])?;
 
     assert_eq!(exit_code, 0, "Validate should succeed on empty project");
-    assert!(stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("issues"),
-            "Should indicate no tasks to validate");
+    assert!(
+        stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("issues"),
+        "Should indicate no tasks to validate"
+    );
 
     Ok(())
 }
@@ -362,16 +463,32 @@ fn test_validate_with_dependencies() -> Result<()> {
 
     // Create tasks with dependencies
     project.create_task_file("setup", "setup-001", "Setup Task", TaskStatus::Done, vec![])?;
-    project.create_task_file("backend", "backend-001", "Backend Task", TaskStatus::Todo, vec!["setup-001".to_string()])?;
-    project.create_task_file("frontend", "frontend-001", "Frontend Task", TaskStatus::Todo, vec!["backend-001".to_string()])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Backend Task",
+        TaskStatus::Todo,
+        vec!["setup-001".to_string()],
+    )?;
+    project.create_task_file(
+        "frontend",
+        "frontend-001",
+        "Frontend Task",
+        TaskStatus::Todo,
+        vec!["backend-001".to_string()],
+    )?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["validate"])?;
 
     assert_eq!(exit_code, 0, "Validate should succeed");
     assert!(stdout.contains("backend-001"), "Should show available task");
     assert!(stdout.contains("frontend-001"), "Should show blocked task");
-    assert!(stdout.contains("Available") || stdout.contains("Blocked") || stdout.contains("dependencies"),
-            "Should show dependency analysis");
+    assert!(
+        stdout.contains("Available")
+            || stdout.contains("Blocked")
+            || stdout.contains("dependencies"),
+        "Should show dependency analysis"
+    );
 
     Ok(())
 }
@@ -382,15 +499,32 @@ fn test_validate_circular_dependencies() -> Result<()> {
     project.run_command(&["init"])?;
 
     // Create circular dependency: A -> B -> A
-    project.create_task_file("backend", "backend-001", "Task A", TaskStatus::Todo, vec!["backend-002".to_string()])?;
-    project.create_task_file("backend", "backend-002", "Task B", TaskStatus::Todo, vec!["backend-001".to_string()])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Task A",
+        TaskStatus::Todo,
+        vec!["backend-002".to_string()],
+    )?;
+    project.create_task_file(
+        "backend",
+        "backend-002",
+        "Task B",
+        TaskStatus::Todo,
+        vec!["backend-001".to_string()],
+    )?;
 
     let (stdout, stderr, exit_code) = project.run_command(&["validate"])?;
 
     // Should detect the circular dependency
-    assert!(stdout.contains("circular") || stderr.contains("circular") ||
-            stdout.contains("cycle") || stderr.contains("cycle") ||
-            exit_code != 0, "Should detect circular dependencies");
+    assert!(
+        stdout.contains("circular")
+            || stderr.contains("circular")
+            || stdout.contains("cycle")
+            || stderr.contains("cycle")
+            || exit_code != 0,
+        "Should detect circular dependencies"
+    );
 
     Ok(())
 }
@@ -407,9 +541,13 @@ fn test_sync_without_git() -> Result<()> {
     let (stdout, stderr, exit_code) = project.run_command(&["sync"])?;
 
     assert_ne!(exit_code, 0, "Sync should fail without Git repository");
-    assert!(stdout.contains("Git") || stderr.contains("Git") ||
-            stdout.contains("repository") || stderr.contains("repository"),
-            "Should indicate Git repository required");
+    assert!(
+        stdout.contains("Git")
+            || stderr.contains("Git")
+            || stdout.contains("repository")
+            || stderr.contains("repository"),
+        "Should indicate Git repository required"
+    );
 
     Ok(())
 }
@@ -424,8 +562,10 @@ fn test_sync_with_git_no_commits() -> Result<()> {
 
     // Should handle empty Git repository gracefully
     assert_eq!(exit_code, 0, "Sync should handle empty Git repo");
-    assert!(stdout.contains("No") || stdout.contains("0") || stdout.contains("activity"),
-            "Should indicate no activity found");
+    assert!(
+        stdout.contains("No") || stdout.contains("0") || stdout.contains("activity"),
+        "Should indicate no activity found"
+    );
 
     Ok(())
 }
@@ -437,7 +577,13 @@ fn test_sync_with_task_commits() -> Result<()> {
     project.init_git_repo()?;
 
     // Create task and commits
-    project.create_task_file("backend", "backend-001", "Backend Task", TaskStatus::Todo, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Backend Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
     project.add_git_commit("Start work on backend-001")?;
     project.add_git_commit("Complete backend-001 implementation")?;
 
@@ -445,7 +591,10 @@ fn test_sync_with_task_commits() -> Result<()> {
 
     assert_eq!(exit_code, 0, "Sync should succeed");
     assert!(stdout.contains("backend-001"), "Should find task activity");
-    assert!(stdout.contains("2") || stdout.contains("commits"), "Should show commit count");
+    assert!(
+        stdout.contains("2") || stdout.contains("commits"),
+        "Should show commit count"
+    );
 
     Ok(())
 }
@@ -456,7 +605,13 @@ fn test_sync_verbose_mode() -> Result<()> {
     project.run_command(&["init"])?;
     project.init_git_repo()?;
 
-    project.create_task_file("backend", "backend-001", "Test Task", TaskStatus::Todo, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Test Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
     project.add_git_commit("Work on backend-001")?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["sync", "--verbose"])?;
@@ -481,8 +636,10 @@ fn test_lint_empty_project() -> Result<()> {
     let (stdout, _stderr, exit_code) = project.run_command(&["lint"])?;
 
     assert_eq!(exit_code, 0, "Lint should succeed on empty project");
-    assert!(stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("analyzed"),
-            "Should handle empty project");
+    assert!(
+        stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("analyzed"),
+        "Should handle empty project"
+    );
 
     Ok(())
 }
@@ -492,13 +649,21 @@ fn test_lint_with_tasks() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    project.create_task_file("backend", "backend-001", "Good Task", TaskStatus::Todo, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Good Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["lint"])?;
 
     assert_eq!(exit_code, 0, "Lint should succeed");
-    assert!(stdout.contains("analyzed") || stdout.contains("complexity") || stdout.contains("quality"),
-            "Should show analysis results");
+    assert!(
+        stdout.contains("analyzed") || stdout.contains("complexity") || stdout.contains("quality"),
+        "Should show analysis results"
+    );
     assert!(stdout.contains("backend-001"), "Should mention the task");
 
     Ok(())
@@ -509,14 +674,32 @@ fn test_lint_area_filter() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    project.create_task_file("backend", "backend-001", "Backend Task", TaskStatus::Todo, vec![])?;
-    project.create_task_file("frontend", "frontend-001", "Frontend Task", TaskStatus::Todo, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Backend Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
+    project.create_task_file(
+        "frontend",
+        "frontend-001",
+        "Frontend Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["lint", "--area", "backend"])?;
 
     assert_eq!(exit_code, 0, "Lint with area filter should succeed");
-    assert!(stdout.contains("backend-001"), "Should include backend task");
-    assert!(!stdout.contains("frontend-001"), "Should exclude frontend task");
+    assert!(
+        stdout.contains("backend-001"),
+        "Should include backend task"
+    );
+    assert!(
+        !stdout.contains("frontend-001"),
+        "Should exclude frontend task"
+    );
 
     Ok(())
 }
@@ -526,7 +709,13 @@ fn test_lint_verbose_mode() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    project.create_task_file("backend", "backend-001", "Test Task", TaskStatus::Todo, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Test Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
 
     let (stdout, _stderr, exit_code) = project.run_command(&["lint", "--verbose"])?;
 
@@ -547,11 +736,14 @@ fn test_ai_basic_interaction() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    let (stdout, _stderr, exit_code) = project.run_command(&["ai", "What should I work on next?"])?;
+    let (stdout, _stderr, exit_code) =
+        project.run_command(&["ai", "What should I work on next?"])?;
 
     assert_eq!(exit_code, 0, "AI command should succeed");
-    assert!(stdout.contains("tasks") || stdout.contains("No tasks") || stdout.contains("available"),
-            "Should provide meaningful response");
+    assert!(
+        stdout.contains("tasks") || stdout.contains("No tasks") || stdout.contains("available"),
+        "Should provide meaningful response"
+    );
     assert!(!stdout.is_empty(), "Should provide some output");
 
     Ok(())
@@ -562,11 +754,18 @@ fn test_ai_task_creation_guidance() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    let (stdout, _stderr, exit_code) = project.run_command(&["ai", "Create a task for user authentication"])?;
+    let (stdout, _stderr, exit_code) =
+        project.run_command(&["ai", "Create a task for user authentication"])?;
 
     assert_eq!(exit_code, 0, "AI task creation should succeed");
-    assert!(stdout.contains("create") || stdout.contains("taskguard"), "Should provide creation guidance");
-    assert!(stdout.contains("authentication") || stdout.contains("auth"), "Should reference the topic");
+    assert!(
+        stdout.contains("create") || stdout.contains("taskguard"),
+        "Should provide creation guidance"
+    );
+    assert!(
+        stdout.contains("authentication") || stdout.contains("auth"),
+        "Should reference the topic"
+    );
 
     Ok(())
 }
@@ -576,14 +775,26 @@ fn test_ai_status_inquiry() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
-    project.create_task_file("backend", "backend-001", "Test Task", TaskStatus::Todo, vec![])?;
+    project.create_task_file(
+        "backend",
+        "backend-001",
+        "Test Task",
+        TaskStatus::Todo,
+        vec![],
+    )?;
 
-    let (stdout, _stderr, exit_code) = project.run_command(&["ai", "What's the project status?"])?;
+    let (stdout, _stderr, exit_code) =
+        project.run_command(&["ai", "What's the project status?"])?;
 
     assert_eq!(exit_code, 0, "AI status inquiry should succeed");
-    assert!(stdout.contains("status") || stdout.contains("tasks") || stdout.contains("1"),
-            "Should provide status information");
-    assert!(stdout.contains("backend-001"), "Should mention existing task");
+    assert!(
+        stdout.contains("status") || stdout.contains("tasks") || stdout.contains("1"),
+        "Should provide status information"
+    );
+    assert!(
+        stdout.contains("backend-001"),
+        "Should mention existing task"
+    );
 
     Ok(())
 }
@@ -596,9 +807,14 @@ fn test_ai_empty_input() -> Result<()> {
     let (stdout, _stderr, exit_code) = project.run_command(&["ai", ""])?;
 
     assert_eq!(exit_code, 0, "AI should handle empty input gracefully");
-    assert!(!stdout.is_empty(), "Should provide some guidance for empty input");
-    assert!(stdout.contains("help") || stdout.contains("guidance") || stdout.contains("assist"),
-            "Should offer helpful guidance");
+    assert!(
+        !stdout.is_empty(),
+        "Should provide some guidance for empty input"
+    );
+    assert!(
+        stdout.contains("help") || stdout.contains("guidance") || stdout.contains("assist"),
+        "Should offer helpful guidance"
+    );
 
     Ok(())
 }
@@ -614,10 +830,15 @@ fn test_invalid_command() -> Result<()> {
     let (stdout, stderr, exit_code) = project.run_command(&["nonexistent-command"])?;
 
     assert_ne!(exit_code, 0, "Invalid command should fail");
-    assert!(stdout.contains("help") || stderr.contains("help") ||
-            stdout.contains("usage") || stderr.contains("usage") ||
-            stdout.contains("subcommand") || stderr.contains("subcommand"),
-            "Should provide helpful error message");
+    assert!(
+        stdout.contains("help")
+            || stderr.contains("help")
+            || stdout.contains("usage")
+            || stderr.contains("usage")
+            || stdout.contains("subcommand")
+            || stderr.contains("subcommand"),
+        "Should provide helpful error message"
+    );
 
     Ok(())
 }
@@ -630,9 +851,13 @@ fn test_missing_required_args() -> Result<()> {
     let (stdout, stderr, exit_code) = project.run_command(&["create"])?;
 
     assert_ne!(exit_code, 0, "Create without required args should fail");
-    assert!(stdout.contains("required") || stderr.contains("required") ||
-            stdout.contains("title") || stderr.contains("title"),
-            "Should indicate missing required arguments");
+    assert!(
+        stdout.contains("required")
+            || stderr.contains("required")
+            || stdout.contains("title")
+            || stderr.contains("title"),
+        "Should indicate missing required arguments"
+    );
 
     Ok(())
 }
@@ -644,9 +869,14 @@ fn test_invalid_area_filter() -> Result<()> {
 
     let (stdout, _stderr, exit_code) = project.run_command(&["list", "--area", "nonexistent"])?;
 
-    assert_eq!(exit_code, 0, "List with invalid area should succeed but show no results");
-    assert!(stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("empty"),
-            "Should show no tasks for invalid area");
+    assert_eq!(
+        exit_code, 0,
+        "List with invalid area should succeed but show no results"
+    );
+    assert!(
+        stdout.contains("0") || stdout.contains("No tasks") || stdout.contains("empty"),
+        "Should show no tasks for invalid area"
+    );
 
     Ok(())
 }
@@ -662,7 +892,13 @@ fn test_large_project_performance() -> Result<()> {
 
     // Create many tasks to test performance
     for i in 1..=50 {
-        project.create_task_file("backend", &format!("backend-{:03}", i), &format!("Task {}", i), TaskStatus::Todo, vec![])?;
+        project.create_task_file(
+            "backend",
+            &format!("backend-{:03}", i),
+            &format!("Task {}", i),
+            TaskStatus::Todo,
+            vec![],
+        )?;
     }
 
     let start = std::time::Instant::now();
@@ -670,15 +906,24 @@ fn test_large_project_performance() -> Result<()> {
     let list_duration = start.elapsed();
 
     assert_eq!(exit_code, 0, "List should succeed with many tasks");
-    assert!(stdout.contains("50") || stdout.contains("backend-050"), "Should show all tasks");
-    assert!(list_duration < std::time::Duration::from_secs(5), "List should complete within 5 seconds");
+    assert!(
+        stdout.contains("50") || stdout.contains("backend-050"),
+        "Should show all tasks"
+    );
+    assert!(
+        list_duration < std::time::Duration::from_secs(5),
+        "List should complete within 5 seconds"
+    );
 
     let start = std::time::Instant::now();
     let (_stdout, _stderr, exit_code) = project.run_command(&["validate"])?;
     let validate_duration = start.elapsed();
 
     assert_eq!(exit_code, 0, "Validate should succeed with many tasks");
-    assert!(validate_duration < std::time::Duration::from_secs(10), "Validate should complete within 10 seconds");
+    assert!(
+        validate_duration < std::time::Duration::from_secs(10),
+        "Validate should complete within 10 seconds"
+    );
 
     Ok(())
 }
@@ -689,19 +934,18 @@ fn test_command_timeout_handling() -> Result<()> {
     project.run_command(&["init"])?;
 
     // Test that commands complete within reasonable time
-    let commands = vec![
-        vec!["list"],
-        vec!["validate"],
-        vec!["ai", "help"],
-    ];
+    let commands = vec![vec!["list"], vec!["validate"], vec!["ai", "help"]];
 
     for cmd in commands {
         let start = std::time::Instant::now();
         let (_stdout, _stderr, _exit_code) = project.run_command(&cmd)?;
         let duration = start.elapsed();
 
-        assert!(duration < std::time::Duration::from_secs(30),
-                "Command {:?} should complete within 30 seconds", cmd);
+        assert!(
+            duration < std::time::Duration::from_secs(30),
+            "Command {:?} should complete within 30 seconds",
+            cmd
+        );
     }
 
     Ok(())
