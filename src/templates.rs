@@ -225,6 +225,7 @@ output. Verify actual implementation matches expected behavior."#
 > {causation_prompt}
 
 ## Pre-flight Checks
+- [ ] Read dependency task files for implementation context (Session Handoff)
 {verification_commands}
 - [ ] `git log --oneline -10` - Check recent related commits
 

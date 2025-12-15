@@ -2,7 +2,19 @@
 
 All notable changes to TaskGuard will be documented in this file.
 
-## [0.3.0-dev] - Unreleased
+## [0.3.1] - 2025-12-15
+
+### Added
+
+- **Dependency context workflow** - Pre-flight checks now prompt to read dependency task files for Session Handoff context
+- **Session Handoff emphasis** - Workflow updated to emphasize filling Session Handoff on task completion
+
+### Changed
+
+- **Template pre-flight** - Added "Read dependency task files" as first pre-flight check
+- **Workflow steps** - Added "Start" step for reading dependencies, emphasized Session Handoff in "Complete" step
+
+## [0.3.0] - 2025-12-13
 
 ### Added
 

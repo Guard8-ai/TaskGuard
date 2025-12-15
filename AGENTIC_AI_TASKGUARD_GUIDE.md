@@ -35,10 +35,11 @@ taskguard restore <id>                            # Restore archived
 
 1. **Init**: `taskguard init && taskguard validate`
 2. **Create**: One task per area, set dependencies at creation
-3. **Validate**: `taskguard validate` after each change
-4. **Update**: Use CLI commands, not manual file editing
-5. **Complete**: `taskguard update status <id> done`
-6. **Commit**: `git add -A && git commit -m "feat(area): description"`
+3. **Start**: Read dependency task files first (check Session Handoff for context)
+4. **Validate**: `taskguard validate` after each change
+5. **Update**: Use CLI commands, not manual file editing
+6. **Complete**: `taskguard update status <id> done` + fill Session Handoff
+7. **Commit**: `git add -A && git commit -m "feat(area): description"`
 
 ## Areas
 

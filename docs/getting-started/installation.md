@@ -10,15 +10,14 @@ Download pre-built binaries from [GitHub Releases](https://github.com/Guard8-ai/
 
 | Platform | Binary |
 |----------|--------|
-| Linux x86_64 | `taskguard-linux-amd64` |
-| macOS Intel | `taskguard-darwin-amd64` |
-| macOS Apple Silicon | `taskguard-darwin-arm64` |
-| Windows | `taskguard-windows-amd64.exe` |
-| WSL | `taskguard-linux-amd64` |
+| Linux x86_64 | `taskguard-linux-x86_64` |
+| macOS (ARM64/Intel via Rosetta) | `taskguard-macos-aarch64` |
+| Windows x86_64 | `taskguard-windows-x86_64.exe` |
+| WSL | `taskguard-linux-x86_64` |
 
 ```bash
 # Example: Linux
-curl -L https://github.com/Guard8-ai/TaskGuard/releases/latest/download/taskguard-linux-amd64 -o taskguard
+curl -L https://github.com/Guard8-ai/TaskGuard/releases/latest/download/taskguard-linux-x86_64 -o taskguard
 chmod +x taskguard
 sudo mv taskguard /usr/local/bin/
 ```
@@ -104,7 +103,7 @@ Use platform-specific scripts for automated installation:
 
     **Output:**
     ```
-    Compiling taskguard v0.3.0
+    Compiling taskguard v0.3.1
     Finished release [optimized] target(s) in 1m 23s
     ```
 
@@ -124,7 +123,7 @@ Use platform-specific scripts for automated installation:
 
     **Expected:**
     ```
-    taskguard 0.3.0
+    taskguard 0.3.1
     ```
 
 ---
