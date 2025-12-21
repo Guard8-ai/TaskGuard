@@ -927,15 +927,16 @@ mod tests {
     #[test]
     #[ignore]
     fn test_create_issue() {
-        // This test requires gh CLI authentication and write access
+        // This test requires gh CLI authentication and write access to Guard8.ai/TaskGuard
         let client = GitHubClient::new().expect("Failed to create client");
         let result = GitHubMutations::create_issue(
             &client,
-            "your-username",
-            "your-repo",
-            "Test Issue",
-            Some("Test body"),
+            "Guard8-ai",
+            "TaskGuard",
+            "[TEST] Automated Test Issue - Safe to Delete",
+            Some("This issue was created by an automated test. Safe to close and delete."),
         );
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Failed to create issue: {:?}", result);
+        // Note: This creates a real issue - clean up manually if needed
     }
 }
