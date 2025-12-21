@@ -170,9 +170,9 @@ taskguard --version
 # Test functionality
 cd /path/to/project
 taskguard init
-taskguard create --title "Test task" --area setup
+taskguard create --title "Test task" --area setup --dependencies "setup-001"
 taskguard list
-taskguard validate
+taskguard validate --orphans
 ```
 
 ## Access Requirements

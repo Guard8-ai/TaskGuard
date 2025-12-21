@@ -19,11 +19,12 @@ AI agents can use TaskGuard immediately via CLI commands.
 ## Core Commands for AI
 
 ```bash
-# Create tasks
-taskguard create --title "Task" --area backend --priority high
+# Create tasks (dependencies required in v0.4.0+)
+taskguard create --title "Task" --area backend --priority high --dependencies "setup-001"
 
-# View available work
+# View available work and orphans
 taskguard validate
+taskguard validate --orphans
 
 # Update status
 taskguard update status <id> doing
@@ -31,6 +32,10 @@ taskguard update status <id> doing
 # Mark complete
 taskguard update status <id> done
 ```
+
+!!! warning "CAUTION: Causality Tracking"
+    AI agents must use `--dependencies` when creating tasks.
+    `setup-001` is auto-created by `taskguard init` as the root.
 
 ---
 

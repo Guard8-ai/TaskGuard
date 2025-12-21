@@ -44,10 +44,11 @@ taskguard init
 
 ## Step 2: Create Your First Task
 
-Create a high-priority task for setting up a database:
+Create a high-priority task for setting up a database. **v0.4.0+: Dependencies are required.**
 
 ```bash
-taskguard create --title "Setup PostgreSQL database" --area backend --priority high
+# setup-001 was auto-created by init - use it as the root dependency
+taskguard create --title "Setup PostgreSQL database" --area backend --priority high --dependencies "setup-001"
 ```
 
 **Output:**
@@ -168,24 +169,19 @@ Brief description of what needs to be done and why.
 
 ## Step 5: Create Dependent Tasks
 
-Create a task that depends on the database setup:
+Create a task that depends on the database setup (specify dependency at creation):
 
 ```bash
-taskguard create --title "Create user authentication API" --area api --priority high
+taskguard create --title "Create user authentication API" --area api --priority high --dependencies "backend-001"
 ```
 
-**Add dependency by editing the file:**
+**The API task is automatically blocked until backend-001 is complete.**
 
-```bash
-vim tasks/api/api-001.md
-```
-
-**Update the YAML front-matter:**
-```yaml
-dependencies: [backend-001]
-```
-
-**Now the API task is blocked until backend-001 is complete.**
+!!! tip "Updating Dependencies"
+    You can also update dependencies later:
+    ```bash
+    taskguard update dependencies api-001 "backend-001,auth-001"
+    ```
 
 ---
 
@@ -323,8 +319,8 @@ taskguard sync
 ### Create → Work → Complete
 
 ```bash
-# 1. Create task
-taskguard create --title "Implement feature X" --area backend
+# 1. Create task (with dependencies - required in v0.4.0+)
+taskguard create --title "Implement feature X" --area backend --dependencies "setup-001"
 
 # 2. Start work
 taskguard update status backend-002 doing
@@ -340,21 +336,15 @@ taskguard update status backend-002 done
 ### Create Task Chain
 
 ```bash
-# 1. Foundation task
-taskguard create --title "Setup" --area setup --priority critical
+# setup-001 is auto-created by init as root
 
-# 2. Dependent tasks (edit files to add dependencies)
-taskguard create --title "Backend API" --area backend
-# Edit: dependencies: [setup-001]
+# Create dependent tasks with --dependencies
+taskguard create --title "Backend API" --area backend --dependencies "setup-001"
+taskguard create --title "Frontend UI" --area frontend --dependencies "setup-001"
+taskguard create --title "Integration Tests" --area testing --dependencies "backend-001,frontend-001"
 
-taskguard create --title "Frontend UI" --area frontend
-# Edit: dependencies: [setup-001]
-
-taskguard create --title "Integration Tests" --area testing
-# Edit: dependencies: [backend-001, frontend-001]
-
-# 3. Validate
-taskguard validate
+# Validate and check for orphans
+taskguard validate --orphans
 ```
 
 ---
@@ -400,20 +390,25 @@ Now that you understand the basics:
 ## Quick Reference
 
 ```bash
-# Initialize
+# Initialize (creates setup-001 as root)
 taskguard init
 
-# Create
-taskguard create --title "Task" --area <area> --priority <level>
+# Create (dependencies required in v0.4.0+)
+taskguard create --title "Task" --area <area> --dependencies "setup-001"
+
+# Create without dependencies (escape hatch)
+taskguard create --title "Spike" --area <area> --allow-orphan-task
 
 # List
 taskguard list [--area <area>] [--status <status>]
 
 # Update
 taskguard update status <task-id> <status>
+taskguard update dependencies <task-id> "dep1,dep2"
 
 # Validate
 taskguard validate
+taskguard validate --orphans
 
 # Git sync
 taskguard sync

@@ -103,24 +103,21 @@ taskguard init
 ### Create Your First Tasks
 
 ```bash
-# Create a setup task
-taskguard create --title "Setup development environment" --area setup --priority high
+# setup-001 is auto-created by init as the root task
+# Create tasks with dependencies (required in v0.4.0+)
+taskguard create --title "Setup development environment" --area setup --dependencies "setup-001"
 
-# Create a backend task that depends on setup
-taskguard create --title "Implement user auth" --area backend --priority medium
+# Create a backend task that depends on the setup task
+taskguard create --title "Implement user auth" --area backend --dependencies "setup-002"
 ```
 
-### Add Dependencies
+### Update Dependencies
 
-Edit the backend task to depend on setup:
+Use CLI to update dependencies:
 
 ```bash
-vim tasks/backend/backend-001.md
-```
-
-Add to the YAML front-matter:
-```yaml
-dependencies: [setup-001]
+# Add or change dependencies
+taskguard update dependencies backend-001 "setup-001,setup-002"
 ```
 
 ### See What's Ready to Work On
