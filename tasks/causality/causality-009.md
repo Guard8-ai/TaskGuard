@@ -1,10 +1,14 @@
 ---
 id: causality-009
-title: "Update all documentation for v0.4.0"
-status: todo
+title: Update all documentation for v0.4.0
+status: done
 priority: high
-tags: [causality, v0.4.0, docs]
-dependencies: [causality-008]
+tags:
+- causality
+- v0.4.0
+- docs
+dependencies:
+- causality-008
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 2h
@@ -60,8 +64,27 @@ area: causality
 
 ## Acceptance Criteria
 
-- [ ] README.md updated with causality tracking
-- [ ] CHANGELOG.md has v0.4.0 entry
-- [ ] All docs/ examples use `--dependencies`
-- [ ] Version bumped to 0.4.0 in Cargo.toml
-- [ ] No broken links in documentation
+- [x] README.md updated with causality tracking
+- [x] CHANGELOG.md has v0.4.0 entry
+- [x] All docs/ examples use `--dependencies`
+- [x] Version bumped to 0.4.0 in Cargo.toml
+- [x] No broken links in documentation
+
+## Session Handoff
+
+**Completed:** 2025-12-21
+
+**What was done:**
+- Updated README.md with Causality Tracking section (Phase 6)
+- Updated CHANGELOG.md with full v0.4.0 entry
+- Updated Cargo.toml version to 0.4.0
+- Updated docs/index.md, docs/api-reference/commands.md
+- Updated docs/features/dependencies.md with full causality docs
+- Updated docs/features/task-management.md
+- Updated docs/getting-started/first-task.md (all examples)
+- Updated docs/usage-examples/common-workflows.md (all 3 workflows)
+- Updated docs/features/ai-integration.md
+- Updated docs/changelog.md
+- Updated INSTALL.md test command
+
+**Files changed:** 12 documentation files updated with v0.4.0 content

@@ -1,10 +1,15 @@
 ---
 id: causality-010
-title: "Build and install locally for verification"
-status: todo
+title: Build and install locally for verification
+status: done
 priority: high
-tags: [causality, v0.4.0, build, install]
-dependencies: [causality-009]
+tags:
+- causality
+- v0.4.0
+- build
+- install
+dependencies:
+- causality-009
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 30m
@@ -66,10 +71,29 @@ rm tasks/testing/testing-*.md 2>/dev/null || true
 
 ## Acceptance Criteria
 
-- [ ] Release binary builds successfully
-- [ ] Version shows 0.4.0
-- [ ] Create without deps shows CAUTION and fails
-- [ ] Create with --allow-orphan-task succeeds
-- [ ] Create with --dependencies succeeds
-- [ ] validate --orphans works correctly
-- [ ] Test tasks cleaned up
+- [x] Release binary builds successfully
+- [x] Version shows 0.4.0
+- [x] Create without deps shows CAUTION and fails
+- [x] Create with --allow-orphan-task succeeds
+- [x] Create with --dependencies succeeds
+- [x] validate --orphans works correctly
+- [x] Test tasks cleaned up
+
+## Session Handoff
+
+**Completed:** 2025-12-21
+
+**What was done:**
+- Built release binary with `cargo build --release`
+- Verified version shows `taskguard 0.4.0`
+- Tested all causality features in /tmp/taskguard-test:
+  - Create without deps → CAUTION message, exit 1 ✓
+  - Create with --allow-orphan-task → Success with note ✓
+  - Create with --dependencies "setup-001" → Success ✓
+  - validate --orphans → Shows orphan details correctly ✓
+
+**Verification output:**
+```
+taskguard 0.4.0
+⚠️  CAUTION: Task has no dependencies.
+```

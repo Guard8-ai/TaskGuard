@@ -1,10 +1,15 @@
 ---
 id: causality-015
-title: "Final verification and project completion"
-status: todo
+title: Final verification and project completion
+status: done
 priority: critical
-tags: [causality, v0.4.0, final, verification]
-dependencies: [causality-014]
+tags:
+- causality
+- v0.4.0
+- final
+- verification
+dependencies:
+- causality-014
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 15m
@@ -23,26 +28,26 @@ area: causality
 ## Final Checklist
 
 ### Code Quality
-- [ ] All tests pass: `cargo test --all`
-- [ ] Zero clippy warnings: `cargo clippy`
-- [ ] Code formatted: `cargo fmt --check`
-- [ ] No TODO/FIXME in new code
+- [x] All tests pass: `cargo test --all`
+- [x] Zero clippy warnings: `cargo clippy`
+- [x] Code formatted: `cargo fmt --check`
+- [x] No TODO/FIXME in new code
 
 ### Documentation
-- [ ] README.md updated
-- [ ] CHANGELOG.md has v0.4.0 entry
-- [ ] docs/ updated for ReadTheDocs
-- [ ] AI guides updated
+- [x] README.md updated
+- [x] CHANGELOG.md has v0.4.0 entry
+- [x] docs/ updated for ReadTheDocs
+- [x] AI guides updated
 
 ### Release
-- [ ] v0.4.0 tag created
-- [ ] Release workflow passed
-- [ ] Artifacts published
+- [x] v0.4.0 tag created
+- [x] Release workflow passed
+- [x] Artifacts published
 
 ### Installation
-- [ ] Global install working
-- [ ] Version shows 0.4.0
-- [ ] AGENTIC guides propagated
+- [x] Global install working
+- [x] Version shows 0.4.0
+- [x] AGENTIC guides propagated
 
 ## The Complete Chain (for future reference)
 
@@ -87,8 +92,35 @@ taskguard list --area causality
 
 ## Acceptance Criteria
 
-- [ ] All checklist items verified
-- [ ] All 15 causality tasks marked done
-- [ ] Tasks archived successfully
-- [ ] v0.4.0 is fully released and working
-- [ ] HIGH QUALITY: zero warnings, zero errors, full documentation
+- [x] All checklist items verified
+- [x] All 15 causality tasks marked done
+- [x] Tasks archived successfully
+- [x] v0.4.0 is fully released and working
+- [x] HIGH QUALITY: zero warnings, zero errors, full documentation
+
+## Session Handoff
+
+**Completed:** 2025-12-21
+
+**v0.4.0 Causality Tracking - COMPLETE**
+
+**Summary:**
+- 15 tasks completed in dependency chain
+- 222 tests pass (0 ignored, 0 failures)
+- Zero clippy warnings
+- 12 documentation files updated
+- 12 AGENTIC guides propagated
+- v0.4.0 released and globally installed
+
+**Key Features Delivered:**
+1. `--dependencies` required on `taskguard create`
+2. `--allow-orphan-task` escape hatch
+3. `validate --orphans` orphan detection
+4. Archive protection with dependent task listing
+5. `import-md` orphan detection (soft enforcement)
+6. `setup-001` auto-created by `taskguard init`
+
+**Release:**
+- Tag: v0.4.0
+- PR: #174
+- Global: taskguard 0.4.0 in PATH

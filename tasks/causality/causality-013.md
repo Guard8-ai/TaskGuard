@@ -1,10 +1,15 @@
 ---
 id: causality-013
-title: "Install TaskGuard globally on system"
-status: todo
+title: Install TaskGuard globally on system
+status: done
 priority: high
-tags: [causality, v0.4.0, install, global]
-dependencies: [causality-012]
+tags:
+- causality
+- v0.4.0
+- install
+- global
+dependencies:
+- causality-012
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 15m
@@ -71,7 +76,19 @@ rm -rf /tmp/test-project
 
 ## Acceptance Criteria
 
-- [ ] taskguard available in PATH
-- [ ] `taskguard --version` shows 0.4.0
-- [ ] Works from any directory
-- [ ] Can initialize new projects
+- [x] taskguard available in PATH
+- [x] `taskguard --version` shows 0.4.0
+- [x] Works from any directory
+- [x] Can initialize new projects
+
+## Session Handoff
+
+**Completed:** 2025-12-21
+
+**What was done:**
+- Copied release binary to ~/.cargo/bin/taskguard
+- Verified `which taskguard` returns correct path
+- Verified `taskguard --version` shows 0.4.0
+- Tested in /tmp/tg-final-test - works correctly
+
+**Installation path:** ~/.cargo/bin/taskguard (user PATH)
