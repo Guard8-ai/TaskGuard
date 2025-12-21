@@ -2,6 +2,17 @@
 
 All notable changes to TaskGuard will be documented in this file.
 
+## [0.4.1] - 2025-12-21
+
+### Fixed
+
+- **Root task for TaskGuard** - Added `setup-001` as root task for the project itself
+- **Orphan task dependencies** - Fixed backend-025 through backend-029 missing dependencies
+
+### Added
+
+- **backend-030** - Task to track archived file path bug in GitHub sync
+
 ## [0.4.0] - 2025-12-21
 
 ### Added
