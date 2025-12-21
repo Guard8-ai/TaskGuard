@@ -5,7 +5,8 @@ status: todo
 priority: medium
 tags:
 - backend
-dependencies: []
+dependencies:
+- setup-001
 assignee: developer
 created: 2025-12-15T12:13:34.200776304Z
 estimate: ~
