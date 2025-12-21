@@ -70,6 +70,65 @@ TaskGuard uses **zero-padded 3-digit IDs**:
 
 Import-md automatically generates IDs in this format.
 
+## Causality Tracking (v0.4.0+)
+
+TaskGuard enforces **causality tracking** - every task should connect to the task graph.
+
+### Why Causality Matters
+
+- **Traceability:** Know where each task came from
+- **AI Agent Focus:** Stay on critical paths, avoid drift
+- **Post-mortem:** Trace bugs back to originating features
+- **Priority:** Dependency chains determine execution order
+
+### The Root Task: setup-001
+
+Every TaskGuard project has `setup-001` as the root task (like Java's Object).
+New tasks should trace back to it directly or transitively:
+
+```
+setup-001 (root)
+    ├── backend-001 (depends on setup-001)
+    │   └── api-001 (depends on backend-001)
+    └── frontend-001 (depends on setup-001)
+```
+
+### Declaring Dependencies in Markdown
+
+**Always specify dependencies** when authoring import markdown:
+
+```markdown
+### Fix #1: Setup Database
+**Priority:** HIGH
+**Area:** backend
+**Dependencies:** [setup-001]
+
+Database configuration and setup.
+
+### Fix #2: Implement API
+**Priority:** HIGH
+**Area:** backend
+**Dependencies:** [backend-001]
+
+REST API implementation.
+```
+
+### What Happens Without Dependencies
+
+If tasks are imported without dependencies, you'll see a CAUTION:
+
+```
+⚠️  CAUTION: 2 orphan task(s) created (no dependencies, nothing depends on them):
+   - docs-001: API Documentation
+   - testing-001: Unit Test Setup
+
+   Orphan tasks break causality tracking. Add dependencies with:
+     taskguard update dependencies docs-001 "api-001"
+     taskguard update dependencies testing-001 "setup-001"
+```
+
+**IMPORTANT:** The import SUCCEEDS but you must fix orphans!
+
 ## Dependencies Best Practices
 
 ### Syntax
@@ -78,7 +137,7 @@ Import-md automatically generates IDs in this format.
 ```
 
 ### Critical Post-Import Step
-**ALWAYS run `taskguard validate` after import** to:
+**ALWAYS run `taskguard validate --orphans` after import** to:
 - Verify all dependency task IDs exist
 - Detect circular dependencies
 - Check for broken references
@@ -181,9 +240,13 @@ To update existing tasks, edit them directly - import-md won't overwrite.
 
 ## Tips for AI Agents
 
+- **Always declare dependencies:** Every task needs a parent in the graph
+- **Start from setup-001:** First tasks in your analysis should depend on setup-001
+- **Chain dependencies:** Task #2 should depend on Task #1 if order matters
+- **Fix orphans immediately:** When CAUTION appears, add dependencies before proceeding
+- **Use validate --orphans:** Check for orphan tasks with `taskguard validate --orphans`
 - **Always specify Area:** Without it, tasks go to `setup/` by default
 - **Use realistic effort estimates:** Helps with planning and prioritization
-- **Group related tasks:** Use dependencies to enforce order
 - **Run validation:** Catch dependency issues immediately after import
 - **Check for conflicts:** Import-md skips existing IDs - plan accordingly
 - **Sync after import (GitHub integration):** Run `taskguard sync --github` after importing to create GitHub issues
@@ -248,5 +311,5 @@ AI: I'll create an analysis markdown, import it, and sync to GitHub:
 
 ---
 
-**Version:** 0.3.0
-**Last Updated:** 2025-01-05
+**Version:** 0.4.0
+**Last Updated:** 2025-12-21

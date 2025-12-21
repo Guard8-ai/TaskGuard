@@ -38,15 +38,13 @@ impl CLITestProject {
         // If debug binary doesn't exist, try release
         let binary_path = if binary_path.exists() {
             binary_path
+        } else if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
+            PathBuf::from(target_dir).join("release").join(binary_name)
         } else {
-            if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
-                PathBuf::from(target_dir).join("release").join(binary_name)
-            } else {
-                manifest_path
-                    .join("target")
-                    .join("release")
-                    .join(binary_name)
-            }
+            manifest_path
+                .join("target")
+                .join("release")
+                .join(binary_name)
         };
 
         Ok(CLITestProject {
@@ -106,17 +104,17 @@ impl CLITestProject {
 
     fn init_git_repo(&self) -> Result<()> {
         Command::new("git")
-            .args(&["init"])
+            .args(["init"])
             .current_dir(&self.project_path)
             .output()?;
 
         Command::new("git")
-            .args(&["config", "user.name", "Test User"])
+            .args(["config", "user.name", "Test User"])
             .current_dir(&self.project_path)
             .output()?;
 
         Command::new("git")
-            .args(&["config", "user.email", "test@example.com"])
+            .args(["config", "user.email", "test@example.com"])
             .current_dir(&self.project_path)
             .output()?;
 
@@ -132,12 +130,12 @@ impl CLITestProject {
         )?;
 
         Command::new("git")
-            .args(&["add", "test.txt"])
+            .args(["add", "test.txt"])
             .current_dir(&self.project_path)
             .output()?;
 
         Command::new("git")
-            .args(&["commit", "-m", message])
+            .args(["commit", "-m", message])
             .current_dir(&self.project_path)
             .output()?;
 
@@ -385,6 +383,7 @@ fn test_create_basic_task() -> Result<()> {
         "backend",
         "--priority",
         "high",
+        "--allow-orphan-task",  // Causality tracking: allow orphan for tests
     ])?;
 
     assert_eq!(exit_code, 0, "Create should succeed");
@@ -399,7 +398,7 @@ fn test_create_basic_task() -> Result<()> {
 
     let task_files: Vec<_> = fs::read_dir(&backend_dir)?
         .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "md"))
+        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "md"))
         .collect();
 
     assert_eq!(task_files.len(), 1, "Should create exactly one task file");
@@ -412,7 +411,7 @@ fn test_create_without_init() -> Result<()> {
     let project = CLITestProject::new()?;
 
     let (stdout, stderr, exit_code) =
-        project.run_command(&["create", "--title", "Test Task", "--area", "backend"])?;
+        project.run_command(&["create", "--title", "Test Task", "--area", "backend", "--allow-orphan-task"])?;
 
     assert_ne!(exit_code, 0, "Create should fail without init");
     assert!(
@@ -431,10 +430,11 @@ fn test_create_minimum_required_args() -> Result<()> {
     let project = CLITestProject::new()?;
     project.run_command(&["init"])?;
 
+    // With causality tracking (v0.4.0+), creating without deps requires --allow-orphan-task
     let (stdout, _stderr, exit_code) =
-        project.run_command(&["create", "--title", "Minimum Task"])?;
+        project.run_command(&["create", "--title", "Minimum Task", "--allow-orphan-task"])?;
 
-    assert_eq!(exit_code, 0, "Create with just title should succeed");
+    assert_eq!(exit_code, 0, "Create with --allow-orphan-task should succeed");
     assert!(
         stdout.contains("Created") || stdout.contains("setup"),
         "Should use default area"

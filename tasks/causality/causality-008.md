@@ -1,10 +1,15 @@
 ---
 id: causality-008
-title: "Run all tests - zero warnings, zero errors"
-status: todo
+title: Run all tests - zero warnings, zero errors
+status: doing
 priority: critical
-tags: [causality, v0.4.0, testing, quality]
-dependencies: [causality-007]
+tags:
+- causality
+- v0.4.0
+- testing
+- quality
+dependencies:
+- causality-007
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 1h

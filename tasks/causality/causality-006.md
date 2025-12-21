@@ -1,10 +1,15 @@
 ---
 id: causality-006
-title: "Update AI_IMPORT_MD_GUIDE.md with causality tracking guidance"
-status: todo
+title: Update AI_IMPORT_MD_GUIDE.md with causality tracking guidance
+status: done
 priority: medium
-tags: [causality, v0.4.0, docs, import-md]
-dependencies: [causality-005]
+tags:
+- causality
+- v0.4.0
+- docs
+- import-md
+dependencies:
+- causality-005
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 1h

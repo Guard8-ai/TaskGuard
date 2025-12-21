@@ -1,10 +1,15 @@
 ---
 id: causality-007
-title: "Update AGENTIC_AI_TASKGUARD_GUIDE.md with causality workflow"
-status: todo
+title: Update AGENTIC_AI_TASKGUARD_GUIDE.md with causality workflow
+status: done
 priority: medium
-tags: [causality, v0.4.0, docs, agentic]
-dependencies: [causality-006]
+tags:
+- causality
+- v0.4.0
+- docs
+- agentic
+dependencies:
+- causality-006
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 1h

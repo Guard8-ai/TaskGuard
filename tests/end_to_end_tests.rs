@@ -14,11 +14,12 @@ fn create_task(title: &str, area: &str, priority: &str) -> Result<()> {
         title.to_string(),
         Some(area.to_string()),
         Some(priority.to_string()),
-        None, // complexity
-        None, // tags
-        None, // dependencies
-        None, // assignee
-        None, // estimate
+        None,  // complexity
+        None,  // tags
+        None,  // dependencies
+        None,  // assignee
+        None,  // estimate
+        true,  // allow_orphan_task - tests don't need causality enforcement
     )
 }
 
@@ -158,7 +159,7 @@ fn test_complete_project_lifecycle() -> Result<()> {
     create_task("Build login form", "frontend", "medium")?;
 
     // 3. Validate initial state
-    validate::run(false)?;
+    validate::run(false, false)?;
 
     // 4. Simulate work progress with Git commits
     let repo = project.init_git_repo()?;
@@ -217,7 +218,7 @@ fn test_dependency_workflow() -> Result<()> {
     )?;
 
     // Initial validation should show only setup-001 as available
-    validate::run(false)?;
+    validate::run(false, false)?;
 
     // Complete setup-001
     let setup_task_path = project.tasks_dir.join("setup").join("setup-001.md");
@@ -226,7 +227,7 @@ fn test_dependency_workflow() -> Result<()> {
     setup_task.save_to_file(&setup_task_path)?;
 
     // Now backend-001 should be available
-    validate::run(false)?;
+    validate::run(false, false)?;
 
     // AI should recommend backend-001
     ai::run("What should I work on next?".to_string())?;
@@ -578,7 +579,7 @@ fn test_large_project_workflow() -> Result<()> {
 
     // Test performance of various operations on large project
     let start = std::time::Instant::now();
-    validate::run(false)?;
+    validate::run(false, false)?;
     let validate_duration = start.elapsed();
 
     let start = std::time::Instant::now();
@@ -683,7 +684,7 @@ fn test_complex_dependency_chains() -> Result<()> {
     )?;
 
     // Test dependency resolution
-    validate::run(false)?;
+    validate::run(false, false)?;
     ai::run("What's blocked by dependencies?".to_string())?;
     ai::run("What can I work on right now?".to_string())?;
 
@@ -693,7 +694,7 @@ fn test_complex_dependency_chains() -> Result<()> {
     backend_task.status = TaskStatus::Done;
     backend_task.save_to_file(&backend_task_path)?;
 
-    validate::run(false)?;
+    validate::run(false, false)?;
     ai::run("What's now available after completing backend-001?".to_string())?;
 
     Ok(())
@@ -862,7 +863,7 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     backend_task.save_to_file(&backend_path)?;
 
     // 3. Analysis phase - understand progress
-    validate::run(false)?; // Check what's now available
+    validate::run(false, false)?; // Check what's now available
     sync::run(10, true, false, false, false, false)?; // Analyze Git activity
     lint::run(true, None)?; // Check task quality
 
@@ -881,7 +882,7 @@ fn test_complete_feature_development_cycle() -> Result<()> {
     frontend_task.save_to_file(&frontend_path)?;
 
     // Final analysis
-    validate::run(false)?;
+    validate::run(false, false)?;
     sync::run(20, false, false, false, false, false)?;
     ai::run("Show me the final project status".to_string())?;
 
@@ -954,7 +955,7 @@ Test task content.
     );
 
     // 4. Run validate --sync-areas to discover and add custom area
-    validate::run(true)?; // sync_areas = true
+    validate::run(true, false)?; // sync_areas = true
 
     // Verify custom area was added
     let final_config = Config::load_or_default(&config_path)?;
@@ -971,7 +972,7 @@ Test task content.
     );
 
     // 6. Run validate --sync-areas again - should report already in sync
-    validate::run(true)?; // Should succeed and report "in sync"
+    validate::run(true, false)?; // Should succeed and report "in sync"
 
     Ok(())
 }

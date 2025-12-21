@@ -144,9 +144,9 @@ Content for third fix.
     import_md::run(file_path.clone(), options)?;
 
     // Verify all three tasks were created
-    let task1 = Task::from_file(&project_dir.join("tasks/testing/multi-001.md"))?;
-    let task2 = Task::from_file(&project_dir.join("tasks/testing/multi-002.md"))?;
-    let task3 = Task::from_file(&project_dir.join("tasks/testing/multi-003.md"))?;
+    let task1 = Task::from_file(project_dir.join("tasks/testing/multi-001.md"))?;
+    let task2 = Task::from_file(project_dir.join("tasks/testing/multi-002.md"))?;
+    let task3 = Task::from_file(project_dir.join("tasks/testing/multi-003.md"))?;
 
     assert_eq!(task1.id, "multi-001");
     assert_eq!(task2.id, "multi-002");
@@ -196,10 +196,10 @@ This fixes issue #2.
     import_md::run(file_path.clone(), options)?;
 
     // Verify tasks have type-specific prefixes
-    let issue1 = Task::from_file(&project_dir.join("tasks/testing/issue-001.md"))?;
-    let issue2 = Task::from_file(&project_dir.join("tasks/testing/issue-002.md"))?;
-    let fix1 = Task::from_file(&project_dir.join("tasks/testing/fix-001.md"))?;
-    let fix2 = Task::from_file(&project_dir.join("tasks/testing/fix-002.md"))?;
+    let issue1 = Task::from_file(project_dir.join("tasks/testing/issue-001.md"))?;
+    let issue2 = Task::from_file(project_dir.join("tasks/testing/issue-002.md"))?;
+    let fix1 = Task::from_file(project_dir.join("tasks/testing/fix-001.md"))?;
+    let fix2 = Task::from_file(project_dir.join("tasks/testing/fix-002.md"))?;
 
     assert_eq!(issue1.id, "issue-001");
     assert_eq!(issue2.id, "issue-002");
@@ -245,9 +245,9 @@ This depends on both.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task1 = Task::from_file(&project_dir.join("tasks/testing/dep-001.md"))?;
-    let task2 = Task::from_file(&project_dir.join("tasks/testing/dep-002.md"))?;
-    let task3 = Task::from_file(&project_dir.join("tasks/testing/dep-003.md"))?;
+    let task1 = Task::from_file(project_dir.join("tasks/testing/dep-001.md"))?;
+    let task2 = Task::from_file(project_dir.join("tasks/testing/dep-002.md"))?;
+    let task3 = Task::from_file(project_dir.join("tasks/testing/dep-003.md"))?;
 
     assert_eq!(task1.dependencies, Vec::<String>::new());
     assert_eq!(task2.dependencies, vec!["dep-001"]);
@@ -316,7 +316,7 @@ Content here.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task = Task::from_file(&project_dir.join("tasks/testing/override-001.md"))?;
+    let task = Task::from_file(project_dir.join("tasks/testing/override-001.md"))?;
     assert_eq!(task.priority, Priority::Critical); // Should use override, not LOW
 
     fs::remove_file(file_path)?;
@@ -346,7 +346,7 @@ Content here.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task = Task::from_file(&project_dir.join("tasks/testing/tags-001.md"))?;
+    let task = Task::from_file(project_dir.join("tasks/testing/tags-001.md"))?;
     assert!(task.tags.contains(&"urgent".to_string()));
     assert!(task.tags.contains(&"backend".to_string()));
     assert!(task.tags.contains(&"testing".to_string())); // Area tag
@@ -423,7 +423,7 @@ This should not create a dependency.
 
     import_md::run(file_path.clone(), options)?;
 
-    let task = Task::from_file(&project_dir.join("tasks/testing/code-001.md"))?;
+    let task = Task::from_file(project_dir.join("tasks/testing/code-001.md"))?;
     assert_eq!(
         task.dependencies,
         Vec::<String>::new(),
@@ -481,7 +481,7 @@ More content after code block.
 
     import_md::run(file1.clone(), options1)?;
 
-    let task1 = Task::from_file(&project_dir.join("tasks/testing/complex-001.md"))?;
+    let task1 = Task::from_file(project_dir.join("tasks/testing/complex-001.md"))?;
 
     // Short task should have lower complexity
     assert!(task1.complexity.unwrap_or(0) <= 4);
