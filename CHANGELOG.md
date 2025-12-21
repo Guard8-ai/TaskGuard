@@ -2,6 +2,32 @@
 
 All notable changes to TaskGuard will be documented in this file.
 
+## [0.4.0] - 2025-12-21
+
+### Added
+
+- **Causality tracking** - Every task must have dependencies to maintain semantic cause-effect chains
+- **CAUTION enforcement** - `taskguard create` fails without `--dependencies` flag, shows clear guidance
+- **Orphan detection** - `taskguard validate --orphans` identifies tasks with no dependencies or dependents
+- **`--allow-orphan-task` flag** - Escape hatch for spikes/research tasks that truly have no dependencies
+- **Archive protection messaging** - Clear feedback showing which tasks depend on blocked archive targets
+- **Orphan detection in import** - `taskguard import-md` warns about orphan tasks after import
+
+### Changed
+
+- **Create command** - Now requires `--dependencies` flag or `--allow-orphan-task` for explicit control
+- **Validate command** - Added `--orphans` flag to show orphan task details
+- **Archive messaging** - Improved feedback when tasks can't be archived due to dependents
+- **AI guides updated** - AGENTIC_AI_TASKGUARD_GUIDE.md and AI_IMPORT_MD_GUIDE.md include causality workflow
+
+### Philosophy
+
+TaskGuard v0.4.0 enforces causality tracking to improve AI agent workflows:
+- **Semantic chains**: Tasks form cause-effect relationships, not isolated items
+- **Root task**: `setup-001` is auto-created by `taskguard init` as the universal root
+- **CAUTION keyword**: AI agents pay attention to CAUTION more than warnings
+- **Soft enforcement**: Import warns but doesn't fail; create fails without deps
+
 ## [0.3.1] - 2025-12-15
 
 ### Added

@@ -36,6 +36,7 @@ pub fn run(
     dependencies: Option<String>,
     assignee: Option<String>,
     estimate: Option<String>,
+    allow_orphan_task: bool,
 ) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
     let config_path = get_config_path()?;
@@ -112,6 +113,28 @@ pub fn run(
         })
         .unwrap_or_default();
 
+    // Causality tracking: enforce dependencies unless explicitly allowed
+    if dependency_list.is_empty() && !allow_orphan_task {
+        eprintln!("⚠️  CAUTION: Task has no dependencies.");
+        eprintln!("   Orphan tasks break causality tracking and reduce AI agent effectiveness.");
+        eprintln!();
+        eprintln!("   Options:");
+        eprintln!("     --dependencies <ids>    Link to originating task(s)");
+        eprintln!("     --allow-orphan-task     Create anyway (not recommended)");
+        eprintln!();
+        eprintln!("   Example:");
+        eprintln!(
+            "     taskguard create --title \"{}\" --area {} --dependencies \"setup-001\"",
+            title, area
+        );
+        return Err(anyhow::anyhow!(
+            "Task creation blocked: no dependencies specified. Use --allow-orphan-task to override."
+        ));
+    }
+
+    // Note if creating orphan task with explicit flag
+    let is_orphan = dependency_list.is_empty() && allow_orphan_task;
+
     // Determine assignee (default: "developer")
     let assignee = assignee.or_else(|| Some("developer".to_string()));
 
@@ -173,6 +196,18 @@ pub fn run(
     println!("   Title: {}", task.title);
     println!("   Area: {}", task.area);
     println!("   Priority: {}", task.priority);
+
+    // Show orphan warning if created with --allow-orphan-task
+    if is_orphan {
+        println!();
+        println!("⚠️  Note: Created orphan task (no dependencies).");
+        println!("   Consider adding dependencies later with:");
+        println!(
+            "     taskguard update dependencies {} \"<parent-task-id>\"",
+            task.id
+        );
+    }
+
     println!();
     println!("📝 Next steps:");
     println!("   taskguard show {}  # View task details", task.id);

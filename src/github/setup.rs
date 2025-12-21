@@ -475,24 +475,15 @@ mod tests {
         // Requires real GitHub authentication
         let client = GitHubClient::new().expect("Failed to create client");
         let config = GitHubConfig {
-            owner: "your-username".to_string(),
-            repo: "your-repo".to_string(),
+            owner: "Guard8-ai".to_string(),
+            repo: "TaskGuard".to_string(),
             project_number: 1,
         };
 
         let result = GitHubProjectSetup::check_project_exists(&client, &config);
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Failed to check project: {:?}", result);
     }
 
-    #[test]
-    #[ignore]
-    fn test_auto_create_project() {
-        // Requires real GitHub authentication and write permissions
-        let client = GitHubClient::new().expect("Failed to create client");
-
-        let result =
-            GitHubProjectSetup::auto_create_project(&client, "your-username", "your-repo", true);
-
-        assert!(result.is_ok());
-    }
+    // Note: test_auto_create_project is intentionally not included as it would
+    // create a new project on every test run, which is destructive behavior.
 }

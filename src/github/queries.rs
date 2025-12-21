@@ -871,7 +871,8 @@ mod tests {
     #[ignore]
     fn test_get_issue_by_number() {
         let client = GitHubClient::new().expect("Failed to create client");
-        let result = GitHubQueries::get_issue_by_number(&client, "octocat", "Hello-World", 1);
-        assert!(result.is_ok());
+        // Use Guard8-ai/TaskGuard issue #1 (or any existing issue)
+        let result = GitHubQueries::get_issue_by_number(&client, "Guard8-ai", "TaskGuard", 95);
+        assert!(result.is_ok(), "Failed to get issue: {:?}", result);
     }
 }

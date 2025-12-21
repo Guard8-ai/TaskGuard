@@ -18,10 +18,10 @@ Creates `.taskguard/` config and `tasks/` directories.
 ---
 
 ### `taskguard create`
-Create a new task.
+Create a new task. **Dependencies are required** (v0.4.0+).
 
 ```bash
-taskguard create --title "Task name" --area backend [OPTIONS]
+taskguard create --title "Task name" --area backend --dependencies "setup-001"
 ```
 
 | Flag | Short | Description |
@@ -31,9 +31,15 @@ taskguard create --title "Task name" --area backend [OPTIONS]
 | `--priority` | `-p` | low, medium, high, critical |
 | `--complexity` | | 1-10 scale |
 | `--tags` | | Comma-separated tags |
-| `--dependencies` | `-d` | Comma-separated task IDs |
+| `--dependencies` | `-d` | Comma-separated task IDs (required unless `--allow-orphan-task`) |
 | `--assignee` | | Task assignee |
 | `--estimate` | `-e` | Time estimate (e.g., "4h") |
+| `--allow-orphan-task` | | Allow task without dependencies (for spikes/research) |
+
+**Causality Tracking (v0.4.0+):**
+- Every task must have dependencies to maintain semantic chains
+- Use `--allow-orphan-task` for root tasks or research spikes
+- Shows CAUTION if no dependencies specified
 
 ---
 
@@ -51,10 +57,19 @@ taskguard list items <task-id>    # List checklist items
 Check dependencies and show available tasks.
 
 ```bash
-taskguard validate
+taskguard validate [--orphans]
 ```
 
+| Flag | Description |
+|------|-------------|
+| `--orphans` | Show orphan tasks (no dependencies and no dependents) |
+
 Shows: available tasks, blocked tasks, parse errors, GitHub sync status.
+
+**Orphan Detection (v0.4.0+):**
+- Orphan = task with no dependencies AND nothing depends on it
+- `setup-001` is exempt (universal root)
+- Use `--orphans` to see detailed orphan task list
 
 ---
 

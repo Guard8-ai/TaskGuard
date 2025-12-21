@@ -54,8 +54,13 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
             Ok(task) => {
                 if task.status == TaskStatus::Done {
                     // Check if any active task depends on this
-                    if is_task_referenced(&task.id, &all_tasks) {
-                        blocked_from_archive.push((task.id.clone(), task.title.clone()));
+                    let dependents = find_dependents(&task.id, &all_tasks);
+                    if !dependents.is_empty() {
+                        blocked_from_archive.push((
+                            task.id.clone(),
+                            task.title.clone(),
+                            dependents,
+                        ));
                     } else {
                         let metadata = fs::metadata(path)?;
                         total_size += metadata.len();
@@ -85,10 +90,14 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
 
     // Show blocked tasks first
     if !blocked_from_archive.is_empty() {
-        println!("🚫 BLOCKED FROM ARCHIVE (still referenced by active tasks):");
-        for (id, title) in &blocked_from_archive {
+        println!("🚫 BLOCKED FROM ARCHIVE (causality protection):");
+        for (id, title, dependents) in &blocked_from_archive {
             println!("   ⚠️  {} - {}", id, title);
+            println!("       └── Depended on by: {}", dependents.join(", "));
         }
+        println!();
+        println!("   These tasks cannot be archived because active tasks depend on them.");
+        println!("   Complete the dependent tasks first, then archive.");
         println!();
     }
 
@@ -215,15 +224,14 @@ fn format_size(bytes: u64) -> String {
     }
 }
 
-/// Check if a task is referenced by any active (non-done) tasks
-fn is_task_referenced(task_id: &str, all_tasks: &[Task]) -> bool {
-    for task in all_tasks {
-        // Only check active tasks (not completed ones)
-        if task.status != TaskStatus::Done && task.dependencies.contains(&task_id.to_string()) {
-            return true; // Active task depends on this
-        }
-    }
-    false
+/// Find active tasks that depend on the given task
+fn find_dependents(task_id: &str, all_tasks: &[Task]) -> Vec<String> {
+    all_tasks
+        .iter()
+        .filter(|t| t.status != TaskStatus::Done)
+        .filter(|t| t.dependencies.contains(&task_id.to_string()))
+        .map(|t| t.id.clone())
+        .collect()
 }
 
 /// Close GitHub issues for archived tasks and update mappings
