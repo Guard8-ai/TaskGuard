@@ -1,10 +1,15 @@
 ---
 id: causality-002
-title: "Add --allow-orphan-task flag and CAUTION to create command"
-status: todo
+title: Add --allow-orphan-task flag and CAUTION to create command
+status: done
 priority: high
-tags: [causality, v0.4.0, create, cli]
-dependencies: [causality-001]
+tags:
+- causality
+- v0.4.0
+- create
+- cli
+dependencies:
+- causality-001
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 2h

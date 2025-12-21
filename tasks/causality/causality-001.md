@@ -1,9 +1,13 @@
 ---
 id: causality-001
-title: "v0.4.0 Causality Tracking - Parent Feature Task"
-status: todo
+title: v0.4.0 Causality Tracking - Parent Feature Task
+status: done
 priority: high
-tags: [causality, v0.4.0, feature, parent]
+tags:
+- causality
+- v0.4.0
+- feature
+- parent
 dependencies: []
 assignee: developer
 created: 2025-12-21T12:00:00Z

@@ -1,7 +1,7 @@
 ---
 id: deployment-007
 title: Update AGENTIC_AI_TASKGUARD_GUIDE.md in all projects
-status: todo
+status: done
 priority: medium
 tags:
 - deployment

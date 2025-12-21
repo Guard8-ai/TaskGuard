@@ -1,10 +1,15 @@
 ---
 id: causality-004
-title: "Strengthen archive command reverse dependency check"
-status: todo
+title: Strengthen archive command reverse dependency check
+status: done
 priority: high
-tags: [causality, v0.4.0, archive, protection]
-dependencies: [causality-003]
+tags:
+- causality
+- v0.4.0
+- archive
+- protection
+dependencies:
+- causality-003
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 1h

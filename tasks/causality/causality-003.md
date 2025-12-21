@@ -1,10 +1,15 @@
 ---
 id: causality-003
-title: "Add --orphans flag to validate command"
-status: todo
+title: Add --orphans flag to validate command
+status: done
 priority: high
-tags: [causality, v0.4.0, validate, cli]
-dependencies: [causality-002]
+tags:
+- causality
+- v0.4.0
+- validate
+- cli
+dependencies:
+- causality-002
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 2h

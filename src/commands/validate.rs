@@ -9,7 +9,7 @@ use crate::config::{
 use crate::github::{TaskIssueMapper, is_github_sync_enabled};
 use crate::task::{Task, TaskStatus};
 
-pub fn run(sync_areas: bool) -> Result<()> {
+pub fn run(sync_areas: bool, show_orphans: bool) -> Result<()> {
     let tasks_dir = get_tasks_dir()?;
 
     // Sync areas first if requested
@@ -196,6 +196,33 @@ pub fn run(sync_areas: bool) -> Result<()> {
         println!();
     }
 
+    // Find orphan tasks (no dependencies AND nothing depends on them)
+    let orphan_tasks = find_orphan_tasks(&active_tasks, &archived_ids);
+    let orphan_count = orphan_tasks.len();
+
+    // Show orphan details if requested
+    if show_orphans {
+        println!("🔍 ORPHAN TASKS");
+        if orphan_tasks.is_empty() {
+            println!("   ✅ No orphan tasks found. All tasks are connected to the dependency graph.");
+        } else {
+            println!("   Tasks with no dependencies and nothing depends on them:");
+            println!();
+            for task in &orphan_tasks {
+                println!("   ⚠️  {} - {}", task.id, task.title);
+            }
+            println!();
+            println!("   To fix, add dependencies:");
+            for task in &orphan_tasks {
+                println!(
+                    "     taskguard update dependencies {} \"<parent-task-id>\"",
+                    task.id
+                );
+            }
+        }
+        println!();
+    }
+
     // Summary
     let total_issues = parse_errors.len() + dependency_issues.len() + circular_deps.len();
 
@@ -216,6 +243,12 @@ pub fn run(sync_areas: bool) -> Result<()> {
     println!("   Total tasks: {}", tasks.len());
     println!("   Available: {}", available_tasks.len());
     println!("   Blocked: {}", blocked_tasks.len());
+    if orphan_count > 0 {
+        println!(
+            "   Orphans: {} (use --orphans to see details)",
+            orphan_count
+        );
+    }
     if !archived_ids.is_empty() {
         println!("   Archived tasks: {}", archived_ids.len());
     }
@@ -260,6 +293,33 @@ pub fn run(sync_areas: bool) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Find orphan tasks - tasks with no dependencies AND nothing depends on them
+/// Note: setup-001 is exempt as it's the root task
+fn find_orphan_tasks<'a>(
+    active_tasks: &[&'a Task],
+    archived_ids: &HashSet<String>,
+) -> Vec<&'a Task> {
+    // Build reverse dependency map (who depends on whom)
+    let mut has_dependents: HashSet<String> = HashSet::new();
+    for task in active_tasks {
+        for dep in &task.dependencies {
+            has_dependents.insert(dep.clone());
+        }
+    }
+
+    // Orphan = no dependencies AND no dependents AND not setup-001 AND not archived
+    active_tasks
+        .iter()
+        .filter(|t| {
+            t.dependencies.is_empty()
+                && !has_dependents.contains(&t.id)
+                && t.id != "setup-001"
+                && !archived_ids.contains(&t.id)
+        })
+        .copied()
+        .collect()
 }
 
 fn has_circular_dependency(

@@ -89,6 +89,9 @@ enum Commands {
         /// Time estimate (e.g., "4h", "2d")
         #[arg(short, long)]
         estimate: Option<String>,
+        /// Allow creating task without dependencies (not recommended)
+        #[arg(long)]
+        allow_orphan_task: bool,
     },
     /// Show detailed task information
     Show {
@@ -100,6 +103,9 @@ enum Commands {
         /// Sync config areas with task directories
         #[arg(long)]
         sync_areas: bool,
+        /// Show orphan tasks (no dependencies and nothing depends on them)
+        #[arg(long)]
+        orphans: bool,
     },
     /// Analyze Git history and suggest task updates
     Sync {
@@ -234,6 +240,7 @@ fn main() -> Result<()> {
             dependencies,
             assignee,
             estimate,
+            allow_orphan_task,
         } => create::run(
             title,
             area,
@@ -243,12 +250,13 @@ fn main() -> Result<()> {
             dependencies,
             assignee,
             estimate,
+            allow_orphan_task,
         ),
         Commands::Show { task_id } => {
             println!("Show task: {}", task_id);
             Ok(())
         }
-        Commands::Validate { sync_areas } => validate::run(sync_areas),
+        Commands::Validate { sync_areas, orphans } => validate::run(sync_areas, orphans),
         Commands::Sync {
             limit,
             verbose,

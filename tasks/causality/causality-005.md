@@ -1,10 +1,15 @@
 ---
 id: causality-005
-title: "Update import-md with orphan detection and CAUTION output"
-status: todo
+title: Update import-md with orphan detection and CAUTION output
+status: done
 priority: high
-tags: [causality, v0.4.0, import-md, soft-enforcement]
-dependencies: [causality-004]
+tags:
+- causality
+- v0.4.0
+- import-md
+- soft-enforcement
+dependencies:
+- causality-004
 assignee: developer
 created: 2025-12-21T12:00:00Z
 estimate: 2h

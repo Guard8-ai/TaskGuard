@@ -1,7 +1,7 @@
 ---
 id: deployment-006
 title: Tag and release v0.3.1
-status: doing
+status: done
 priority: high
 tags:
 - deployment
