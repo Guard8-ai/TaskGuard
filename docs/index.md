@@ -9,7 +9,7 @@
 TaskGuard is a **local-first, Git-native task management system** built in Rust that provides:
 
 - 📋 **Simple task management** - Markdown files with YAML metadata
-- 🔗 **Dependency tracking** - Automatic blocking based on task dependencies
+- 🔗 **Causality tracking** - Semantic dependency chains for AI agents (v0.4.0+)
 - 🤖 **AI collaboration** - Zero-setup integration with Claude Code and other LLMs
 - 🔒 **Git-native** - All tasks stored in version control
 - ⚡ **Fast & secure** - Rust-powered with comprehensive security testing
@@ -88,7 +88,8 @@ taskguard init
 ### 3. Create Your First Task
 
 ```bash
-taskguard create --title "Setup database" --area backend --priority high
+# setup-001 is auto-created as root task
+taskguard create --title "Setup database" --area backend --dependencies "setup-001"
 ```
 
 ### 4. View Tasks
@@ -179,7 +180,7 @@ TaskGuard suggests, never decides. You're always in control of your workflow.
 | Feature | Status |
 |---------|--------|
 | **Task Management** | ✅ Create, list, update tasks |
-| **Dependencies** | ✅ Automatic blocking & validation |
+| **Causality Tracking** | ✅ Mandatory dependencies, orphan detection |
 | **Git Sync** | ✅ Commit analysis & suggestions |
 | **Quality Analysis** | ✅ Complexity scoring & linting |
 | **AI Integration** | ✅ Claude Code, natural language |
@@ -193,7 +194,7 @@ TaskGuard suggests, never decides. You're always in control of your workflow.
 - **GitHub:** [Guard8-ai/TaskGuard](https://github.com/Guard8-ai/TaskGuard)
 - **Issues:** [Report a bug](https://github.com/Guard8-ai/TaskGuard/issues)
 - **License:** MIT
-- **Version:** 0.2.2
+- **Version:** 0.4.0
 
 ---
 
@@ -201,9 +202,9 @@ TaskGuard suggests, never decides. You're always in control of your workflow.
 
 ### Solo Developer
 ```bash
-# Track personal project tasks
-taskguard create --title "Build API endpoint" --area backend
-taskguard validate  # See what's ready to work on
+# Track personal project tasks with causality
+taskguard create --title "Build API endpoint" --area backend --dependencies "setup-001"
+taskguard validate --orphans  # Check for orphan tasks
 ```
 
 ### Team Collaboration

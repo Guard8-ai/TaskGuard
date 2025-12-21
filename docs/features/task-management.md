@@ -18,16 +18,22 @@ Core task management commands and workflows.
 
 ## Creating Tasks
 
+**v0.4.0+: Dependencies are required** for causality tracking.
+
 ```bash
-# Basic creation
-taskguard create --title "Task title" --area backend
+# Create with dependencies (required)
+taskguard create --title "Task title" --area backend --dependencies "setup-001"
 
-# With priority
-taskguard create --title "Critical fix" --area backend --priority critical
+# With priority and dependencies
+taskguard create --title "Critical fix" --area backend --priority critical --dependencies "backend-001"
 
-# Different areas
-taskguard create --title "UI component" --area frontend --priority high
+# Root/spike tasks (no dependencies)
+taskguard create --title "Research spike" --area backend --allow-orphan-task
 ```
+
+!!! note "Causality Tracking"
+    `setup-001` is auto-created by `taskguard init` as the universal root task.
+    All other tasks should specify dependencies to maintain semantic chains.
 
 **Auto-generated:**
 - Unique ID (`backend-001`, `frontend-001`, etc.)
