@@ -38,7 +38,7 @@ taskguard restore <id>                            # Restore archived
 
 ## Causality Tracking (v0.4.0+)
 
-**Every task MUST have dependencies.** Root is `setup-001`.
+**Every task MUST have dependencies.** `setup-001` is auto-created by `taskguard init`.
 
 ```
 setup-001 → backend-001 → api-001 → testing-001

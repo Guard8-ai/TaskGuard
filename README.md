@@ -177,14 +177,14 @@ TaskGuard v0.4.0 introduces **causality tracking** - every task must have depend
 
 **Key principles:**
 - Every task must specify `--dependencies` (or `--allow-orphan-task` for spikes)
-- `setup-001` is the universal root task (like Java's Object)
+- `setup-001` is auto-created by `taskguard init` as the universal root
 - Orphan tasks (no deps, no dependents) are detected and flagged
 - Tasks with active dependents cannot be archived
 
 **Example workflow:**
 ```bash
-# Create root setup task
-taskguard create --title "Project setup" --area setup --allow-orphan-task
+# Initialize project (auto-creates setup-001 as root)
+taskguard init
 
 # Create tasks with dependencies (required)
 taskguard create --title "User auth" --area backend --dependencies "setup-001"

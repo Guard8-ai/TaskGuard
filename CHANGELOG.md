@@ -24,7 +24,7 @@ All notable changes to TaskGuard will be documented in this file.
 
 TaskGuard v0.4.0 enforces causality tracking to improve AI agent workflows:
 - **Semantic chains**: Tasks form cause-effect relationships, not isolated items
-- **Root task**: `setup-001` serves as the universal root (like Java's Object)
+- **Root task**: `setup-001` is auto-created by `taskguard init` as the universal root
 - **CAUTION keyword**: AI agents pay attention to CAUTION more than warnings
 - **Soft enforcement**: Import warns but doesn't fail; create fails without deps
 
