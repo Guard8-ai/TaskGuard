@@ -171,16 +171,31 @@ taskguard restore backend-001
 - Status mapping: todo→Backlog, doing→In Progress, done→Done
 - Archive lifecycle: archiving closes issues, restoring reopens them
 
-## 🎯 Core Concept: Dependency Blocking
+## 🎯 Core Concept: Causality Tracking
 
-TaskGuard's key innovation is **dependency blocking** - tasks automatically become unavailable until their prerequisites are completed. This ensures work happens in the right order without manual tracking.
+TaskGuard v0.4.0 introduces **causality tracking** - every task must have dependencies to form semantic cause-effect chains. This ensures AI agents and developers always understand *why* a task exists and *what* enables it.
+
+**Key principles:**
+- Every task must specify `--dependencies` (or `--allow-orphan-task` for spikes)
+- `setup-001` is the universal root task (like Java's Object)
+- Orphan tasks (no deps, no dependents) are detected and flagged
+- Tasks with active dependents cannot be archived
 
 **Example workflow:**
-1. Create foundation tasks (setup, architecture decisions)
-2. Create implementation tasks that depend on foundations
-3. Create testing tasks that depend on implementations
-4. Use `taskguard validate` to see what's ready to work on
-5. Tasks automatically become available as dependencies complete
+```bash
+# Create root setup task
+taskguard create --title "Project setup" --area setup --allow-orphan-task
+
+# Create tasks with dependencies (required)
+taskguard create --title "User auth" --area backend --dependencies "setup-001"
+taskguard create --title "Auth tests" --area testing --dependencies "backend-001"
+
+# Check for orphan tasks
+taskguard validate --orphans
+
+# Validate dependency chain
+taskguard validate
+```
 
 ## 📋 Task Format
 
@@ -308,6 +323,13 @@ TaskGuard provides information and suggestions but never makes decisions for you
 - ✅ Archive command with GitHub issue closing
 - ✅ Restore command with GitHub issue reopening
 - ✅ Task-issue mapping persistence with archived state tracking
+
+**✅ Phase 6 (v0.4.0 - COMPLETED): Causality Tracking**
+- ✅ Mandatory dependencies for all tasks (except root and spikes)
+- ✅ Orphan task detection with `validate --orphans`
+- ✅ `--allow-orphan-task` escape hatch for research tasks
+- ✅ Archive protection for tasks with active dependents
+- ✅ CAUTION messaging for AI agent attention
 
 ## 🤖 For AI Agents & Automation
 
