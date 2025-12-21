@@ -116,9 +116,7 @@ pub fn run(
     // Causality tracking: enforce dependencies unless explicitly allowed
     if dependency_list.is_empty() && !allow_orphan_task {
         eprintln!("⚠️  CAUTION: Task has no dependencies.");
-        eprintln!(
-            "   Orphan tasks break causality tracking and reduce AI agent effectiveness."
-        );
+        eprintln!("   Orphan tasks break causality tracking and reduce AI agent effectiveness.");
         eprintln!();
         eprintln!("   Options:");
         eprintln!("     --dependencies <ids>    Link to originating task(s)");

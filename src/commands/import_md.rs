@@ -6,8 +6,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config::{Config, get_config_path, get_tasks_dir, load_tasks_from_dir};
-use std::collections::HashSet;
 use crate::task::{Priority, Task, TaskStatus};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct ImportOptions {
@@ -119,7 +119,11 @@ pub fn run(file_path: PathBuf, options: ImportOptions) -> Result<()> {
         if task.dependencies.is_empty() {
             println!("⚠️  Created: {} (no dependencies)", task.id);
         } else {
-            println!("✅ Created: {} (depends on: {})", task.id, task.dependencies.join(", "));
+            println!(
+                "✅ Created: {} (depends on: {})",
+                task.id,
+                task.dependencies.join(", ")
+            );
         }
         created_tasks.push(task);
     }
@@ -129,21 +133,30 @@ pub fn run(file_path: PathBuf, options: ImportOptions) -> Result<()> {
 
     println!();
     if !orphan_tasks.is_empty() {
-        println!("⚠️  CAUTION: {} orphan task(s) created (no dependencies, nothing depends on them):", orphan_tasks.len());
+        println!(
+            "⚠️  CAUTION: {} orphan task(s) created (no dependencies, nothing depends on them):",
+            orphan_tasks.len()
+        );
         for task in &orphan_tasks {
             println!("   - {}: {}", task.id, task.title);
         }
         println!();
         println!("   Orphan tasks break causality tracking. Add dependencies with:");
         for task in &orphan_tasks {
-            println!("     taskguard update dependencies {} \"<parent-task-id>\"", task.id);
+            println!(
+                "     taskguard update dependencies {} \"<parent-task-id>\"",
+                task.id
+            );
         }
         println!();
     }
 
     println!("📊 Import complete:");
     println!("   Created: {} tasks", created_count);
-    println!("   With dependencies: {}", created_count - orphan_tasks.len());
+    println!(
+        "   With dependencies: {}",
+        created_count - orphan_tasks.len()
+    );
     println!("   Orphans: {}", orphan_tasks.len());
     println!("   Area: {}", area);
     println!("   Directory: {}", area_dir.display());
@@ -538,7 +551,10 @@ fn estimate_complexity(content: &str) -> Option<u8> {
 
 /// Detect orphan tasks among imported tasks
 /// An orphan has no dependencies AND no other task (existing or imported) depends on it
-fn detect_orphan_imports<'a>(imported_tasks: &'a [Task], tasks_dir: &Path) -> Result<Vec<&'a Task>> {
+fn detect_orphan_imports<'a>(
+    imported_tasks: &'a [Task],
+    tasks_dir: &Path,
+) -> Result<Vec<&'a Task>> {
     // Load existing tasks to check for reverse dependencies
     let existing_tasks = load_tasks_from_dir(tasks_dir).unwrap_or_default();
 
@@ -563,9 +579,7 @@ fn detect_orphan_imports<'a>(imported_tasks: &'a [Task], tasks_dir: &Path) -> Re
     let orphans: Vec<&Task> = imported_tasks
         .iter()
         .filter(|t| {
-            t.dependencies.is_empty()
-                && !has_dependents.contains(&t.id)
-                && t.id != "setup-001"
+            t.dependencies.is_empty() && !has_dependents.contains(&t.id) && t.id != "setup-001"
         })
         .collect();
 

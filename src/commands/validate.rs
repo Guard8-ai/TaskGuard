@@ -204,7 +204,9 @@ pub fn run(sync_areas: bool, show_orphans: bool) -> Result<()> {
     if show_orphans {
         println!("🔍 ORPHAN TASKS");
         if orphan_tasks.is_empty() {
-            println!("   ✅ No orphan tasks found. All tasks are connected to the dependency graph.");
+            println!(
+                "   ✅ No orphan tasks found. All tasks are connected to the dependency graph."
+            );
         } else {
             println!("   Tasks with no dependencies and nothing depends on them:");
             println!();

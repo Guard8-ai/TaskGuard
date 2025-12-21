@@ -383,7 +383,7 @@ fn test_create_basic_task() -> Result<()> {
         "backend",
         "--priority",
         "high",
-        "--allow-orphan-task",  // Causality tracking: allow orphan for tests
+        "--allow-orphan-task", // Causality tracking: allow orphan for tests
     ])?;
 
     assert_eq!(exit_code, 0, "Create should succeed");
@@ -410,8 +410,14 @@ fn test_create_basic_task() -> Result<()> {
 fn test_create_without_init() -> Result<()> {
     let project = CLITestProject::new()?;
 
-    let (stdout, stderr, exit_code) =
-        project.run_command(&["create", "--title", "Test Task", "--area", "backend", "--allow-orphan-task"])?;
+    let (stdout, stderr, exit_code) = project.run_command(&[
+        "create",
+        "--title",
+        "Test Task",
+        "--area",
+        "backend",
+        "--allow-orphan-task",
+    ])?;
 
     assert_ne!(exit_code, 0, "Create should fail without init");
     assert!(
@@ -434,7 +440,10 @@ fn test_create_minimum_required_args() -> Result<()> {
     let (stdout, _stderr, exit_code) =
         project.run_command(&["create", "--title", "Minimum Task", "--allow-orphan-task"])?;
 
-    assert_eq!(exit_code, 0, "Create with --allow-orphan-task should succeed");
+    assert_eq!(
+        exit_code, 0,
+        "Create with --allow-orphan-task should succeed"
+    );
     assert!(
         stdout.contains("Created") || stdout.contains("setup"),
         "Should use default area"

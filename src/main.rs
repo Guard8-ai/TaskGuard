@@ -256,7 +256,10 @@ fn main() -> Result<()> {
             println!("Show task: {}", task_id);
             Ok(())
         }
-        Commands::Validate { sync_areas, orphans } => validate::run(sync_areas, orphans),
+        Commands::Validate {
+            sync_areas,
+            orphans,
+        } => validate::run(sync_areas, orphans),
         Commands::Sync {
             limit,
             verbose,

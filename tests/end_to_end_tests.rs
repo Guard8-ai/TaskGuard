@@ -14,12 +14,12 @@ fn create_task(title: &str, area: &str, priority: &str) -> Result<()> {
         title.to_string(),
         Some(area.to_string()),
         Some(priority.to_string()),
-        None,  // complexity
-        None,  // tags
-        None,  // dependencies
-        None,  // assignee
-        None,  // estimate
-        true,  // allow_orphan_task - tests don't need causality enforcement
+        None, // complexity
+        None, // tags
+        None, // dependencies
+        None, // assignee
+        None, // estimate
+        true, // allow_orphan_task - tests don't need causality enforcement
     )
 }
 

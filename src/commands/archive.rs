@@ -56,7 +56,11 @@ pub fn run(dry_run: bool, _days: Option<u32>) -> Result<()> {
                     // Check if any active task depends on this
                     let dependents = find_dependents(&task.id, &all_tasks);
                     if !dependents.is_empty() {
-                        blocked_from_archive.push((task.id.clone(), task.title.clone(), dependents));
+                        blocked_from_archive.push((
+                            task.id.clone(),
+                            task.title.clone(),
+                            dependents,
+                        ));
                     } else {
                         let metadata = fs::metadata(path)?;
                         total_size += metadata.len();
