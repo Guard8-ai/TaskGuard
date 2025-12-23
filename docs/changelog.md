@@ -4,6 +4,16 @@ TaskGuard version history and release notes.
 
 ---
 
+## v0.4.2 (2025-12-23)
+
+### Improved
+- **Cycle detection algorithm** - Upgraded to proper gray/black DFS coloring for efficiency
+  - Shared "verified" set across all task checks reduces redundant traversals
+  - Correctly handles diamond/DAG dependency patterns
+  - O(V+E) complexity with better constant factors for large projects
+
+---
+
 ## v0.4.1 (2025-12-21)
 
 ### Fixed

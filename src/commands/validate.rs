@@ -91,6 +91,8 @@ pub fn run(sync_areas: bool, show_orphans: bool) -> Result<()> {
     // Find dependency issues (only check non-done active tasks)
     let mut dependency_issues = Vec::new();
     let mut circular_deps = Vec::new();
+    // Track fully-verified nodes across all cycle checks for efficiency
+    let mut cycle_verified: HashSet<String> = HashSet::new();
 
     for task in &active_tasks {
         // Skip done tasks - they don't need dependency validation
@@ -105,8 +107,8 @@ pub fn run(sync_areas: bool, show_orphans: bool) -> Result<()> {
             }
         }
 
-        // Check for circular dependencies (simple check)
-        if has_circular_dependency(task, &task_map, &mut HashSet::new()) {
+        // Check for circular dependencies
+        if has_circular_dependency(task, &task_map, &mut HashSet::new(), &mut cycle_verified) {
             circular_deps.push(task.id.clone());
         }
     }
@@ -324,26 +326,39 @@ fn find_orphan_tasks<'a>(
         .collect()
 }
 
+/// Check for circular dependencies using proper DFS with gray/black coloring.
+/// - `in_stack`: nodes currently being processed (gray) - a cycle exists if we hit one
+/// - `visited`: nodes fully processed (black) - safe to skip, already verified no cycles
 fn has_circular_dependency(
     task: &Task,
     task_map: &HashMap<String, &Task>,
+    in_stack: &mut HashSet<String>,
     visited: &mut HashSet<String>,
 ) -> bool {
+    // If already fully processed, no cycle through this path
     if visited.contains(&task.id) {
-        return true; // Found a cycle
+        return false;
     }
 
-    visited.insert(task.id.clone());
+    // If in current recursion stack, we found a cycle!
+    if in_stack.contains(&task.id) {
+        return true;
+    }
+
+    // Mark as being processed (gray)
+    in_stack.insert(task.id.clone());
 
     for dep_id in &task.dependencies {
         if let Some(dep_task) = task_map.get(dep_id)
-            && has_circular_dependency(dep_task, task_map, visited)
+            && has_circular_dependency(dep_task, task_map, in_stack, visited)
         {
             return true;
         }
     }
 
-    visited.remove(&task.id);
+    // Done processing - remove from stack (gray -> black)
+    in_stack.remove(&task.id);
+    visited.insert(task.id.clone());
     false
 }
 

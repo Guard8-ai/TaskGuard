@@ -194,7 +194,7 @@ TaskGuard suggests, never decides. You're always in control of your workflow.
 - **GitHub:** [Guard8-ai/TaskGuard](https://github.com/Guard8-ai/TaskGuard)
 - **Issues:** [Report a bug](https://github.com/Guard8-ai/TaskGuard/issues)
 - **License:** MIT
-- **Version:** 0.4.0
+- **Version:** 0.4.2
 
 ---
 

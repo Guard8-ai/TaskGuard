@@ -2,6 +2,15 @@
 
 All notable changes to TaskGuard will be documented in this file.
 
+## [0.4.2] - 2025-12-23
+
+### Improved
+
+- **Cycle detection algorithm** - Upgraded to proper gray/black DFS coloring for efficiency
+  - Shared "verified" set across all task checks reduces redundant traversals
+  - Correctly handles diamond/DAG dependency patterns without false positives
+  - O(V+E) complexity maintained with better constant factors for large projects
+
 ## [0.4.1] - 2025-12-21
 
 ### Fixed

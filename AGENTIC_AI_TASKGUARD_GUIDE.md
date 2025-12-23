@@ -36,7 +36,7 @@ taskguard archive                                 # Archive done tasks
 taskguard restore <id>                            # Restore archived
 ```
 
-## Causality Tracking (v0.4.0+)
+## Causality Tracking (v0.4.0+, improved in v0.4.2)
 
 **Every task MUST have dependencies.** `setup-001` is auto-created by `taskguard init`.
 

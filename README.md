@@ -104,7 +104,7 @@ taskguard init
 
 ```bash
 # setup-001 is auto-created by init as the root task
-# Create tasks with dependencies (required in v0.4.0+)
+# Create tasks with dependencies (required since v0.4.0)
 taskguard create --title "Setup development environment" --area setup --dependencies "setup-001"
 
 # Create a backend task that depends on the setup task
@@ -327,6 +327,10 @@ TaskGuard provides information and suggestions but never makes decisions for you
 - ✅ `--allow-orphan-task` escape hatch for research tasks
 - ✅ Archive protection for tasks with active dependents
 - ✅ CAUTION messaging for AI agent attention
+
+**✅ Phase 6.1 (v0.4.2 - COMPLETED): Algorithm Improvements**
+- ✅ Upgraded cycle detection with gray/black DFS coloring
+- ✅ Efficient handling of diamond/DAG dependency patterns
 
 ## 🤖 For AI Agents & Automation
 
