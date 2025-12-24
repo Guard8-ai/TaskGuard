@@ -364,6 +364,31 @@ TaskGuard is in active development. See [CLAUDE.md](CLAUDE.md) for detailed tech
 
 MIT License - see LICENSE file for details.
 
+## Designed With
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Guard8-ai/GroundedProgressiveArchitecture">
+        <strong>Grounded Progressive Architecture</strong>
+      </a>
+      <br>
+      <em>Design methodology for human-AI collaboration</em>
+    </td>
+  </tr>
+</table>
+
+TaskGuard was designed using **[Grounded Progressive Architecture (GPA)](https://github.com/Guard8-ai/GroundedProgressiveArchitecture)** - a six-phase methodology that keeps AI focused while preserving human vision and decision authority:
+
+1. **Vision Casting** - Concrete solution sketch, not abstract goals
+2. **Iterative Deepening** - Refine through structured cycles
+3. **Stress Testing** - Identify problems without immediate fixes
+4. **Philosophical Grounding** - "Developer is the Captain" principle
+5. **Boundary Setting** - Decisive cuts based on philosophy
+6. **Meta Review** - Process improvement
+
+**Result**: Complete architecture with zero scope drift. Local-first, Git-native, AI-ready.
+
 ---
 
 Built with ❤️ in Rust for developers who want to stay in control of their workflow.
