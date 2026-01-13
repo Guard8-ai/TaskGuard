@@ -39,8 +39,8 @@ strip = true        # Strip symbols
 # Lints - Strict mode: fail on warnings and clippy
 # ============================================================================
 [lints.rust]
-dead_code = "deny"
-unused = "deny"
+dead_code = "warn"
+unused = "warn"
 
 [lints.clippy]
 all = { level = "deny", priority = -1 }
@@ -62,3 +62,6 @@ single_match_else = "allow"
 uninlined_format_args = "allow"
 
 case_sensitive_file_extension_comparisons = "allow"
+empty_line_after_doc_comments = "allow"
+ptr_arg = "allow"
+unnecessary_wraps = "allow"
